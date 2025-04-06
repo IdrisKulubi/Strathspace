@@ -10,7 +10,9 @@ export async function middleware(request: Request & { nextUrl: URL }) {
   const isAuth = !!session?.user;
   const pathname = request.nextUrl.pathname;
 
-  // Allow public routes
+ 
+
+  //  public routes
   if (publicRoutes.some((route) => pathname === route)) {
     return NextResponse.next();
   }

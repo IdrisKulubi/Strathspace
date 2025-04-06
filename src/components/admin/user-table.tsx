@@ -4,7 +4,7 @@ import { useTable } from '@/hooks/use-table';
 import { type ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { deleteUserWithImages } from '@/lib/actions/admin.actions';
+import { deleteUser } from '@/lib/actions/admin.actions';
 import { useSWRConfig } from 'swr';
 import { users } from '@/db/schema';
 import { type InferSelectModel } from 'drizzle-orm';
@@ -47,7 +47,7 @@ export function UserManagementTable({ users }: { users: User[] }) {
           variant="destructive"
           size="sm"
           onClick={async () => {
-            await deleteUserWithImages(row.original.id! );
+            await deleteUser(row.original.id! );
             mutate('/api/admin/users');
           }}
         >
