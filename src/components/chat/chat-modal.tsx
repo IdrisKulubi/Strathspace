@@ -13,6 +13,7 @@ interface ChatSectionProps {
   currentUser: { id: string; image: string; name: string };
   onSelectChat: (matchId: string) => void;
   markAsRead: (matchId: string) => void;
+  initialChats?: ChatPreview[];
 }
 
 interface ChatPreview {
@@ -29,25 +30,35 @@ interface ChatPreview {
   };
 }
 
-export function ChatSection({ currentUser, onSelectChat, markAsRead }: ChatSectionProps) {
-  const [chats, setChats] = useState<ChatPreview[]>([]);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+export function ChatSection({ 
+  currentUser, 
+  onSelectChat, 
+  markAsRead,
+  initialChats = []
+}: ChatSectionProps) {
+  const [chats, setChats] = useState<ChatPreview[]>(initialChats);
+  const [isInitialLoading, setIsInitialLoading] = useState(!initialChats.length);
 
   const fetchChats = useCallback(async () => {
     try {
-      // Only show loading state on initial load
+      // Only show loading state on initial load if no initialChats
       if (isInitialLoading) {
         setIsInitialLoading(true);
       }
 
+      console.time('ChatSection - fetchChats');
       const result = await getChats();
+      console.timeEnd('ChatSection - fetchChats');
       
       if (result) {
+        console.time('ChatSection - state update');
         // Only update if there are actual changes
         setChats(prevChats => {
           const hasChanges = JSON.stringify(prevChats) !== JSON.stringify(result);
+          console.log('Chat data changed:', hasChanges);
           return hasChanges ? result : prevChats;
         });
+        console.timeEnd('ChatSection - state update');
       }
     } catch (error) {
       console.error("Error fetching chats:", error);
@@ -56,10 +67,19 @@ export function ChatSection({ currentUser, onSelectChat, markAsRead }: ChatSecti
     }
   }, [isInitialLoading]);
 
-  // Initial fetch
+  // Initial fetch - skip immediate fetch if we have initialChats
   useEffect(() => {
-    fetchChats();
-  }, [fetchChats]);
+    if (initialChats.length === 0) {
+      fetchChats();
+    } else {
+      // If we have initialChats, still fetch but with a small delay
+      // to ensure UI is responsive first
+      const timer = setTimeout(() => {
+        fetchChats();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [fetchChats, initialChats.length]);
 
   // Silent background updates
   useInterval(() => {

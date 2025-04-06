@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { MusicProvider } from "@/context/music-context";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
-import { Navbar } from "@/components/layout/navbar";
 import { constructMetadata } from "@/lib/metadata";
 import { Analytics } from "@vercel/analytics/react";
 import { SwipeCounterProvider } from "@/context/swipe-counter-context";
@@ -55,7 +54,7 @@ export default async function RootLayout({
                 <ServiceWorkerInit />
                 <PHProvider>
                   <div className="relative min-h-screen">
-                    <Navbar />
+                    
                     <main className="flex-1">{children}</main>
                     <Analytics />
                     <SpeedInsights />

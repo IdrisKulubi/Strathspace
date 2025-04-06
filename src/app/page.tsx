@@ -9,6 +9,7 @@ import { checkProfileCompletion } from "@/lib/checks";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 
+
 export default async function Home() {
   const session = await auth();
   
@@ -22,10 +23,12 @@ export default async function Home() {
 
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-pink-50 to-white dark:from-pink-950 dark:to-background overflow-x-hidden">
+    <Navbar />
       <Scene3DWrapper />
       <FloatingHearts />
       
-   
+    
+
       {/* Content sections */}
       <section id="hero" className="relative">
         <LandingContent isLoggedIn={!!session?.user} />

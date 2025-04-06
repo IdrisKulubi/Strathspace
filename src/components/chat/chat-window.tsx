@@ -22,6 +22,7 @@ interface ChatWindowProps {
 }
 
 export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
+  console.time('ChatWindow - initialization');
   const {
     messages,
     isTyping,
@@ -29,22 +30,35 @@ export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
     handleTyping,
     isLoading,
   } = useChat(matchId, partner);
+  console.timeEnd('ChatWindow - initialization');
 
   const { data: session } = useSession();
   const { markAsRead } = useUnreadMessages(session?.user.id ?? "");
   const markAsReadRef = useRef(markAsRead);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     markAsReadRef.current = markAsRead;
   }, [markAsRead]);
 
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (scrollAreaRef.current && messages.length > 0) {
+      const scrollArea = scrollAreaRef.current;
+      scrollArea.scrollTop = scrollArea.scrollHeight;
+    }
+  }, [messages.length]);
+
   useEffect(() => {
     const markRead = async () => {
       try {
+        console.time('ChatWindow - markAsRead');
         markAsReadRef.current(matchId);
         await markMessagesAsRead(matchId, session?.user.id ?? "");
+        console.timeEnd('ChatWindow - markAsRead');
       } catch (error) {
         console.error('Error marking messages as read:', error);
+        console.timeEnd('ChatWindow - markAsRead');
       }
     };
 
@@ -68,10 +82,29 @@ export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
             You matched with {partner.firstName} on {new Date(partner.createdAt).toLocaleDateString()}
           </div>
           
-          <ScrollArea className="flex-1 p-4">
+          <ScrollArea 
+            className="flex-1 p-4"
+            ref={scrollAreaRef}
+          >
             <div className="flex flex-col space-y-4">
+              {/* Only animate the last 5 messages for better performance */}
+              {messages.slice(0, Math.max(0, messages.length - 5)).map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "flex",
+                    message.senderId === session?.user.id ? "justify-end" : "justify-start"
+                  )}
+                >
+                  <MessageBubble 
+                    message={message} 
+                    isUser={message.senderId === session?.user.id}
+                  />
+                </div>
+              ))}
+              
               <AnimatePresence initial={false}>
-                {messages.map((message) => (
+                {messages.slice(Math.max(0, messages.length - 5)).map((message) => (
                   <motion.div
                     key={message.id}
                     initial={{ opacity: 0, y: 20 }}

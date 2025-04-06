@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Profile } from "@/db/schema";
 import { SwipeableCard } from "../cards/swipeable-card";
 import { AnimatePresence } from "framer-motion";
@@ -76,6 +76,24 @@ export function ExploreMobileV2({
   const [isChatLoaded, setIsChatLoaded] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showChatList, setShowChatList] = useState(false);
+  // Add loading states for matches and likes
+  const [isMatchesLoading, setIsMatchesLoading] = useState(true);
+  const [isLikesLoading, setIsLikesLoading] = useState(true);
+  // Add a state for cached chat data with proper typing
+  const [cachedChats, setCachedChats] = useState<Array<{
+    id: string;
+    userId: string;
+    firstName?: string;
+    lastName?: string;
+    profilePhoto: string | null;
+    matchId: string;
+    lastMessage: {
+      content: string;
+      createdAt: Date;
+      isRead: boolean;
+      senderId: string;
+    };
+  }>>([]);
 
   // Initialize matches from likedProfiles where isMatch is true
   const [matches, setMatches] = useState<Profile[]>(
@@ -89,9 +107,57 @@ export function ExploreMobileV2({
   const { toast } = useToast();
   const unreadMessages = useUnreadMessages(currentUser.id);
 
+  // Preload buffer for profiles - Improved to load more profiles in advance
+  const visibleProfiles = useMemo(() => {
+    if (currentIndex < 0) return [];
+    
+    // Get the current profile and the next few profiles for preloading
+    // Preload 5 profiles for better performance
+    const buffer = [];
+    for (let i = 0; i < 5; i++) {
+      const index = currentIndex - i;
+      if (index >= 0 && profiles[index]) {
+        buffer.push(profiles[index]);
+      }
+    }
+    return buffer;
+  }, [currentIndex, profiles]);
+
+  // Preload chat data on component mount
+  useEffect(() => {
+    if (!isChatLoaded) {
+      console.time('Initial chat data preloading');
+      getChats().then((result) => {
+        console.timeEnd('Initial chat data preloading');
+        console.log('Initial preloaded chat data size:', result.length);
+        setCachedChats(result);
+        setIsChatLoaded(true);
+      }).catch(error => {
+        console.error('Error preloading chat data:', error);
+        console.timeEnd('Initial chat data preloading');
+      });
+    }
+  }, [isChatLoaded]);
+
+  // Periodically refresh chat data in the background
+  useInterval(() => {
+    if (isChatLoaded) {
+      // Silent background refresh
+      getChats().then((result) => {
+        setCachedChats(result);
+      }).catch(error => {
+        console.error('Error refreshing chat data:', error);
+      });
+    }
+  }, 30000); // Refresh every 30 seconds
+
   // Fetch and sync matches and likes
   const syncMatchesAndLikes = useCallback(async () => {
     try {
+      // Set loading states to true before fetching data
+      setIsMatchesLoading(true);
+      setIsLikesLoading(true);
+      
       const [matchesResult, likesResult] = await Promise.all([
         getMatches(),
         getLikedByProfiles(),
@@ -99,6 +165,7 @@ export function ExploreMobileV2({
 
       if (matchesResult.matches) {
         setMatches(matchesResult.matches as unknown as Profile[]);
+        setIsMatchesLoading(false);
       }
 
       if (likesResult.profiles) {
@@ -110,9 +177,13 @@ export function ExploreMobileV2({
             )
         );
         setLikes(newLikes);
+        setIsLikesLoading(false);
       }
     } catch (error) {
       console.error("Error syncing matches and likes:", error);
+      // Set loading states to false even if there's an error
+      setIsMatchesLoading(false);
+      setIsLikesLoading(false);
     }
   }, []);
 
@@ -138,12 +209,25 @@ export function ExploreMobileV2({
       setIsAnimating(true);
       setSwipeDirection(direction);
 
-      const result = await recordSwipe(
+      // Start recording the swipe immediately but don't await it
+      const swipePromise = recordSwipe(
         profiles[currentIndex].userId,
         direction === "right" ? "like" : "pass"
       );
 
+      // Reduce the animation time for faster transitions
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev - 1);
+        setSwipeDirection(null);
+        setIsAnimating(false);
+      }, 150); // Reduced from 300ms to 150ms for faster transitions
+
+      // Process the result after the animation has started
+      const result = await swipePromise;
+
       if (direction === "right") {
+        setSwipedProfiles((prev) => [...prev, profiles[currentIndex]]);
+        
         if (result.isMatch) {
           const updatedProfile = {
             ...profiles[currentIndex],
@@ -152,6 +236,19 @@ export function ExploreMobileV2({
           } satisfies Profile;
           setMatchedProfile(updatedProfile);
           setMatches((prev) => [...prev, updatedProfile]);
+          
+          // Trigger confetti
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.3, x: 0.5 },
+          });
+          
+          toast({
+            title: "It's a match ✨",
+            description: `You matched with ${updatedProfile.firstName}! Start chatting now!`,
+            className: "bg-gradient-to-r from-pink-500 to-purple-500 text-white border-none",
+          });
         } else {
           toast({
             title: "Yasss 💖",
@@ -161,15 +258,9 @@ export function ExploreMobileV2({
               "bg-gradient-to-r from-pink-500 to-purple-500 text-white border-none",
           });
         }
+      } else {
+        setSwipedProfiles((prev) => [...prev, profiles[currentIndex]]);
       }
-
-      setSwipedProfiles((prev) => [...prev, profiles[currentIndex]]);
-
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev - 1);
-        setSwipeDirection(null);
-        setIsAnimating(false);
-      }, 300);
     },
     [currentIndex, isAnimating, profiles, toast]
   );
@@ -270,8 +361,15 @@ export function ExploreMobileV2({
   const handleChatHover = useCallback(() => {
     if (!isChatLoaded) {
       // Preload chat data
-      getChats().then(() => {
+      console.time('Chat data preloading');
+      getChats().then((result) => {
+        console.timeEnd('Chat data preloading');
+        console.log('Preloaded chat data size:', JSON.stringify(result).length, 'bytes');
+        setCachedChats(result);
         setIsChatLoaded(true);
+      }).catch(error => {
+        console.error('Error preloading chat data:', error);
+        console.timeEnd('Chat data preloading');
       });
     }
   }, [isChatLoaded]);
@@ -308,6 +406,7 @@ export function ExploreMobileV2({
               currentUser={currentUser} 
               onSelectChat={handleSelectChat}
               markAsRead={markAsRead}
+              initialChats={cachedChats}
             />
           </div>
         </SheetContent>
@@ -332,14 +431,30 @@ export function ExploreMobileV2({
               <AnimatePresence>
                 {profiles[currentIndex] && (
                   <>
-                    <SwipeableCard
-                      key={profiles[currentIndex].userId}
-                      profile={
-                        profiles[currentIndex] as Profile & { photos?: string[] }
-                      }
-                      onSwipe={handleSwipe}
-                      active={true}
-                    />
+                    <div className="w-full h-full relative" style={{ touchAction: 'manipulation' }}>
+                      <SwipeableCard
+                        key={profiles[currentIndex].userId}
+                        profile={
+                          profiles[currentIndex] as Profile & { photos?: string[] }
+                        }
+                        onSwipe={handleSwipe}
+                        active={true}
+                      />
+                    </div>
+                    
+                    {/* Preload the next profiles (hidden but loaded in DOM) */}
+                    {visibleProfiles.slice(1).map((profile, idx) => (
+                      <div 
+                        key={`preload-${profile.userId}`} 
+                        className={idx < 2 ? "absolute inset-0 opacity-0 pointer-events-none" : "hidden"}
+                      >
+                        <SwipeableCard
+                          profile={profile as Profile & { photos: string[] }}
+                          onSwipe={() => {}}
+                          active={false}
+                        />
+                      </div>
+                    ))}
                   </>
                 )}
               </AnimatePresence>
@@ -376,10 +491,13 @@ export function ExploreMobileV2({
                   className="relative"
                 >
                   <Heart className="h-6 w-6 text-pink-500" />
-                  {matches.length > 0 && (
+                  {!isMatchesLoading && matches.length > 0 && (
                     <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
                       {matches.length}
                     </span>
+                  )}
+                  {isMatchesLoading && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-pink-500/30 animate-pulse"></span>
                   )}
                 </Button>
 
@@ -447,10 +565,13 @@ export function ExploreMobileV2({
                   className="relative"
                 >
                   <Star className="h-6 w-6 text-yellow-500" />
-                  {likes.length > 0 && (
+                  {!isLikesLoading && likes.length > 0 && (
                     <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-yellow-500 text-white text-xs flex items-center justify-center">
                       {likes.length}
                     </span>
+                  )}
+                  {isLikesLoading && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-yellow-500/30 animate-pulse"></span>
                   )}
                 </Button>
               </div>

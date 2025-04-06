@@ -127,11 +127,15 @@ export async function getUnreadCount(userId: string) {
 }
 
 export async function getChats() {
+  console.time('getChats total execution');
   const session = await auth();
   if (!session?.user?.id) return [];
 
   try {
-    // First get matches with their participants
+    // Optimized query to get matches with their participants and latest message in a single query
+    console.time('getChats - optimized fetch');
+    
+    // First get all matches for the current user
     const matches = await db.query.matches.findMany({
       where: (matches, { or, eq }) => or(
         eq(matches.user1Id, session.user.id),
@@ -166,29 +170,36 @@ export async function getChats() {
         }
       }
     });
-
-    // Then get the latest message for each match
-    const matchesWithMessages = await Promise.all(
-      matches.map(async (match) => {
-        const latestMessage = await db.query.messages.findFirst({
-          where: eq(messages.matchId, match.id),
-          orderBy: (messages, { desc }) => [desc(messages.createdAt)],
-        });
-
-        return {
-          ...match,
-          messages: latestMessage ? [latestMessage] : []
-        };
-      })
-    );
+    
+    // Get all match IDs to fetch messages in a single query
+    const matchIds = matches.map(match => match.id);
+    
+    // Fetch the latest message for each match in a single query
+    const latestMessages = await db.query.messages.findMany({
+      where: (messages, { inArray }) => inArray(messages.matchId, matchIds),
+      orderBy: (messages, { desc }) => [desc(messages.createdAt)],
+    });
+    
+    // Create a map of matchId to latest message for quick lookup
+    const messagesByMatchId = new Map();
+    latestMessages.forEach(message => {
+      if (!messagesByMatchId.has(message.matchId) || 
+          new Date(message.createdAt) > new Date(messagesByMatchId.get(message.matchId).createdAt)) {
+        messagesByMatchId.set(message.matchId, message);
+      }
+    });
+    
+    console.timeEnd('getChats - optimized fetch');
+    console.log('Matches count:', matches.length, 'Messages count:', latestMessages.length);
 
     // Transform to chat previews
-    const chats = matchesWithMessages
-      .filter(match => match.messages.length > 0)
+    console.time('getChats - transform data');
+    const chats = matches
+      .filter(match => messagesByMatchId.has(match.id)) // Only include matches with messages
       .map(match => {
         const isUser1 = match.user1Id === session.user.id;
         const partner = isUser1 ? match.user2.profile : match.user1.profile;
-        const lastMessage = match.messages[0];
+        const lastMessage = messagesByMatchId.get(match.id);
 
         return {
           id: partner.id,
@@ -210,10 +221,14 @@ export async function getChats() {
         return new Date(b.lastMessage.createdAt).getTime() - 
                new Date(a.lastMessage.createdAt).getTime();
       });
-
+    console.timeEnd('getChats - transform data');
+    console.log('Final chats count:', chats.length);
+    
+    console.timeEnd('getChats total execution');
     return chats;
   } catch (error) {
     console.error("Error getting chats:", error);
+    console.timeEnd('getChats total execution');
     return [];
   }
 }
