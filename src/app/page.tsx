@@ -8,7 +8,6 @@ import { Footer } from "@/components/shared/layout/footer";
 import { checkProfileCompletion } from "@/lib/checks";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { FeedbackModal } from "@/components/shared/notification/maintenance-modal";
 
 export default async function Home() {
   const session = await auth();
@@ -26,9 +25,7 @@ export default async function Home() {
       <Scene3DWrapper />
       <FloatingHearts />
       
-      {/* Auto-showing Maintenance Modal */}
-      <FeedbackModal autoShow={true} />
-
+   
       {/* Content sections */}
       <section id="hero" className="relative">
         <LandingContent isLoggedIn={!!session?.user} />

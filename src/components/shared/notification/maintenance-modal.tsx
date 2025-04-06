@@ -135,7 +135,7 @@ export function FeedbackModal({ autoShow = false }: FeedbackModalProps) {
                   <div className="text-3xl sm:text-4xl animate-bounce">🎉</div>
                   <div>
                     <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-                      Y&pos;all Went Crazy This Season 🔥
+                      Y&apos;all Went Crazy This Season 🔥
                     </h2>
                     <span className="text-sm sm:text-base text-fuchsia-200/90">In that short time, we had </span>
                     <p className="text-sm sm:text-base text-fuchsia-200/90">
