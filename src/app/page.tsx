@@ -8,6 +8,7 @@ import { Footer } from "@/components/shared/layout/footer";
 import { checkProfileCompletion } from "@/lib/checks";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { Navbar } from "@/components/layout/navbar";
 
 
 export default async function Home() {
