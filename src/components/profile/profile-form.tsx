@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema } from "@/lib/validators";
@@ -9,6 +9,8 @@ import { BioInput } from "@/components/shared/profile/bio-input";
 import { InterestSelector } from "@/components/shared/profile/interest-selector";
 import { DetailsInput } from "@/components/shared/profile/details-input";
 import { SocialInput } from "@/components/shared/profile/social-input";
+import { LifestyleInput } from "@/components/shared/profile/lifestyle-input";
+import { PersonalityInput } from "@/components/shared/profile/personality-input";
 import { motion } from "framer-motion";
 import {
   Card,
@@ -30,14 +32,27 @@ import { ImageUpload } from "../shared/profile/image-upload";
 
 interface ProfileFormProps {
   initialData: ProfileFormData;
+  activeTab?: any;
 }
 
-export function ProfileForm({ initialData }: ProfileFormProps) {
+export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string | null>(activeTab || null);
   const [isChanged, setIsChanged] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Create refs for each section
+  const sectionRefs = {
+    photos: useRef<HTMLDivElement>(null),
+    bio: useRef<HTMLDivElement>(null),
+    interests: useRef<HTMLDivElement>(null),
+    basicInfo: useRef<HTMLDivElement>(null), // Maps to details section
+    courseInfo: useRef<HTMLDivElement>(null), // Also maps to details section
+    socialLinks: useRef<HTMLDivElement>(null), // Maps to socials section
+    lifestyle: useRef<HTMLDivElement>(null),
+    personality: useRef<HTMLDivElement>(null),
+  };
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -51,6 +66,33 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     });
     return () => subscription.unsubscribe();
   }, [form, form.watch]);
+  
+  // Scroll to active section when it changes
+  useEffect(() => {
+    // Map profile completion sections to form sections
+    const sectionMapping: Record<string, string> = {
+      photos: "photos",
+      bio: "bio",
+      interests: "interests",
+      basicInfo: "details",
+      courseInfo: "details",
+      socialLinks: "socials",
+      lifestyle: "lifestyle",
+      personality: "personality",
+    };
+    
+    if (activeTab && sectionMapping[activeTab]) {
+      setActiveSection(sectionMapping[activeTab]);
+      
+      // Scroll to the section after a short delay to ensure rendering
+      setTimeout(() => {
+        const section = document.getElementById(`section-${sectionMapping[activeTab]}`);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [activeTab]);
 
   const handleSubmit = async () => {
     if (!isChanged) return;
@@ -161,6 +203,29 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     }
   };
 
+  // Function to scroll to a section when clicked from ProfileCompletion
+  const scrollToSection = (sectionId: string) => {
+    // Map profile completion sections to form sections
+    const sectionMapping: Record<string, string> = {
+      photos: "photos",
+      bio: "bio",
+      interests: "interests",
+      basicInfo: "details",
+      courseInfo: "details",
+      socialLinks: "socials",
+      lifestyle: "lifestyle",
+      personality: "personality",
+    };
+    
+    const formSection = sectionMapping[sectionId] || sectionId;
+    setActiveSection(formSection);
+    
+    const section = document.getElementById(`section-${formSection}`);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <div className="space-y-12">
       {/* Love-themed header with floating hearts animation */}
@@ -195,7 +260,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
         layout
       >
         {/* Photos Section */}
-        <motion.div layoutId="photos-section" className="md:col-span-2">
+        <motion.div layoutId="photos-section" className="md:col-span-2" id="section-photos" ref={sectionRefs.photos}>
           <Card
             className={`relative overflow-hidden transition-all duration-300 ${
               activeSection === "photos"
@@ -241,7 +306,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
         </motion.div>
 
         {/* Bio & Interests Side by Side */}
-        <motion.div layoutId="bio-section">
+        <motion.div layoutId="bio-section" id="section-bio" ref={sectionRefs.bio}>
           <Card
             className={`relative h-full overflow-hidden transition-all duration-300 ${
               activeSection === "bio"
@@ -267,7 +332,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           </Card>
         </motion.div>
 
-        <motion.div layoutId="interests-section">
+        <motion.div layoutId="interests-section" id="section-interests" ref={sectionRefs.interests}>
           <Card
             className={`relative h-full overflow-hidden transition-all duration-300 ${
               activeSection === "interests"
@@ -294,7 +359,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
         </motion.div>
 
         {/* Details Section - Full Width */}
-        <motion.div layoutId="details-section" className="md:col-span-2">
+        <motion.div layoutId="details-section" className="md:col-span-2" id="section-details" ref={sectionRefs.basicInfo}>
           <Card
             className={`relative overflow-hidden transition-all duration-300 ${
               activeSection === "details"
@@ -340,8 +405,72 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           </Card>
         </motion.div>
 
+        {/* Lifestyle Section - Full Width */}
+        <motion.div layoutId="lifestyle-section" className="md:col-span-2" id="section-lifestyle" ref={sectionRefs.lifestyle}>
+          <Card
+            className={`relative overflow-hidden transition-all duration-300 ${
+              activeSection === "lifestyle"
+                ? "ring-2 ring-pink-500 shadow-xl scale-[1.02] bg-gradient-to-br from-pink-50/50 to-white dark:from-pink-950/50 dark:to-background"
+                : "hover:shadow-lg hover:scale-[1.01] bg-white/50 dark:bg-background/50"
+            }`}
+            onMouseEnter={() => setActiveSection("lifestyle")}
+            onMouseLeave={() => setActiveSection(null)}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-pink-500" />
+                Lifestyle Details 🌿
+              </CardTitle>
+              <CardDescription>Tell us about your lifestyle preferences ✨</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LifestyleInput
+                values={{
+                  drinkingPreference: form.watch("drinkingPreference"),
+                  workoutFrequency: form.watch("workoutFrequency"),
+                  socialMediaUsage: form.watch("socialMediaUsage"),
+                  sleepingHabits: form.watch("sleepingHabits"),
+                }}
+                onChange={(field, value) => handleFieldUpdate(field, value)}
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Personality Section - Full Width */}
+        <motion.div layoutId="personality-section" className="md:col-span-2" id="section-personality" ref={sectionRefs.personality}>
+          <Card
+            className={`relative overflow-hidden transition-all duration-300 ${
+              activeSection === "personality"
+                ? "ring-2 ring-pink-500 shadow-xl scale-[1.02] bg-gradient-to-br from-pink-50/50 to-white dark:from-pink-950/50 dark:to-background"
+                : "hover:shadow-lg hover:scale-[1.01] bg-white/50 dark:bg-background/50"
+            }`}
+            onMouseEnter={() => setActiveSection("personality")}
+            onMouseLeave={() => setActiveSection(null)}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-pink-500" />
+                Personality & Communication 💫
+              </CardTitle>
+              <CardDescription>Share how you connect with others ✨</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PersonalityInput
+                values={{
+                  personalityType: form.watch("personalityType") as "introvert" | "extrovert" | "ambivert" | undefined,
+                  communicationStyle: form.watch("communicationStyle") as "direct" | "thoughtful" | "expressive" | "analytical" | undefined,
+                  loveLanguage: form.watch("loveLanguage") as "words_of_affirmation" | "quality_time" | "acts_of_service" | "physical_touch" | "receiving_gifts" | undefined,
+                  zodiacSign: form.watch("zodiacSign") as "aries" | "taurus" | "gemini" | "cancer" | "leo" | "virgo" | "libra" | "scorpio" | "sagittarius" | "capricorn" | "aquarius" | "pisces" | undefined,
+                }}
+                onChange={(field, value) => handleFieldUpdate(field, value)}
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Socials Section - Full Width */}
-        <motion.div layoutId="socials-section" className="md:col-span-2">
+        <motion.div layoutId="socials-section" className="md:col-span-2" id="section-socials" ref={sectionRefs.socialLinks}>
           <Card
             className={`relative overflow-hidden transition-all duration-300 ${
               activeSection === "socials"
@@ -378,51 +507,30 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
       {/* Love-themed footer decoration */}
       <motion.div
-        className="relative h-12 mt-8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.6 }}
+        className="flex justify-center"
       >
-        <div className="absolute inset-x-0 flex justify-center gap-4">
-          {["💖", "✨", "💝", "✨", "💖"].map((emoji, i) => (
-            <motion.span
-              key={i}
-              className="text-2xl"
-              animate={{
-                y: [0, -10, 0],
-                rotate: [-5, 5, -5],
-              }}
-              transition={{
-                duration: 2,
-                delay: i * 0.2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              {emoji}
-            </motion.span>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Add update button at the bottom */}
-      {isChanged && (
         <Button
-          type="button"
+          disabled={!isChanged || isSubmitting}
           onClick={handleSubmit}
-          disabled={
-            isSubmitting ||
-            !isChanged ||
-            !form.watch("phoneNumber") ||
-            !!form.formState.errors.phoneNumber ||
-            !/^[0-9+\-\s()]+$/.test(form.watch("phoneNumber") || "") ||
-            (form.watch("phoneNumber") || "").length < 10
-          }
-          className="w-full bg-pink-600 hover:bg-pink-700"
+          className="px-8 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-full flex items-center gap-2"
+          size="lg"
         >
-          {isSubmitting ? "Saving..." : "Save Changes"}
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin mr-2">💫</div>
+              Saving...
+            </>
+          ) : (
+            <>
+              <span>Save Changes</span>
+              <span>✨</span>
+            </>
+          )}
         </Button>
-      )}
+      </motion.div>
     </div>
   );
 }

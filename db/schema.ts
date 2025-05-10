@@ -115,6 +115,28 @@ export const profiles = pgTable(
     lastName: text("last_name").notNull().default(""),
     isMatch: boolean("is_match").default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    
+    // New lifestyle attributes
+    drinkingPreference: text("drinking_preference"),
+    workoutFrequency: text("workout_frequency"),
+    socialMediaUsage: text("social_media_usage"),
+    sleepingHabits: text("sleeping_habits"),
+    
+    // New personality attributes
+    personalityType: text("personality_type"),
+    communicationStyle: text("communication_style"),
+    loveLanguage: text("love_language"),
+    zodiacSign: text("zodiac_sign"),
+    
+    // Profile visibility and privacy settings
+    visibilityMode: text("visibility_mode").default("standard"),
+    incognitoMode: boolean("incognito_mode").default(false),
+    discoveryPaused: boolean("discovery_paused").default(false),
+    readReceiptsEnabled: boolean("read_receipts_enabled").default(true),
+    showActiveStatus: boolean("show_active_status").default(true),
+    
+    // Username for profile sharing
+    username: text("username"),
   },
   (table) => ({
     userIdIdx: index("profile_user_id_idx").on(table.userId),
@@ -122,6 +144,7 @@ export const profiles = pgTable(
     genderIdx: index("profile_gender_idx").on(table.gender),
     lastActiveIdx: index("profile_last_active_idx").on(table.lastActive),
     completedIdx: index("profile_completed_idx").on(table.profileCompleted),
+    usernameIdx: index("profile_username_idx").on(table.username),
   })
 );
 

@@ -11,7 +11,6 @@ import { SwipeCounterProvider } from "@/context/swipe-counter-context";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { ServiceWorkerInit } from "@/components/service-worker/service-worker-init";
 import { PHProvider, PostHogPageview } from "@/components/providers/posthog";
 
 const fontSans = Geist({
@@ -51,7 +50,6 @@ export default async function RootLayout({
           <SessionProvider session={session}>
             <MusicProvider>
               <SwipeCounterProvider>
-                <ServiceWorkerInit />
                 <PHProvider>
                   <div className="relative min-h-screen">
                     
