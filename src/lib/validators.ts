@@ -134,7 +134,9 @@ export const profileSchema = z
       .min(3, "Username must be at least 3 characters")
       .max(30, "Username is too long")
       .regex(/^[a-zA-Z0-9_.-]+$/, "Username can only contain letters, numbers, periods, underscores, and hyphens")
-      .optional(),
+      .nullable()
+      .optional()
+      .transform((val) => val && val.trim() ? val.trim() : undefined),
   })
   .refine((data) => {
     return (

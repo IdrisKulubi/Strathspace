@@ -32,13 +32,12 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     redirect("/profile/setup");
   }
 
-  // Await searchParams before accessing its properties
+  // In Next.js 15, we must await searchParams before accessing its properties
   const currentSearchParams = await searchParams;
   const activeSection = currentSearchParams?.section || null;
 
   const profile = await getProfile();
   if (!profile) {
-    
     console.error("ProfilePage: Profile data is null after checks passed.");
     redirect("/profile/setup"); // Or show a dedicated error page
   }

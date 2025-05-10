@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PHProvider, PostHogPageview } from "@/components/providers/posthog";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -51,14 +52,15 @@ export default async function RootLayout({
             <MusicProvider>
               <SwipeCounterProvider>
                 <PHProvider>
-                  <div className="relative min-h-screen">
-                    
-                    <main className="flex-1">{children}</main>
-                    <Analytics />
-                    <SpeedInsights />
-                    <Toaster />
-                    <PostHogPageview />
-                  </div>
+                  <TooltipProvider>
+                    <div className="relative min-h-screen">
+                      <main className="flex-1">{children}</main>
+                      <Analytics />
+                      <SpeedInsights />
+                      <Toaster />
+                      <PostHogPageview />
+                    </div>
+                  </TooltipProvider>
                 </PHProvider>
               </SwipeCounterProvider>
             </MusicProvider>

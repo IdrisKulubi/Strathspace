@@ -90,6 +90,10 @@ export function DetailsInput({
       if (!phoneInput) {
         setIsValid(false);
         setFormattedNumber("");
+        // Ensure we update the form value when clearing the input
+        if (values.phoneNumber) {
+          onChange("phoneNumber", "");
+        }
         return;
       }
 
@@ -111,7 +115,7 @@ export function DetailsInput({
       setIsValid(false);
       setFormattedNumber("");
     }
-  }, [phoneInput, selectedCountry,onChange,values.phoneNumber]);
+  }, [phoneInput, selectedCountry, onChange, values.phoneNumber]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^\d+\s()-]/g, "");
