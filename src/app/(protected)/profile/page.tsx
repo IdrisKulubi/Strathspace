@@ -18,7 +18,7 @@ function ProfileLoadingSkeleton() {
 }
 
 interface ProfilePageProps {
-  searchParams?: { section?: string };
+  searchParams: { section?: string };
 }
 
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
@@ -32,13 +32,13 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     redirect("/profile/setup");
   }
 
-  // Get active section from search params if available
-  const activeSection = searchParams?.section || null;
+  // Await searchParams before accessing its properties
+  const currentSearchParams = await searchParams;
+  const activeSection = currentSearchParams?.section || null;
 
   const profile = await getProfile();
   if (!profile) {
-    // This case might indicate an error or an unexpected state
-    // Redirecting to setup or showing an error might be appropriate
+    
     console.error("ProfilePage: Profile data is null after checks passed.");
     redirect("/profile/setup"); // Or show a dedicated error page
   }

@@ -209,12 +209,13 @@ export async function updateProfile(data: ProfileFormData) {
 
     const actualUserId = user[0].id;
 
-    // Transform social fields before validation
+    // Transform social fields and username before validation
     const processedData = {
       ...data,
       instagram: data.instagram ?? "",
       spotify: data.spotify ?? "",
       snapchat: data.snapchat ?? "",
+      username: data.username?.trim() || undefined, // Ensure empty/null username becomes undefined
     };
 
     // Validate the processed data
@@ -357,7 +358,7 @@ export async function submitProfile(data: ProfileFormData) {
       showActiveStatus: data.showActiveStatus !== undefined 
         ? data.showActiveStatus 
         : true,
-      username: data.username,
+      username: data.username?.trim() || undefined, // Ensure empty/null username becomes undefined
     };
 
     // Create or update profile

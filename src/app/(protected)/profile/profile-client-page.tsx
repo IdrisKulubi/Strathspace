@@ -7,8 +7,7 @@ import { MobileNav } from "@/components/explore/mobile/mobile-nav";
 import { StalkersList } from "@/components/profile/stalkers-list";
 import { ProfileCompletion } from "@/components/profile/profile-completion";
 import { Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { calculateProfileCompletion } from "@/lib/utils/profile-completion";
+
 
 interface ProfileClientPageProps {
   profile: ProfileFormData;
@@ -95,9 +94,8 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
               profile={profile} 
               onSectionClick={handleSectionClick}
             />
-            
-            {/* Standalone Improve Profile button for mobile visibility */}
-            {calculateProfileCompletion(profile).incompleteSections.length > 0 && (
+            {/* will decide if to remove this button or not */}
+            {/* {calculateProfileCompletion(profile).incompleteSections.length > 0 && (
               <Button 
                 className="mt-4 w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
                 onClick={() => {
@@ -109,7 +107,7 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
               >
                 Improve Your Profile
               </Button>
-            )}
+            )} */}
           </div>
           
           <section className="space-y-6 mb-8">

@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Brain, Heart, MessageCircle, Stars } from "lucide-react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface PersonalityAttributes {
   personalityType?: "introvert" | "extrovert" | "ambivert"; 
@@ -86,6 +87,13 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
     }),
   };
 
+  const tabsConfig = [
+    { value: "personality", icon: Brain, label: "Personality" },
+    { value: "communication", icon: MessageCircle, label: "Communication" },
+    { value: "love", icon: Heart, label: "Love Language" },
+    { value: "zodiac", icon: Stars, label: "Zodiac" },
+  ];
+
   return (
     <motion.div
       initial="hidden"
@@ -93,59 +101,68 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
       variants={cardVariants}
       className="w-full"
     >
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 mb-6">
-          <TabsTrigger value="personality" className="flex flex-col items-center gap-1">
-            <Brain className="h-4 w-4" />
-            <span className="text-xs">Personality</span>
-          </TabsTrigger>
-          
-          <TabsTrigger value="communication" className="flex flex-col items-center gap-1">
-            <MessageCircle className="h-4 w-4" />
-            <span className="text-xs">Communication</span>
-          </TabsTrigger>
-          
-          <TabsTrigger value="love" className="flex flex-col items-center gap-1">
-            <Heart className="h-4 w-4" />
-            <span className="text-xs">Love Language</span>
-          </TabsTrigger>
-          
-          <TabsTrigger value="zodiac" className="flex flex-col items-center gap-1">
-            <Stars className="h-4 w-4" />
-            <span className="text-xs">Zodiac</span>
-          </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4 gap-2 bg-transparent p-0">
+          {tabsConfig.map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 rounded-lg p-3 text-muted-foreground transition-all duration-200 ease-in-out",
+                "hover:bg-pink-50 hover:text-pink-600 dark:hover:bg-pink-900/50 dark:hover:text-pink-400",
+                activeTab === tab.value &&
+                  "bg-pink-100 text-pink-700 shadow-md dark:bg-pink-950 dark:text-pink-300"
+              )}
+            >
+              <tab.icon className="h-5 w-5" />
+              <span className="text-xs font-medium">{tab.label}</span>
+            </TabsTrigger>
+          ))}
         </TabsList>
         
         {/* Personality type */}
         <TabsContent value="personality" className="mt-0">
-          <Card className="border-none shadow-none">
+          <Card className="border-none shadow-none bg-transparent">
             <CardContent className="p-0">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">
+                  <Label className="text-base font-semibold mb-3 block text-gray-800 dark:text-gray-200">
                     What's your personality type?
                   </Label>
                   
                   <RadioGroup
                     value={values.personalityType}
                     onValueChange={(value) => onChange("personalityType", value)}
-                    className="grid grid-cols-1 gap-2"
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-3"
                   >
                     {["introvert", "extrovert", "ambivert"].map((value, i) => (
                       <motion.div 
                         key={value}
                         custom={i} 
                         variants={itemVariants}
+                        className="w-full"
                       >
                         <Label
                           htmlFor={`personality-${value}`}
-                          className={`flex items-center justify-between rounded-lg border border-primary/20 p-4 cursor-pointer hover:bg-primary/5 transition-colors ${
-                            values.personalityType === value ? "bg-primary/10 border-primary" : ""
-                          }`}
+                          className={cn(
+                            "flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-all duration-200 ease-in-out",
+                            "bg-white dark:bg-gray-800/30 border-gray-200 dark:border-gray-700",
+                            "hover:border-pink-400 hover:bg-pink-50/50 dark:hover:border-pink-600 dark:hover:bg-pink-900/30",
+                            values.personalityType === value 
+                              ? "border-pink-500 bg-pink-50 dark:border-pink-500 dark:bg-pink-950/70 ring-2 ring-pink-500" 
+                              : "hover:shadow-md"
+                          )}
                         >
                           <div className="flex items-center gap-3">
-                            <RadioGroupItem value={value} id={`personality-${value}`} />
-                            <span>{getReadableLabel(value)}</span>
+                            <RadioGroupItem 
+                              value={value} 
+                              id={`personality-${value}`}
+                              className={cn(
+                                "border-gray-400 dark:border-gray-600 text-pink-600 dark:text-pink-500",
+                                values.personalityType === value && "border-pink-600 dark:border-pink-500"
+                              )}
+                            />
+                            <span className="font-medium text-sm text-gray-700 dark:text-gray-300">{getReadableLabel(value)}</span>
                           </div>
                         </Label>
                       </motion.div>
@@ -157,7 +174,7 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
                   <Button
                     type="button"
                     onClick={() => setActiveTab("communication")}
-                    className="bg-gradient-to-r from-pink-500 to-pink-600"
+                    className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
                   >
                     Next: Communication
                   </Button>
@@ -169,34 +186,47 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
         
         {/* Communication style */}
         <TabsContent value="communication" className="mt-0">
-          <Card className="border-none shadow-none">
+          <Card className="border-none shadow-none bg-transparent">
             <CardContent className="p-0">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">
+                  <Label className="text-base font-semibold mb-3 block text-gray-800 dark:text-gray-200">
                     How would you describe your communication style?
                   </Label>
                   
                   <RadioGroup
                     value={values.communicationStyle}
                     onValueChange={(value) => onChange("communicationStyle", value)}
-                    className="grid grid-cols-1 gap-2"
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-3"
                   >
                     {["direct", "thoughtful", "expressive", "analytical"].map((value, i) => (
                       <motion.div 
                         key={value}
                         custom={i} 
                         variants={itemVariants}
+                        className="w-full"
                       >
                         <Label
                           htmlFor={`communication-${value}`}
-                          className={`flex items-center justify-between rounded-lg border border-primary/20 p-4 cursor-pointer hover:bg-primary/5 transition-colors ${
-                            values.communicationStyle === value ? "bg-primary/10 border-primary" : ""
-                          }`}
+                          className={cn(
+                            "flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-all duration-200 ease-in-out",
+                            "bg-white dark:bg-gray-800/30 border-gray-200 dark:border-gray-700",
+                            "hover:border-pink-400 hover:bg-pink-50/50 dark:hover:border-pink-600 dark:hover:bg-pink-900/30",
+                            values.communicationStyle === value 
+                              ? "border-pink-500 bg-pink-50 dark:border-pink-500 dark:bg-pink-950/70 ring-2 ring-pink-500" 
+                              : "hover:shadow-md"
+                          )}
                         >
                           <div className="flex items-center gap-3">
-                            <RadioGroupItem value={value} id={`communication-${value}`} />
-                            <span>{getReadableLabel(value)}</span>
+                            <RadioGroupItem 
+                              value={value} 
+                              id={`communication-${value}`}
+                              className={cn(
+                                "border-gray-400 dark:border-gray-600 text-pink-600 dark:text-pink-500",
+                                values.communicationStyle === value && "border-pink-600 dark:border-pink-500"
+                              )}
+                            />
+                            <span className="font-medium text-sm text-gray-700 dark:text-gray-300">{getReadableLabel(value)}</span>
                           </div>
                         </Label>
                       </motion.div>
@@ -209,13 +239,14 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
                     type="button"
                     variant="outline"
                     onClick={() => setActiveTab("personality")}
+                    className="border-pink-300 text-pink-600 hover:bg-pink-50 hover:text-pink-700 dark:border-pink-700 dark:text-pink-400 dark:hover:bg-pink-900/50 dark:hover:text-pink-300"
                   >
                     Back
                   </Button>
                   <Button
                     type="button"
                     onClick={() => setActiveTab("love")}
-                    className="bg-gradient-to-r from-pink-500 to-pink-600"
+                    className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
                   >
                     Next: Love Language
                   </Button>
@@ -227,34 +258,47 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
         
         {/* Love language */}
         <TabsContent value="love" className="mt-0">
-          <Card className="border-none shadow-none">
+          <Card className="border-none shadow-none bg-transparent">
             <CardContent className="p-0">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">
+                  <Label className="text-base font-semibold mb-3 block text-gray-800 dark:text-gray-200">
                     What's your primary love language?
                   </Label>
                   
                   <RadioGroup
                     value={values.loveLanguage}
                     onValueChange={(value) => onChange("loveLanguage", value)}
-                    className="grid grid-cols-1 gap-2"
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-3"
                   >
                     {["words_of_affirmation", "quality_time", "acts_of_service", "physical_touch", "receiving_gifts"].map((value, i) => (
                       <motion.div 
                         key={value}
                         custom={i} 
                         variants={itemVariants}
+                        className="w-full"
                       >
                         <Label
                           htmlFor={`love-${value}`}
-                          className={`flex items-center justify-between rounded-lg border border-primary/20 p-4 cursor-pointer hover:bg-primary/5 transition-colors ${
-                            values.loveLanguage === value ? "bg-primary/10 border-primary" : ""
-                          }`}
+                          className={cn(
+                            "flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-all duration-200 ease-in-out",
+                            "bg-white dark:bg-gray-800/30 border-gray-200 dark:border-gray-700",
+                            "hover:border-pink-400 hover:bg-pink-50/50 dark:hover:border-pink-600 dark:hover:bg-pink-900/30",
+                            values.loveLanguage === value 
+                              ? "border-pink-500 bg-pink-50 dark:border-pink-500 dark:bg-pink-950/70 ring-2 ring-pink-500" 
+                              : "hover:shadow-md"
+                          )}
                         >
                           <div className="flex items-center gap-3">
-                            <RadioGroupItem value={value} id={`love-${value}`} />
-                            <span>{getReadableLabel(value)}</span>
+                            <RadioGroupItem 
+                              value={value} 
+                              id={`love-${value}`} 
+                              className={cn(
+                                "border-gray-400 dark:border-gray-600 text-pink-600 dark:text-pink-500",
+                                values.loveLanguage === value && "border-pink-600 dark:border-pink-500"
+                              )}
+                            />
+                            <span className="font-medium text-sm text-gray-700 dark:text-gray-300">{getReadableLabel(value)}</span>
                           </div>
                         </Label>
                       </motion.div>
@@ -267,13 +311,14 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
                     type="button"
                     variant="outline"
                     onClick={() => setActiveTab("communication")}
+                    className="border-pink-300 text-pink-600 hover:bg-pink-50 hover:text-pink-700 dark:border-pink-700 dark:text-pink-400 dark:hover:bg-pink-900/50 dark:hover:text-pink-300"
                   >
                     Back
                   </Button>
                   <Button
                     type="button"
                     onClick={() => setActiveTab("zodiac")}
-                    className="bg-gradient-to-r from-pink-500 to-pink-600"
+                    className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
                   >
                     Next: Zodiac
                   </Button>
@@ -285,34 +330,47 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
         
         {/* Zodiac sign */}
         <TabsContent value="zodiac" className="mt-0">
-          <Card className="border-none shadow-none">
+          <Card className="border-none shadow-none bg-transparent">
             <CardContent className="p-0">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">
+                  <Label className="text-base font-semibold mb-3 block text-gray-800 dark:text-gray-200">
                     What's your zodiac sign?
                   </Label>
                   
                   <RadioGroup
                     value={values.zodiacSign}
                     onValueChange={(value) => onChange("zodiacSign", value)}
-                    className="grid grid-cols-1 gap-2"
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-3"
                   >
                     {["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"].map((value, i) => (
                       <motion.div 
                         key={value}
                         custom={i} 
                         variants={itemVariants}
+                        className="w-full"
                       >
                         <Label
                           htmlFor={`zodiac-${value}`}
-                          className={`flex items-center justify-between rounded-lg border border-primary/20 p-4 cursor-pointer hover:bg-primary/5 transition-colors ${
-                            values.zodiacSign === value ? "bg-primary/10 border-primary" : ""
-                          }`}
+                          className={cn(
+                            "flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-all duration-200 ease-in-out",
+                            "bg-white dark:bg-gray-800/30 border-gray-200 dark:border-gray-700",
+                            "hover:border-pink-400 hover:bg-pink-50/50 dark:hover:border-pink-600 dark:hover:bg-pink-900/30",
+                            values.zodiacSign === value 
+                              ? "border-pink-500 bg-pink-50 dark:border-pink-500 dark:bg-pink-950/70 ring-2 ring-pink-500" 
+                              : "hover:shadow-md"
+                          )}
                         >
                           <div className="flex items-center gap-3">
-                            <RadioGroupItem value={value} id={`zodiac-${value}`} />
-                            <span>{getReadableLabel(value)}</span>
+                            <RadioGroupItem 
+                              value={value} 
+                              id={`zodiac-${value}`} 
+                              className={cn(
+                                "border-gray-400 dark:border-gray-600 text-pink-600 dark:text-pink-500",
+                                values.zodiacSign === value && "border-pink-600 dark:border-pink-500"
+                              )}
+                            />
+                            <span className="font-medium text-sm text-gray-700 dark:text-gray-300">{getReadableLabel(value)}</span>
                           </div>
                         </Label>
                       </motion.div>
@@ -325,13 +383,14 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
                     type="button"
                     variant="outline"
                     onClick={() => setActiveTab("love")}
+                    className="border-pink-300 text-pink-600 hover:bg-pink-50 hover:text-pink-700 dark:border-pink-700 dark:text-pink-400 dark:hover:bg-pink-900/50 dark:hover:text-pink-300"
                   >
                     Back
                   </Button>
                   
                   <Button
                     type="button"
-                    className="bg-gradient-to-r from-green-500 to-green-600"
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
                     disabled={!values.zodiacSign}
                   >
                     All Done! ✓

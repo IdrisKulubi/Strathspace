@@ -79,10 +79,10 @@ export function DetailsInput({
 
   // Initialize phone number format if there's an initial value
   useEffect(() => {
-    if (values.phoneNumber && values.phoneNumber !== phoneInput) {
-      setPhoneInput(values.phoneNumber);
+    if (values.phoneNumber !== phoneInput) {
+      setPhoneInput(values.phoneNumber ?? "");
     }
-  }, [values.phoneNumber, phoneInput]);
+  }, [values.phoneNumber]);
 
   // Validate and format phone number
   useEffect(() => {
@@ -291,72 +291,37 @@ export function DetailsInput({
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
             <Phone className="w-4 h-4 text-pink-500" />
-            Phone Number 📱
+            Phone Number 📞
           </Label>
           <div className="flex gap-2">
-            <PhoneSelect
+            <PhoneSelect 
               value={selectedCountry}
               onValueChange={(value) => handleCountryChange(value as CountryCode)}
             >
               <PhoneSelectTrigger className="w-[120px] bg-pink-50/50 dark:bg-pink-950/50 border-pink-200">
-                <PhoneSelectValue placeholder="Country">
-                  <span className="flex items-center gap-2">
-                    <span>{countries.find(c => c.code === selectedCountry)?.flag}</span>
-                    <span className="text-sm">{countries.find(c => c.code === selectedCountry)?.dialCode}</span>
-                  </span>
-                </PhoneSelectValue>
+                <PhoneSelectValue placeholder="Country" />
               </PhoneSelectTrigger>
-              <PhoneSelectContent>
+              <PhoneSelectContent className="max-h-[200px]">
                 {countries.map((country) => (
-                  <PhoneSelectItem
-                    key={country.code}
-                    value={country.code}
-                    className="flex items-center gap-2"
-                  >
-                    <span className="w-6">{country.flag}</span>
-                    <span className="text-sm">{country.dialCode}</span>
+                  <PhoneSelectItem key={country.code} value={country.code}>
+                    {country.flag} {country.code} (+{country.dialCode})
                   </PhoneSelectItem>
                 ))}
               </PhoneSelectContent>
             </PhoneSelect>
-
-            <div className="flex-1 relative">
-              <Input
-                value={phoneInput}
-                onChange={handlePhoneChange}
-                placeholder={`e.g., ${
-                  selectedCountry === "KE" ? "0712 345 678" : "area code and number"
-                }`}
-                className={`bg-pink-50/50 dark:bg-pink-950/50 border-pink-200 ${
-                  phoneInput && !isValid ? "border-red-500" : ""
-                } ${isValid ? "border-green-500" : ""}`}
-                type="tel"
-              />
-              {phoneInput && formattedNumber && (
-                <div className="absolute -bottom-5 left-0 text-xs text-muted-foreground">
-                  {formattedNumber}
-                </div>
-              )}
-            </div>
+            <Input
+              type="tel"
+              value={phoneInput}
+              onChange={handlePhoneChange}
+              placeholder="Your phone number"
+              className={`flex-1 bg-pink-50/50 dark:bg-pink-950/50 border-pink-200 ${errors?.phoneNumber && !isValid ? 'border-red-500' : ''}`}
+            />
           </div>
-
-          {errors?.phoneNumber && (
+          {errors?.phoneNumber && !isValid && (
             <p className="text-sm text-red-500">{errors.phoneNumber}</p>
           )}
-          
-          {phoneInput && !isValid && !errors?.phoneNumber && (
-            <p className="text-sm text-yellow-500">
-              Please enter a valid phone number for {countries.find(c => c.code === selectedCountry)?.name}
-              <span className="block text-xs text-muted-foreground mt-1">
-                This will be used for matching purposes
-              </span>
-            </p>
-          )}
-
-          {isValid && (
-            <p className="text-sm text-green-500">
-              ✓ Valid phone number
-            </p>
+          {formattedNumber && isValid && (
+             <p className="text-sm text-green-500">Valid: {formattedNumber}</p>
           )}
         </div>
       </div>
