@@ -7,7 +7,6 @@ import { profileSchema } from "@/lib/validators";
 import { useToast } from "@/hooks/use-toast";
 import { BioInput } from "@/components/shared/profile/bio-input";
 import { InterestSelector } from "@/components/shared/profile/interest-selector";
-import { DetailsInput } from "@/components/shared/profile/details-input";
 import { SocialInput } from "@/components/shared/profile/social-input";
 import { LifestyleInput } from "@/components/shared/profile/lifestyle-input";
 import { PersonalityInput } from "@/components/shared/profile/personality-input";
