@@ -49,9 +49,10 @@ import { Badge } from "@/components/ui/badge";
 interface ProfileFormProps {
   initialData: ProfileFormData;
   activeTab?: string | null;
+  onFormValuesChange?: (values: ProfileFormData) => void;
 }
 
-export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
+export function ProfileForm({ initialData, activeTab, onFormValuesChange }: ProfileFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<string | null>(activeTab || null);
@@ -60,6 +61,9 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
   const [isPending, setIsPending] = useState(false);
   const [formStatus, setFormStatus] = useState<{ status: string; message: string } | null>(null);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  
+  // Define enhanced tooltip style
+  const tooltipStyles = "bg-white/95 dark:bg-slate-800 border-2 border-pink-300 dark:border-pink-700 p-2.5 text-sm font-medium text-pink-900 dark:text-white shadow-[0_0_15px_rgba(236,72,153,0.3)] dark:shadow-[0_0_15px_rgba(236,72,153,0.4)] rounded-lg backdrop-blur-sm";
   
   // Create refs for each section
   const sectionRefs = {
@@ -92,10 +96,15 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
       if (hasChanges !== isChanged) {
         setIsChanged(hasChanges);
       }
+      
+      // Pass the current form values to the parent component for preview
+      if (onFormValuesChange) {
+        onFormValuesChange(form.getValues());
+      }
     });
     
     return () => subscription.unsubscribe();
-  }, [form, initialData, isChanged]);
+  }, [form, initialData, isChanged, onFormValuesChange]);
   
   // Scroll to active section when it changes
   useEffect(() => {
@@ -347,53 +356,94 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
       </AnimatePresence>
       
       {/* Navigation Tabs for Profile Sections */}
-      <TooltipProvider>
+      <TooltipProvider delayDuration={300}>
         <Tabs defaultValue={activeTab || "details"} className="w-full">
-          <TabsList className="grid grid-cols-4 sm:grid-cols-4 w-full mb-6 p-1 bg-pink-50/50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl">
+          <TabsList className="grid grid-cols-4 sm:grid-cols-4 w-full mb-6 p-1.5 bg-pink-50/50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl relative overflow-hidden">
+            {/* Visual separators between tabs */}
+            <div className="absolute top-3 bottom-3 left-1/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-2/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-3/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="details" className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 rounded-lg">
+                <TabsTrigger 
+                  value="details" 
+                  className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 
+                    data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 
+                    rounded-lg py-2.5 relative overflow-hidden transition-all duration-300 
+                    hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
+                    after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2
+                    after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
+                >
                   <UserRound className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Basic Info</span>
+                  <span className="hidden sm:inline font-medium">Basic Info</span>
+                  <span className="sm:hidden">Info</span>
                 </TabsTrigger>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+              <TooltipContent side="bottom" align="center" className={tooltipStyles}>
                 Your personal information and bio
               </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="preferences" className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 rounded-lg">
+                <TabsTrigger 
+                  value="preferences" 
+                  className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 
+                    data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 
+                    rounded-lg py-2.5 relative overflow-hidden transition-all duration-300
+                    hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
+                    after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2
+                    after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
+                >
                   <Heart className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Preferences</span>
+                  <span className="hidden sm:inline font-medium">Preferences</span>
+                  <span className="sm:hidden">Prefs</span>
                 </TabsTrigger>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+              <TooltipContent side="bottom" align="center" className={tooltipStyles}>
                 Dating preferences and interests
               </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="lifestyle" className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 rounded-lg">
+                <TabsTrigger 
+                  value="lifestyle" 
+                  className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 
+                    data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 
+                    rounded-lg py-2.5 relative overflow-hidden transition-all duration-300
+                    hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
+                    after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2
+                    after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
+                >
                   <Coffee className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Lifestyle</span>
+                  <span className="hidden sm:inline font-medium">Lifestyle</span>
+                  <span className="sm:hidden">Life</span>
                 </TabsTrigger>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+              <TooltipContent side="bottom" align="center" className={tooltipStyles}>
                 Your habits and lifestyle details
               </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="personality" className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 rounded-lg">
+                <TabsTrigger 
+                  value="personality" 
+                  className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 
+                    data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 
+                    rounded-lg py-2.5 relative overflow-hidden transition-all duration-300
+                    hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
+                    after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2
+                    after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
+                >
                   <Stars className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Personality</span>
+                  <span className="hidden sm:inline font-medium">Personality</span>
+                  <span className="sm:hidden">Person</span>
                 </TabsTrigger>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+              <TooltipContent side="bottom" align="center" className={tooltipStyles}>
                 Your personality traits and communication style
               </TooltipContent>
             </Tooltip>
@@ -411,7 +461,7 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
                     <TooltipTrigger asChild>
                       <InfoIcon className="w-4 h-4 text-pink-400 cursor-help ml-1" />
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-sm bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-3 shadow-lg">
+                    <TooltipContent side="top" className={tooltipStyles}>
                       <p>Tell us about yourself so potential matches can get to know you better!</p>
                     </TooltipContent>
                   </Tooltip>
@@ -435,7 +485,7 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
                             <TooltipTrigger>
                               <InfoIcon className="w-3.5 h-3.5 text-pink-400 cursor-help" />
                             </TooltipTrigger>
-                            <TooltipContent className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+                            <TooltipContent className={tooltipStyles}>
                               This will be visible to other users
                             </TooltipContent>
                           </Tooltip>
@@ -459,7 +509,7 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
                             <TooltipTrigger>
                               <InfoIcon className="w-3.5 h-3.5 text-pink-400 cursor-help" />
                             </TooltipTrigger>
-                            <TooltipContent className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+                            <TooltipContent className={tooltipStyles}>
                               This will be visible to other users
                             </TooltipContent>
                           </Tooltip>
@@ -484,7 +534,7 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
                           <TooltipTrigger>
                             <InfoIcon className="w-3.5 h-3.5 text-pink-400 cursor-help" />
                           </TooltipTrigger>
-                          <TooltipContent className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+                          <TooltipContent className={tooltipStyles}>
                             Let others know what you're studying
                           </TooltipContent>
                         </Tooltip>
@@ -509,7 +559,7 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
                             <TooltipTrigger>
                               <InfoIcon className="w-3.5 h-3.5 text-pink-400 cursor-help" />
                             </TooltipTrigger>
-                            <TooltipContent className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+                            <TooltipContent className={tooltipStyles}>
                               What year of university are you in?
                             </TooltipContent>
                           </Tooltip>
@@ -542,7 +592,7 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
                             <TooltipTrigger>
                               <InfoIcon className="w-3.5 h-3.5 text-pink-400 cursor-help" />
                             </TooltipTrigger>
-                            <TooltipContent className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+                            <TooltipContent className={tooltipStyles}>
                               All users must be at least 18 years old
                             </TooltipContent>
                           </Tooltip>
@@ -576,7 +626,7 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
                           <TooltipTrigger>
                             <InfoIcon className="w-3.5 h-3.5 text-pink-400 cursor-help" />
                           </TooltipTrigger>
-                          <TooltipContent className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+                          <TooltipContent className={tooltipStyles}>
                             This helps us match you with compatible people
                           </TooltipContent>
                         </Tooltip>
@@ -776,7 +826,7 @@ export function ProfileForm({ initialData, activeTab }: ProfileFormProps) {
               </Button>
             </div>
           </TooltipTrigger>
-          <TooltipContent side="top" className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-pink-800 p-2 shadow-lg">
+          <TooltipContent side="top" className={tooltipStyles}>
             {!isChanged ? "Make changes to enable saving" : "Save your profile changes"}
           </TooltipContent>
         </Tooltip>
