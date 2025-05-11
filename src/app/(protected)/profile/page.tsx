@@ -18,10 +18,10 @@ function ProfileLoadingSkeleton() {
 }
 
 interface ProfilePageProps {
-  searchParams: { section?: string };
+  searchParams: Promise<{ section?: string }>;
 }
 
-export default async function ProfilePage({ searchParams }: ProfilePageProps) {
+export default async function ProfilePage(props: ProfilePageProps) {
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
@@ -32,8 +32,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     redirect("/profile/setup");
   }
 
-  const currentSearchParams = await searchParams;
-  const activeSection = currentSearchParams?.section || null;
+  const searchParams = await props.searchParams; // Await searchParams from props
+  const activeSection = searchParams?.section || null;
 
   const profile = await getProfile();
   if (!profile) {

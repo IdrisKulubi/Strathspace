@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -55,11 +53,11 @@ interface ProfileFormProps {
 export function ProfileForm({ initialData, activeTab, onFormValuesChange }: ProfileFormProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<string | null>(activeTab || null);
+  const [_activeSection, setActiveSection] = useState<string | null>(activeTab || null);
   const [isChanged, setIsChanged] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [_isSubmitting, _setIsSubmitting] = useState(false);
   const [isPending, setIsPending] = useState(false);
-  const [formStatus, setFormStatus] = useState<{ status: string; message: string } | null>(null);
+  const [formStatus, _setFormStatus] = useState<{ status: string; message: string } | null>(null);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   
   const tooltipStyles = "bg-white/95 dark:bg-slate-800 border-2 border-pink-300 dark:border-pink-700 p-2.5 text-sm font-medium text-pink-900 dark:text-white shadow-[0_0_15px_rgba(236,72,153,0.3)] dark:shadow-[0_0_15px_rgba(236,72,153,0.4)] rounded-lg backdrop-blur-sm";
