@@ -11,6 +11,25 @@ import { getRedisInstance } from "@/lib/redis";
 import { getCachedData, setCachedData } from "../utils/redis-helpers";
 import { prefetchProfileImages } from "@/lib/actions/image-prefetch";
 
+/**
+ * Invalidate profile cache when profile is updated
+ */
+async function invalidateProfileCache(userId: string) {
+  try {
+    const redis = getRedisInstance();
+    if (redis) {
+      // Delete profile cache
+      await (await redis).del(`profile:${userId}`);
+    }
+    
+    // Revalidate the profile page
+    revalidatePath("/profile");
+  } catch (error) {
+    console.error("Error invalidating profile cache:", error);
+    // Continue even if cache invalidation fails
+  }
+}
+
 export type ProfileFormData = {
   photos: string[];
   bio: string;
@@ -27,6 +46,28 @@ export type ProfileFormData = {
   lastName: string;
   phoneNumber: string;
   profilePhoto?: string;
+  
+  // New lifestyle attributes
+  drinkingPreference?: "not_for_me" | "socially" | "frequently" | "prefer_not_to_say";
+  workoutFrequency?: "never" | "sometimes" | "often" | "active";
+  socialMediaUsage?: "passive_scroller" | "active_poster" | "influencer" | "minimal";
+  sleepingHabits?: "night_owl" | "early_bird" | "it_varies";
+  
+  // New personality attributes
+  personalityType?: string;
+  communicationStyle?: string;
+  loveLanguage?: string;
+  zodiacSign?: string;
+  
+  // Profile visibility and privacy settings
+  visibilityMode?: "standard" | "incognito";
+  incognitoMode?: boolean;
+  discoveryPaused?: boolean;
+  readReceiptsEnabled?: boolean;
+  showActiveStatus?: boolean;
+  
+  // Username for profile sharing
+  username?: string;
 };
 
 // Add these cache keys
@@ -168,12 +209,13 @@ export async function updateProfile(data: ProfileFormData) {
 
     const actualUserId = user[0].id;
 
-    // Transform social fields before validation
+    // Transform social fields and username before validation
     const processedData = {
       ...data,
       instagram: data.instagram ?? "",
       spotify: data.spotify ?? "",
       snapchat: data.snapchat ?? "",
+      username: data.username?.trim() || undefined, // Ensure empty/null username becomes undefined
     };
 
     // Validate the processed data
@@ -206,27 +248,49 @@ export async function updateProfile(data: ProfileFormData) {
         photos: processedData.photos,
         profilePhoto: processedData.profilePhoto,
         updatedAt: new Date(),
+        
+        // New lifestyle attributes
+        drinkingPreference: processedData.drinkingPreference,
+        workoutFrequency: processedData.workoutFrequency,
+        socialMediaUsage: processedData.socialMediaUsage,
+        sleepingHabits: processedData.sleepingHabits,
+        
+        // New personality attributes
+        personalityType: processedData.personalityType,
+        communicationStyle: processedData.communicationStyle,
+        loveLanguage: processedData.loveLanguage,
+        zodiacSign: processedData.zodiacSign,
+        
+        // Profile visibility and privacy settings
+        visibilityMode: processedData.visibilityMode || "standard",
+        incognitoMode: processedData.incognitoMode || false,
+        discoveryPaused: processedData.discoveryPaused || false,
+        readReceiptsEnabled: processedData.readReceiptsEnabled !== undefined 
+          ? processedData.readReceiptsEnabled 
+          : true,
+        showActiveStatus: processedData.showActiveStatus !== undefined 
+          ? processedData.showActiveStatus 
+          : true,
+          
+        // Username (if provided)
+        ...(processedData.username && { username: processedData.username }),
       })
       .where(eq(profiles.userId, actualUserId))
       .returning();
 
+    // Invalidate cache if present
+    await invalidateProfileCache(actualUserId);
+
     if (!updatedProfile || updatedProfile.length === 0) {
-      return {
-        success: false,
-        error: "Failed to update profile",
-      };
+      return { success: false, error: "Failed to update profile" };
     }
 
-    revalidatePath("/profile");
-    return {
-      success: true,
-      profile: updatedProfile[0],
-    };
+    return { success: true };
   } catch (error) {
-    console.error("Error updating profile:", error);
+    console.error("Profile update error:", error);
     return {
       success: false,
-      error: "Failed to update profile. Please try again!",
+      error: "An error occurred while updating your profile",
     };
   }
 }
@@ -275,6 +339,26 @@ export async function submitProfile(data: ProfileFormData) {
       updatedAt: new Date(),
       profileCompleted: true,
       isComplete: true,
+      
+      // Include new fields
+      drinkingPreference: data.drinkingPreference,
+      workoutFrequency: data.workoutFrequency,
+      socialMediaUsage: data.socialMediaUsage,
+      sleepingHabits: data.sleepingHabits,
+      personalityType: data.personalityType,
+      communicationStyle: data.communicationStyle,
+      loveLanguage: data.loveLanguage,
+      zodiacSign: data.zodiacSign,
+      visibilityMode: data.visibilityMode || "standard",
+      incognitoMode: data.incognitoMode || false,
+      discoveryPaused: data.discoveryPaused || false,
+      readReceiptsEnabled: data.readReceiptsEnabled !== undefined 
+        ? data.readReceiptsEnabled 
+        : true,
+      showActiveStatus: data.showActiveStatus !== undefined 
+        ? data.showActiveStatus 
+        : true,
+      username: data.username?.trim() || undefined, // Ensure empty/null username becomes undefined
     };
 
     // Create or update profile
@@ -294,25 +378,16 @@ export async function submitProfile(data: ProfileFormData) {
         .where(eq(profiles.userId, session.user.id));
     }
 
-    // Update user's phone number and profile photo
-    await db
-      .update(users)
-      .set({
-        phoneNumber: data.phoneNumber,
-        profilePhoto: profileData.profilePhoto,
-      })
-      .where(eq(users.id, session.user.id));
+    // Invalidate any cached data
+    await invalidateProfileCache(session.user.id);
 
-    revalidatePath("/explore");
     revalidatePath("/profile");
-
     return { success: true };
   } catch (error) {
-    console.error("Error updating profile:", error);
+    console.error("Error creating/updating profile:", error);
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to update profile",
+      error: "An error occurred while saving profile",
     };
   }
 }
@@ -384,10 +459,4 @@ export async function removePhoto(photoUrl: string) {
       error: "Failed to remove photo. Please try again😢",
     };
   }
-}
-
-// Add cache invalidation
-export async function invalidateProfileCache(userId: string) {
-  const redis = await getRedisInstance();
-  await redis.del(CACHE_KEYS.PROFILE(userId));
 }

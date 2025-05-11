@@ -58,7 +58,8 @@ function Heart({ position, scale = 1, rotation = [0, 0, 0] }: HeartProps) {
     <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
       <mesh
         ref={meshRef}
-        geometry={geometry}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        geometry={geometry as any}
         position={position}
         scale={scale}
         rotation={rotation}

@@ -11,7 +11,7 @@ import {
   index,
   uniqueIndex
 } from "drizzle-orm/pg-core";
-import { type AdapterAccount } from "@auth/core/adapters";
+import { type AdapterAccount } from "next-auth/adapters";
 import { User } from "next-auth";
 
 // First define all tables
@@ -115,6 +115,28 @@ export const profiles = pgTable(
     lastName: text("last_name").notNull().default(""),
     isMatch: boolean("is_match").default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    
+    // New lifestyle attributes
+    drinkingPreference: text("drinking_preference"),
+    workoutFrequency: text("workout_frequency"),
+    socialMediaUsage: text("social_media_usage"),
+    sleepingHabits: text("sleeping_habits"),
+    
+    // New personality attributes
+    personalityType: text("personality_type"),
+    communicationStyle: text("communication_style"),
+    loveLanguage: text("love_language"),
+    zodiacSign: text("zodiac_sign"),
+    
+    // Profile visibility and privacy settings
+    visibilityMode: text("visibility_mode").default("standard"),
+    incognitoMode: boolean("incognito_mode").default(false),
+    discoveryPaused: boolean("discovery_paused").default(false),
+    readReceiptsEnabled: boolean("read_receipts_enabled").default(true),
+    showActiveStatus: boolean("show_active_status").default(true),
+    
+    // Username for profile sharing
+    username: text("username"),
   },
   (table) => ({
     userIdIdx: index("profile_user_id_idx").on(table.userId),
@@ -122,6 +144,7 @@ export const profiles = pgTable(
     genderIdx: index("profile_gender_idx").on(table.gender),
     lastActiveIdx: index("profile_last_active_idx").on(table.lastActive),
     completedIdx: index("profile_completed_idx").on(table.profileCompleted),
+    usernameIdx: index("profile_username_idx").on(table.username),
   })
 );
 
@@ -335,101 +358,6 @@ export type Profile = typeof profiles.$inferSelect & {
 // Export the Message type if needed
 export type Message = typeof messages.$inferSelect;
 
-// =====================
-// Contest Tables
-// =====================
 
-export const contests = pgTable("contests", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  type: text("type").$type<"photo" | "bio" | "both">().notNull(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  activeIdx: index("contest_active_idx").on(table.isActive),
-  dateIdx: index("contest_date_idx").on(table.startDate, table.endDate),
-}));
-
-export const contestEntries = pgTable("contest_entries", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  contestId: uuid("contest_id")
-    .notNull()
-    .references(() => contests.id),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
-  entryType: text("entry_type").$type<"photo" | "bio">().notNull(),
-  photoUrl: text("photo_url"),
-  bioText: text("bio_text").default(''),
-  caption: text("caption").default(''),
-  voteCount: integer("vote_count").default(0).notNull(),
-  isWinner: boolean("is_winner").default(false),
-  isApproved: boolean("is_approved").default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  contestIdx: index("entry_contest_idx").on(table.contestId),
-  userIdx: index("entry_user_idx").on(table.userId),
-  winnerIdx: index("entry_winner_idx").on(table.isWinner),
-}));
-
-export const contestVotes = pgTable("contest_votes", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  entryId: uuid("entry_id")
-    .notNull()
-    .references(() => contestEntries.id),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  uniqueVote: uniqueIndex("unique_vote").on(table.entryId, table.userId),
-}));
-
-// =====================
-// Relations
-// =====================
-
-export const contestsRelations = relations(contests, ({ many }) => ({
-  entries: many(contestEntries),
-}));
-
-export const contestEntriesRelations = relations(contestEntries, ({ one, many }) => ({
-  contest: one(contests, {
-    fields: [contestEntries.contestId],
-    references: [contests.id],
-  }),
-  user: one(users, {
-    fields: [contestEntries.userId],
-    references: [users.id],
-  }),
-  votes: many(contestVotes),
-}));
-
-export const contestVotesRelations = relations(contestVotes, ({ one }) => ({
-  entry: one(contestEntries, {
-    fields: [contestVotes.entryId],
-    references: [contestEntries.id],
-  }),
-  user: one(users, {
-    fields: [contestVotes.userId],
-    references: [users.id],
-  }),
-}));
-
-// =====================
-// Type Exports
-// =====================
-
-export type Contest = typeof contests.$inferSelect;
-export type ContestEntry = typeof contestEntries.$inferSelect & {
-  votes?: number;
-  user?: User;
-};
-export type ContestVote = typeof contestVotes.$inferSelect;
 export type ProfileView = typeof profileViews.$inferSelect;
 

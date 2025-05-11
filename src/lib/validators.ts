@@ -1,5 +1,33 @@
 import { z } from "zod";
 
+// Define lifestyle attribute enums
+export const drinkingPreferenceEnum = z.enum([
+  "not_for_me", 
+  "socially", 
+  "frequently", 
+  "prefer_not_to_say"
+]);
+
+export const workoutFrequencyEnum = z.enum([
+  "never", 
+  "sometimes", 
+  "often", 
+  "active"
+]);
+
+export const socialMediaUsageEnum = z.enum([
+  "passive_scroller", 
+  "active_poster", 
+  "influencer", 
+  "minimal"
+]);
+
+export const sleepingHabitsEnum = z.enum([
+  "night_owl", 
+  "early_bird", 
+  "it_varies"
+]);
+
 export const profileSchema = z
   .object({
     photos: z
@@ -80,6 +108,35 @@ export const profileSchema = z
       .optional()
       .nullable()
       .transform((val) => val?.trim() || ""),
+      
+    // New optional lifestyle attributes
+    drinkingPreference: drinkingPreferenceEnum.optional(),
+    workoutFrequency: workoutFrequencyEnum.optional(),
+    socialMediaUsage: socialMediaUsageEnum.optional(),
+    sleepingHabits: sleepingHabitsEnum.optional(),
+    
+    // New personality attributes
+    personalityType: z.string().optional(),
+    communicationStyle: z.string().optional(),
+    loveLanguage: z.string().optional(),
+    zodiacSign: z.string().optional(),
+    
+    // Profile visibility and privacy settings
+    visibilityMode: z.enum(["standard", "incognito"]).optional().default("standard"),
+    incognitoMode: z.boolean().optional().default(false),
+    discoveryPaused: z.boolean().optional().default(false),
+    readReceiptsEnabled: z.boolean().optional().default(true),
+    showActiveStatus: z.boolean().optional().default(true),
+    
+    // Username for profile sharing - must be unique when provided
+    username: z.string()
+      .trim()
+      .min(3, "Username must be at least 3 characters")
+      .max(30, "Username is too long")
+      .regex(/^[a-zA-Z0-9_.-]+$/, "Username can only contain letters, numbers, periods, underscores, and hyphens")
+      .nullable()
+      .optional()
+      .transform((val) => val && val.trim() ? val.trim() : undefined),
   })
   .refine((data) => {
     return (
