@@ -47,6 +47,7 @@ import { Separator } from "@/components/ui/separator";
 import { NoMoreProfiles } from "../empty-state";
 import Image from "next/image";
 import { SwipeControls } from "../controls/swipe-controls";
+import { Spinner } from "@/components/ui/spinner";
 
 interface ExploreDesktopProps {
   initialProfiles: Profile[];
@@ -148,9 +149,11 @@ export function ExploreDesktop({
   // Fetch and sync matches and likes
   const syncMatchesAndLikes = useCallback(async () => {
     try {
-      // Set loading states to true before fetching data
-      setIsMatchesLoading(true);
-      setIsLikesLoading(true);
+      // Only show loading indicator on initial fetch
+      if (matches.length === 0 && likes.length === 0) {
+        setIsMatchesLoading(true);
+        setIsLikesLoading(true);
+      }
       
       const [matchesResult, likesResult] = await Promise.all([
         getMatches(),
@@ -158,19 +161,35 @@ export function ExploreDesktop({
       ]);
 
       if (matchesResult.matches) {
-        setMatches(matchesResult.matches as unknown as Profile[]);
+        // Only update state if the data has actually changed
+        const newMatches = matchesResult.matches as unknown as Profile[];
+        
+        // Compare arrays by stringifying key properties
+        const currentMatchesKey = matches.map(m => m.userId).sort().join(',');
+        const newMatchesKey = newMatches.map(m => m.userId).sort().join(',');
+        
+        if (currentMatchesKey !== newMatchesKey) {
+          setMatches(newMatches);
+        }
         setIsMatchesLoading(false);
       }
 
       if (likesResult.profiles) {
         // Filter out profiles that are now matches
-        const newLikes = likesResult.profiles.filter(
+        const filteredLikes = likesResult.profiles.filter(
           (profile: Profile) =>
             !matchesResult.matches?.some(
               (match) => match.userId === profile.userId
             )
         );
-        setLikes(newLikes);
+        
+        // Only update if there's a difference
+        const currentLikesKey = likes.map(l => l.userId).sort().join(',');
+        const newLikesKey = filteredLikes.map(l => l.userId).sort().join(',');
+        
+        if (currentLikesKey !== newLikesKey) {
+          setLikes(filteredLikes);
+        }
         setIsLikesLoading(false);
       }
     } catch (error) {
@@ -179,7 +198,7 @@ export function ExploreDesktop({
       setIsMatchesLoading(false);
       setIsLikesLoading(false);
     }
-  }, []);
+  }, [matches, likes]);
 
   // Initial sync
   useEffect(() => {
@@ -346,15 +365,26 @@ export function ExploreDesktop({
 
   // Periodically refresh chat data in the background
   useInterval(() => {
-    if (isChatLoaded) {
-      // Silent background refresh
+    if (isChatLoaded && activeTab === "messages") {
+      console.time('Background chat update');
       getChats().then((result) => {
-        setCachedChats(result);
+        // Only update state if the data has actually changed
+        const currentChatsKey = cachedChats.map(c => `${c.matchId}-${c.lastMessage.createdAt}`).join(',');
+        const newChatsKey = result.map(c => `${c.matchId}-${c.lastMessage.createdAt}`).join(',');
+        
+        if (currentChatsKey !== newChatsKey) {
+          console.log('Chat data changed, updating state');
+          setCachedChats(result);
+        } else {
+          console.log('No chat data changes detected');
+        }
+        console.timeEnd('Background chat update');
       }).catch(error => {
-        console.error('Error refreshing chat data:', error);
+        console.error('Error updating chat data:', error);
+        console.timeEnd('Background chat update');
       });
     }
-  }, 30000); // Refresh every 30 seconds
+  }, 30000);
 
   // Preload chat data when chat icon is hovered
   const handleChatHover = useCallback(() => {
@@ -536,7 +566,7 @@ export function ExploreDesktop({
                 asChild
                 size="lg"
               >
-                <Link href="/settings">
+                <Link href="/profile">
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </Link>
@@ -736,7 +766,11 @@ export function ExploreDesktop({
               </div>
 
               <ScrollArea className="h-[calc(100vh-10rem)] pr-4">
-                {matches.length > 0 ? (
+                {isMatchesLoading ? (
+                  <div className="flex justify-center items-center h-40">
+                    <Spinner className="h-8 w-8 text-pink-500" />
+                  </div>
+                ) : matches.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {matches.map((match) => (
                       <motion.div
@@ -745,11 +779,12 @@ export function ExploreDesktop({
                         animate={{ scale: 1, opacity: 1 }}
                         whileHover={{ y: -5, transition: { duration: 0.2 } }}
                         transition={{ duration: 0.3 }}
+                        layout // Add layout animation for smooth transitions when grid changes
                       >
                         <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/40 bg-white/50 dark:bg-black/20 backdrop-blur-sm group">
                           <div className="aspect-[3/4] relative overflow-hidden">
                             <Image 
-                              src={match.profilePhoto || ''} 
+                              src={match.profilePhoto || '/default-avatar.png'} 
                               alt={match.firstName} 
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                               width={100}
@@ -858,7 +893,7 @@ export function ExploreDesktop({
                         <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/40 bg-white/50 dark:bg-black/20 backdrop-blur-sm">
                           <div className="aspect-[3/4] relative overflow-hidden group">
                             <Image 
-                              src={like.profilePhoto || ''} 
+                              src={like.profilePhoto || '/default-avatar.png'} 
                               alt={like.firstName} 
                               className="w-full h-full object-cover"
                               width={100}

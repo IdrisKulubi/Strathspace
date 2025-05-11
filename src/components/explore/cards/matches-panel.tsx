@@ -46,9 +46,9 @@ export function MatchesPanel({ profiles }: MatchesPanelProps) {
                   animate={{ opacity: 1, y: 0 }}
                   className="group relative bg-white dark:bg-background rounded-2xl p-3 shadow-sm border border-pink-100 dark:border-pink-900 flex items-center gap-3 cursor-pointer"
                 >
-                  <Avatar className="h-12 w-12 border-2 border-pink-500">
-                    <AvatarImage src={profile.profilePhoto || ""} />
-                    <AvatarFallback className="bg-pink-500 text-white">
+                  <Avatar className="h-12 w-12 border-2 border-pink-200">
+                    <AvatarImage src={profile.profilePhoto || undefined} />
+                    <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 text-white">
                       {profile.firstName?.[0]}
                       {profile.lastName?.[0]}
                     </AvatarFallback>
