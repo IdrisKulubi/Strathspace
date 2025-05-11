@@ -1,0 +1,80 @@
+name: Auto Deploy and Merge
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!main'
+
+jobs:
+  test-deploy-merge:
+    name: Test, Deploy, and Merge
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: false
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Lint
+        run: pnpm lint
+        
+      - name: Type check
+        run: pnpm tsc --noEmit
+        
+      - name: Run tests
+        run: pnpm test
+        
+      # Deploy to preview environment
+      - name: Deploy to Vercel (Preview)
+        id: deploy-preview
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-args: '--prod'
+      
+      # Create and auto-approve PR
+      - name: Create Pull Request
+        id: create-pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Auto PR from ${{ github.ref_name }}"
+          title: "Auto PR: ${{ github.ref_name }} → main"
+          body: |
+            This PR was automatically created by the CI/CD pipeline.
+            
+            - Branch: ${{ github.ref_name }}
+            - Commit: ${{ github.sha }}
+            - Preview URL: ${{ steps.deploy-preview.outputs.preview-url }}
+            
+            This branch has passed all tests and was deployed successfully.
+          branch: ${{ github.ref_name }}
+          base: main
+      
+      - name: Enable Pull Request Auto-merge
+        if: steps.create-pr.outputs.pull-request-number
+        run: |
+          gh pr merge --auto --squash "${{ steps.create-pr.outputs.pull-request-number }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
