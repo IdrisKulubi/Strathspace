@@ -42,8 +42,8 @@ export function DesktopNav({ className = "" }: DesktopNavProps) {
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage
-                      src={session.user?.image || ""}
-                      alt={session.user?.name || ""}
+                      src={session.user?.image || undefined}
+                      alt={session.user?.name || "User avatar"}
                     />
                     <AvatarFallback>
                       <User className="h-4 w-4" />

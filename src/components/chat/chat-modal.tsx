@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { getChats } from "@/lib/actions/chat.actions";
 import { Spinner } from "@/components/ui/spinner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatPreview } from "./chat-preview";
 import { EmptyChats } from "./empty-chats";
-import { useInterval } from "@/hooks/use-interval";
 import { cn } from "@/lib/utils";
+import Pusher from 'pusher-js';
 
 interface ChatSectionProps {
   currentUser: { id: string; image: string; name: string };
@@ -38,55 +38,141 @@ export function ChatSection({
 }: ChatSectionProps) {
   const [chats, setChats] = useState<ChatPreview[]>(initialChats);
   const [isInitialLoading, setIsInitialLoading] = useState(!initialChats.length);
+  const [isFetching, setIsFetching] = useState(false);
+  const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number>(Date.now());
 
-  const fetchChats = useCallback(async () => {
+  // Memoize the fetch function to avoid recreation on each render
+  const fetchChats = useCallback(async (force = false) => {
     try {
-      // Only show loading state on initial load if no initialChats
+      // Only set loading state on initial load if no initialChats
       if (isInitialLoading) {
         setIsInitialLoading(true);
       }
 
+      // If already fetching, or if not forced and it's been less than 5 seconds since last fetch, skip
+      if (isFetching || (!force && Date.now() - lastFetchTimestamp < 5000)) {
+        console.log('Skipping redundant fetch - too soon or already in progress');
+        return;
+      }
+
+      setIsFetching(true);
       console.time('ChatSection - fetchChats');
       const result = await getChats();
       console.timeEnd('ChatSection - fetchChats');
+      setLastFetchTimestamp(Date.now());
       
       if (result) {
         console.time('ChatSection - state update');
-        // Only update if there are actual changes
-        setChats(prevChats => {
-          const hasChanges = JSON.stringify(prevChats) !== JSON.stringify(result);
-          console.log('Chat data changed:', hasChanges);
-          return hasChanges ? result : prevChats;
-        });
+        // Only update if there are actual changes - deep comparison through JSON
+        const currentKey = JSON.stringify(chats.map(c => ({ 
+          id: c.id, 
+          matchId: c.matchId,
+          lastUpdate: c.lastMessage?.createdAt
+        })));
+        
+        const newKey = JSON.stringify(result.map(c => ({ 
+          id: c.id, 
+          matchId: c.matchId,
+          lastUpdate: c.lastMessage?.createdAt
+        })));
+        
+        const hasChanges = currentKey !== newKey;
+        console.log('Chat data changed:', hasChanges);
+        
+        if (hasChanges) {
+          setChats(result);
+        }
         console.timeEnd('ChatSection - state update');
       }
     } catch (error) {
       console.error("Error fetching chats:", error);
     } finally {
       setIsInitialLoading(false);
+      setIsFetching(false);
     }
-  }, [isInitialLoading]);
+  }, [isInitialLoading, chats, isFetching, lastFetchTimestamp]);
 
   // Initial fetch - skip immediate fetch if we have initialChats
   useEffect(() => {
     if (initialChats.length === 0) {
-      fetchChats();
+      fetchChats(true);
     } else {
       // If we have initialChats, still fetch but with a small delay
-      // to ensure UI is responsive first
       const timer = setTimeout(() => {
-        fetchChats();
-      }, 1000);
+        fetchChats(true);
+      }, 2000); // Increased from 1000ms to 2000ms for better user experience
       return () => clearTimeout(timer);
     }
   }, [fetchChats, initialChats.length]);
 
-  // Silent background updates
-  useInterval(() => {
-    if (!isInitialLoading) {
-      fetchChats();
+  // Real-time updates via Pusher
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    // Ensure environment variables are available
+    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY;
+    const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
+
+    if (!pusherKey || !pusherCluster) {
+      console.error("Pusher environment variables are not set.");
+      return;
     }
-  }, 3000);
+
+    const pusherClient = new Pusher(pusherKey, {
+      cluster: pusherCluster,
+      authEndpoint: "/api/pusher/auth",
+    });
+
+    const channelName = `private-user-${currentUser.id}-chatlist`;
+    const eventName = "chatlist-update";
+
+    try {
+      const channel = pusherClient.subscribe(channelName);
+
+      channel.bind(eventName, (data: any) => {
+        console.log(`Pusher event received: ${eventName} on ${channelName}`, data);
+        // Don't fetch immediately - wait a short delay to batch potential multiple events
+        setTimeout(() => fetchChats(true), 300);
+      });
+
+      // Optional: Bind to subscription success/error for debugging
+      channel.bind('pusher:subscription_succeeded', () => {
+        console.log(`Successfully subscribed to ${channelName}`);
+      });
+
+      channel.bind('pusher:subscription_error', (status: any) => {
+        console.error(`Failed to subscribe to ${channelName}: `, status);
+      });
+      
+      return () => {
+        console.log(`Unsubscribing from ${channelName}`);
+        pusherClient.unsubscribe(channelName);
+      };
+    } catch (error) {
+      console.error("Error setting up Pusher subscription:", error);
+    }
+  }, [currentUser?.id, fetchChats]);
+
+  // Memoize the chat list to prevent unnecessary re-renders
+  const chatList = useMemo(() => {
+    return chats.map((chat, index) => (
+      <div 
+        key={chat.id} 
+        className={cn(
+          "transition-colors hover:bg-muted/50",
+          // Add top border to first item to match design
+          index === 0 && "border-t border-border"
+        )}
+      >
+        <ChatPreview 
+          profile={chat as ChatPreview}
+          currentUser={currentUser}
+          onSelect={onSelectChat}
+          markAsRead={markAsRead}
+        />
+      </div>
+    ));
+  }, [chats, currentUser, onSelectChat, markAsRead]);
 
   if (isInitialLoading) {
     return (
@@ -107,27 +193,16 @@ export function ChatSection({
   return (
     <div className="flex h-full w-full flex-col bg-background">
       <div className="border-b border-border/10 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        {isFetching && (
+          <div className="absolute right-4 top-3">
+            <Spinner className="h-4 w-4 text-muted-foreground opacity-50" />
+          </div>
+        )}
       </div>
       
       <ScrollArea className="flex-1">
         <div className="divide-y divide-border">
-          {chats.map((chat, index) => (
-            <div 
-              key={chat.id} 
-              className={cn(
-                "transition-colors hover:bg-muted/50",
-                // Add top border to first item to match design
-                index === 0 && "border-t border-border"
-              )}
-            >
-              <ChatPreview 
-                profile={chat as ChatPreview}
-                currentUser={currentUser}
-                onSelect={onSelectChat}
-                markAsRead={markAsRead}
-              />
-            </div>
-          ))}
+          {chatList}
         </div>
       </ScrollArea>
     </div>

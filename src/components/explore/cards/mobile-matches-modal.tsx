@@ -56,7 +56,7 @@ export function MobileMatchesModal({
                 >
                   <div className="flex items-center gap-3">
                     <Avatar className="h-14 w-14 border-2 border-purple-200 dark:border-purple-800">
-                      <AvatarImage src={profile.profilePhoto || ""} />
+                      <AvatarImage src={profile.profilePhoto || undefined} />
                       <AvatarFallback className="bg-gradient-to-br from-purple-400 to-purple-600 text-white">
                         {profile.firstName?.[0]}
                         {profile.lastName?.[0]}

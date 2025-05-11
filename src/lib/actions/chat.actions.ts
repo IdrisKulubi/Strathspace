@@ -59,6 +59,25 @@ export async function sendMessage(
       })
       .returning();
 
+    const matchDetails = await db.query.matches.findFirst({
+      where: eq(messages.matchId, matchId),
+      columns: { user1Id: true, user2Id: true },
+    });
+
+    if (matchDetails) {
+      const eventName = "chatlist-update"; // Consistent event name
+      const payload = { matchId, timestamp: new Date().toISOString(), senderId };
+      try {
+        await Promise.all([
+          pusher.trigger(`private-user-${matchDetails.user1Id}-chatlist`, eventName, payload),
+          pusher.trigger(`private-user-${matchDetails.user2Id}-chatlist`, eventName, payload)
+        ]);
+      } catch (pusherError) {
+        console.error("Pusher trigger failed in sendMessage:", pusherError);
+        // Log and continue, message sending itself succeeded.
+      }
+    }
+
     return { message, error: null };
   } catch (error) {
     console.error("Error sending message:", error);
@@ -190,7 +209,6 @@ export async function getChats() {
     });
     
     console.timeEnd('getChats - optimized fetch');
-    console.log('Matches count:', matches.length, 'Messages count:', latestMessages.length);
 
     // Transform to chat previews
     console.time('getChats - transform data');
@@ -222,7 +240,6 @@ export async function getChats() {
                new Date(a.lastMessage.createdAt).getTime();
       });
     console.timeEnd('getChats - transform data');
-    console.log('Final chats count:', chats.length);
     
     console.timeEnd('getChats total execution');
     return chats;

@@ -47,7 +47,7 @@ export function MatchCard({
             onClick={() => setShowDetails(true)}
           >
             <Avatar className="h-12 w-12 border-2 border-purple-200 dark:border-purple-800">
-              <AvatarImage src={profile.profilePhoto || profile.photos?.[0]} />
+              <AvatarImage src={profile.profilePhoto || profile.photos?.[0] || undefined} />
               <AvatarFallback className="bg-gradient-to-br from-purple-400 to-purple-600 text-white">
                 {profile.firstName?.[0]}
                 {profile.lastName?.[0]}
