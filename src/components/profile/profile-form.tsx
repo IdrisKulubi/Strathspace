@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -32,8 +34,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FieldErrors } from "react-hook-form";
-import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { GraduationCap } from "lucide-react";
 import { Calendar } from "lucide-react";
@@ -44,6 +44,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "../ui/input";
 
 interface ProfileFormProps {
   initialData: ProfileFormData;
@@ -61,17 +62,15 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
   const [formStatus, setFormStatus] = useState<{ status: string; message: string } | null>(null);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   
-  // Define enhanced tooltip style
   const tooltipStyles = "bg-white/95 dark:bg-slate-800 border-2 border-pink-300 dark:border-pink-700 p-2.5 text-sm font-medium text-pink-900 dark:text-white shadow-[0_0_15px_rgba(236,72,153,0.3)] dark:shadow-[0_0_15px_rgba(236,72,153,0.4)] rounded-lg backdrop-blur-sm";
   
-  // Create refs for each section
   const sectionRefs = {
     photos: useRef<HTMLDivElement>(null),
     bio: useRef<HTMLDivElement>(null),
     interests: useRef<HTMLDivElement>(null),
-    basicInfo: useRef<HTMLDivElement>(null), // Maps to details section
-    courseInfo: useRef<HTMLDivElement>(null), // Also maps to details section
-    socialLinks: useRef<HTMLDivElement>(null), // Maps to socials section
+    basicInfo: useRef<HTMLDivElement>(null),
+    courseInfo: useRef<HTMLDivElement>(null), 
+    socialLinks: useRef<HTMLDivElement>(null),
     lifestyle: useRef<HTMLDivElement>(null),
     personality: useRef<HTMLDivElement>(null),
   };
@@ -81,22 +80,17 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
     defaultValues: initialData,
   });
 
-  // Track form changes by comparing with initial values
   useEffect(() => {
-    // Create a deep copy of initialData to use for comparisons
     const initialValues = JSON.stringify(initialData);
     
-    const subscription = form.watch((value) => {
-      // Compare current form values with initialData
+    const subscription = form.watch(() => {
       const currentValues = JSON.stringify(form.getValues());
       const hasChanges = initialValues !== currentValues;
       
-      // Only update if the state needs to change
       if (hasChanges !== isChanged) {
         setIsChanged(hasChanges);
       }
       
-      // Pass the current form values to the parent component for preview
       if (onFormValuesChange) {
         onFormValuesChange(form.getValues());
       }
@@ -105,9 +99,7 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
     return () => subscription.unsubscribe();
   }, [form, initialData, isChanged, onFormValuesChange]);
   
-  // Scroll to active section when it changes
   useEffect(() => {
-    // Map profile completion sections to form sections
     const sectionMapping: Record<string, string> = {
       photos: "photos",
       bio: "bio",
@@ -122,7 +114,6 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
     if (activeTab && sectionMapping[activeTab]) {
       setActiveSection(sectionMapping[activeTab]);
       
-      // Scroll to the section after a short delay to ensure rendering
       setTimeout(() => {
         const section = document.getElementById(`section-${sectionMapping[activeTab]}`);
         if (section) {
@@ -132,44 +123,6 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
     }
   }, [activeTab]);
 
-  const handleSubmit = async () => {
-    if (!isChanged) return;
-
-    setIsSubmitting(true);
-    try {
-      const formData = form.getValues();
-      const result = await updateProfile(formData);
-
-      if (result.success) {
-        // Reset form state to avoid considering current values as changes
-        form.reset(formData);
-        setIsChanged(false);
-        router.refresh();
-        // Show success animation
-        setShowSaveSuccess(true);
-        setTimeout(() => setShowSaveSuccess(false), 3000);
-        toast({
-          title: "Profile updated! ✨",
-          description: "Your changes have been saved successfully!",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Update failed ☹️",
-          description: result.error || "Please try again",
-        });
-      }
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Update failed ☹️",
-        description: "Something went wrong. Please try again",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleFieldUpdate = async (
     field: keyof Omit<ProfileFormData, "profilePhoto">,
@@ -247,27 +200,6 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
   };
 
   // Function to scroll to a section when clicked from ProfileCompletion
-  const scrollToSection = (sectionId: string) => {
-    // Map profile completion sections to form sections
-    const sectionMapping: Record<string, string> = {
-      photos: "photos",
-      bio: "bio",
-      interests: "interests",
-      basicInfo: "details",
-      courseInfo: "details",
-      socialLinks: "socials",
-      lifestyle: "lifestyle",
-      personality: "personality",
-    };
-    
-    const formSection = sectionMapping[sectionId] || sectionId;
-    setActiveSection(formSection);
-    
-    const section = document.getElementById(`section-${formSection}`);
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsPending(true);
@@ -357,11 +289,33 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
       {/* Navigation Tabs for Profile Sections */}
       <TooltipProvider delayDuration={300}>
         <Tabs defaultValue={activeTab || "details"} className="w-full">
-          <TabsList className="grid grid-cols-4 sm:grid-cols-4 w-full mb-6 p-1.5 bg-pink-50/50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl relative overflow-hidden">
+          <TabsList className="grid grid-cols-5 sm:grid-cols-5 w-full mb-6 p-1.5 bg-pink-50/50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl relative overflow-hidden">
             {/* Visual separators between tabs */}
-            <div className="absolute top-3 bottom-3 left-1/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
-            <div className="absolute top-3 bottom-3 left-2/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
-            <div className="absolute top-3 bottom-3 left-3/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-1/5 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-2/5 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-3/5 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-4/5 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger 
+                  value="photos" 
+                  className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 
+                    data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 
+                    rounded-lg py-2.5 relative overflow-hidden transition-all duration-300 
+                    hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
+                    after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2
+                    after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
+                >
+                  <Sparkles className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline font-medium">Photos</span>
+                  <span className="sm:hidden">Photos</span>
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="center" className={tooltipStyles}>
+                Manage your profile photos
+              </TooltipContent>
+            </Tooltip>
             
             <Tooltip>
               <TooltipTrigger asChild>
@@ -448,6 +402,50 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
             </Tooltip>
           </TabsList>
 
+          {/* Photos Tab Content */}
+          <TabsContent value="photos" className="mt-4 space-y-4 animate-in fade-in-50">
+            <Card id="section-photos" ref={sectionRefs.photos} className="relative overflow-hidden transition-all duration-300 shadow-md border-pink-100 dark:border-pink-900 hover:shadow-lg">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-pink-400 to-pink-600"></div>
+              <CardHeader className="bg-gradient-to-r from-pink-50/50 to-white dark:from-pink-950/50 dark:to-slate-950">
+                <CardTitle className="text-lg font-medium flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-pink-500" />
+                  Profile Photos
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoIcon className="w-4 h-4 text-pink-400 cursor-help ml-1" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className={tooltipStyles}>
+                      <p>Upload photos to make your profile stand out! You can set one as your main profile photo.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </CardTitle>
+                <CardDescription>
+                  Show your best self in up to 6 photos
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 pt-6 bg-white dark:bg-slate-950">
+                <div className="space-y-6">
+                  <ImageUpload
+                    value={form.watch("photos")}
+                    onChange={handlePhotoUpdate}
+                    onRemove={handlePhotoRemove}
+                    onProfilePhotoSelect={handleProfilePhotoUpdate}
+                    maxFiles={6}
+                  />
+                  {form.formState.errors.photos?.message && (
+                    <p className="text-sm text-red-500">{form.formState.errors.photos.message}</p>
+                  )}
+                  <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+                    <p className="flex items-center gap-2">
+                      <InfoIcon className="w-4 h-4 text-blue-500" />
+                      <span>Click on the user icon on any photo to set it as your main profile image.</span>
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Details Tab Content */}
           <TabsContent value="details" className="mt-4 space-y-4 animate-in fade-in-50">
             <Card className="relative overflow-hidden transition-all duration-300 shadow-md border-pink-100 dark:border-pink-900 hover:shadow-lg">
@@ -528,13 +526,13 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
                     <div className="space-y-2 mt-4">
                       <Label className="flex items-center gap-2">
                         <GraduationCap className="w-4 h-4 text-pink-500" />
-                        What's your course? 📚
+                        What&apos;s your course? 📚
                         <Tooltip>
                           <TooltipTrigger>
                             <InfoIcon className="w-3.5 h-3.5 text-pink-400 cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent className={tooltipStyles}>
-                            Let others know what you're studying
+                            Let others know what you&apos;re studying
                           </TooltipContent>
                         </Tooltip>
                       </Label>
@@ -620,7 +618,7 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
                     <div className="space-y-2 mt-4">
                       <Label className="flex items-center gap-2">
                         <Heart className="w-4 h-4 text-pink-500" />
-                        What's your gender? 💫
+                        What&apos;s your gender? 💫
                         <Tooltip>
                           <TooltipTrigger>
                             <InfoIcon className="w-3.5 h-3.5 text-pink-400 cursor-help" />

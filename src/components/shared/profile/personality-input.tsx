@@ -127,7 +127,7 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
               <div className="space-y-4">
                 <div>
                   <Label className="text-base font-semibold mb-3 block text-gray-800 dark:text-gray-200">
-                    What's your personality type?
+                    What&apos;s your personality type?
                   </Label>
                   
                   <RadioGroup
@@ -263,7 +263,7 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
               <div className="space-y-4">
                 <div>
                   <Label className="text-base font-semibold mb-3 block text-gray-800 dark:text-gray-200">
-                    What's your primary love language?
+                    What&apos;s your primary love language?
                   </Label>
                   
                   <RadioGroup
@@ -335,7 +335,7 @@ export function PersonalityInput({ values, onChange }: PersonalityInputProps) {
               <div className="space-y-4">
                 <div>
                   <Label className="text-base font-semibold mb-3 block text-gray-800 dark:text-gray-200">
-                    What's your zodiac sign?
+                    What&apos;s your zodiac sign?
                   </Label>
                   
                   <RadioGroup

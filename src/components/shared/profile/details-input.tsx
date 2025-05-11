@@ -82,7 +82,7 @@ export function DetailsInput({
     if (values.phoneNumber !== phoneInput) {
       setPhoneInput(values.phoneNumber ?? "");
     }
-  }, [values.phoneNumber]);
+  }, [values.phoneNumber, phoneInput]);
 
   // Validate and format phone number
   useEffect(() => {

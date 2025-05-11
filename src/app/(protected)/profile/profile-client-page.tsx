@@ -7,12 +7,10 @@ import { MobileNav } from "@/components/explore/mobile/mobile-nav";
 import { StalkersList } from "@/components/profile/stalkers-list";
 import { ProfileCompletion } from "@/components/profile/profile-completion";
 import { ProfilePreview } from "@/components/profile/profile-preview";
-import { Sparkles, User, Heart, Settings, InfoIcon, Eye, EyeOff } from "lucide-react";
+import { Sparkles, User, Heart, Eye, EyeOff } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useForm } from "react-hook-form";
 
 interface ProfileClientPageProps {
   profile: ProfileFormData;

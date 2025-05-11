@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { 
   calculateProfileCompletion, 
-  IncompleteSection,
   getCompletionMessage
 } from "@/lib/utils/profile-completion";
 import { ProfileFormData } from "@/lib/actions/profile.actions";

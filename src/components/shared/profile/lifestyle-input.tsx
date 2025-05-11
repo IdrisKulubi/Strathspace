@@ -118,7 +118,7 @@ export function LifestyleInput({ values, onChange }: LifestyleInputProps) {
               <div className="space-y-4">
                 <div>
                   <Label className="text-base font-semibold mb-3 block text-gray-800 dark:text-gray-200">
-                    What\'s your drinking preference?
+                    What&apos;s your drinking preference?
                   </Label>
                   
                   <RadioGroup

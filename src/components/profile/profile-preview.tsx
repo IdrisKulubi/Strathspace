@@ -5,7 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Heart, GraduationCap, Coffee, User, Stars, Calendar, Music, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 
 interface ProfilePreviewProps {
   profile: ProfileFormData;
@@ -13,9 +12,7 @@ interface ProfilePreviewProps {
 }
 
 export function ProfilePreview({ profile, className }: ProfilePreviewProps) {
-  const getAge = () => {
-    return profile.age || "?";
-  };
+ 
 
   const getInitials = () => {
     const first = profile.firstName?.charAt(0) || "";
