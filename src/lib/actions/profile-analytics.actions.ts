@@ -1,6 +1,6 @@
 import db from "@/db/drizzle";
 import { profileViews, swipes, matches } from "@/db/schema";
-import { and, eq, or, sql, gte } from "drizzle-orm";
+import { and, eq, or, sql, gte, desc } from "drizzle-orm";
 
 export interface ProfileAnalytics {
   visitCount: number;
@@ -37,12 +37,13 @@ export async function getProfileAnalytics(userId: string): Promise<ProfileAnalyt
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  // Basic stats (existing code)
-  const visitCount = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(profileViews)
-    .where(eq(profileViews.viewedId, userId))
-    .then(res => res[0]?.count ?? 0);
+  // Get total profile visits with proper join
+  const visitCount = await db.query.profileViews.findMany({
+    where: eq(profileViews.viewedId, userId),
+    columns: {
+      id: true
+    }
+  }).then(res => res.length);
 
   const swipeRightCount = await db
     .select({ count: sql<number>`count(*)` })
@@ -62,16 +63,16 @@ export async function getProfileAnalytics(userId: string): Promise<ProfileAnalyt
     .where(or(eq(matches.user1Id, userId), eq(matches.user2Id, userId)))
     .then(res => res[0]?.count ?? 0);
 
-  // Weekly trends
+  // Weekly trends with proper date handling
   const weeklyTrends = await getWeeklyTrends(userId, sevenDaysAgo);
 
-  // Peak activity hours
+  // Peak hours using viewedAt
   const peakHours = await getPeakHours(userId);
 
-  // Comparison with other users
+  // Comparison stats using proper joins
   const comparisonStats = await getComparisonStats(userId);
 
-  // Weekly goals and progress
+  // Weekly goals based on actual data
   const weeklyGoals = calculateWeeklyGoals(visitCount, matchCount);
 
   const matchRatio = swipeRightCount > 0 ? matchCount / swipeRightCount : 0;
@@ -102,15 +103,17 @@ async function getWeeklyTrends(userId: string, startDate: Date) {
     const nextDate = new Date(date);
     nextDate.setDate(date.getDate() + 1);
 
-    const dayVisits = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(profileViews)
-      .where(and(
+    // Get daily visits using proper query
+    const dayVisits = await db.query.profileViews.findMany({
+      where: and(
         eq(profileViews.viewedId, userId),
         gte(profileViews.viewedAt, date),
         sql`${profileViews.viewedAt} < ${nextDate}`
-      ))
-      .then(res => res[0]?.count ?? 0);
+      ),
+      columns: {
+        id: true
+      }
+    }).then(res => res.length);
 
     const dayMatches: number = await db
       .select({ count: sql<number>`count(*)` })
@@ -131,8 +134,8 @@ async function getWeeklyTrends(userId: string, startDate: Date) {
 }
 
 async function getPeakHours(userId: string) {
-  // Get activity count by hour
-  const hourlyActivity = await db
+  // Get activity count by hour using proper date field
+  const result = await db
     .select({
       hour: sql<number>`EXTRACT(HOUR FROM ${profileViews.viewedAt})::integer`,
       count: sql<number>`count(*)`
@@ -140,16 +143,18 @@ async function getPeakHours(userId: string) {
     .from(profileViews)
     .where(eq(profileViews.viewedId, userId))
     .groupBy(sql`EXTRACT(HOUR FROM ${profileViews.viewedAt})`)
-    .orderBy(sql<number>`count(*)`)
+    .orderBy(desc(sql<number>`count(*)`))
     .limit(5);
 
-  return hourlyActivity;
+  return result.map(r => ({ hour: r.hour, count: Number(r.count) }));
 }
 
 async function getComparisonStats(userId: string) {
-  // Get average stats across all users
-  const avgVisits = await db
-    .select({ avg: sql<number>`avg(count)` })
+  // Get average visits across all users
+  const avgVisitsResult = await db
+    .select({
+      avg: sql<number>`avg(count)::integer`
+    })
     .from(
       db.select({
         count: sql<number>`count(*)`
@@ -157,11 +162,15 @@ async function getComparisonStats(userId: string) {
       .from(profileViews)
       .groupBy(profileViews.viewedId)
       .as('visit_counts')
-    )
-    .then(res => Math.round(res[0]?.avg ?? 0));
+    );
 
-  const avgMatches = await db
-    .select({ avg: sql<number>`avg(count)` })
+  const avgVisits = avgVisitsResult[0]?.avg ?? 0;
+
+  // Get average matches
+  const avgMatchesResult = await db
+    .select({
+      avg: sql<number>`avg(count)::integer`
+    })
     .from(
       db.select({
         count: sql<number>`count(*)`
@@ -169,8 +178,9 @@ async function getComparisonStats(userId: string) {
       .from(matches)
       .groupBy(matches.user1Id)
       .as('match_counts')
-    )
-    .then(res => Math.round(res[0]?.avg ?? 0));
+    );
+
+  const avgMatches = avgMatchesResult[0]?.avg ?? 0;
 
   // Calculate user's percentile rank
   const userRank = await calculatePercentileRank(userId);
@@ -178,21 +188,35 @@ async function getComparisonStats(userId: string) {
   return {
     avgVisits,
     avgMatches,
-    avgEffectivenessScore: 50, // Baseline score
+    avgEffectivenessScore: 50,
     percentileRank: userRank
   };
 }
 
 async function calculatePercentileRank(userId: string): Promise<number> {
-  // Complex calculation simplified for now
-  return 75; // Placeholder
+  const allVisits = await db.query.profileViews.findMany({
+    columns: {
+      viewedId: true
+    }
+  });
+
+  const visitCounts = new Map<string, number>();
+  allVisits.forEach(visit => {
+    visitCounts.set(visit.viewedId, (visitCounts.get(visit.viewedId) || 0) + 1);
+  });
+
+  const counts = Array.from(visitCounts.values()).sort((a, b) => a - b);
+  const userCount = visitCounts.get(userId) || 0;
+  
+  const position = counts.findIndex(count => count >= userCount);
+  return Math.round((position / counts.length) * 100);
 }
 
 function calculateWeeklyGoals(visitCount: number, matchCount: number) {
   return {
-    visitGoal: Math.max(visitCount + 10, 20), // At least 20 visits
+    visitGoal: Math.max(visitCount + 10, 20),
     visitProgress: visitCount,
-    matchGoal: Math.max(matchCount + 2, 5), // At least 5 matches
+    matchGoal: Math.max(matchCount + 2, 5),
     matchProgress: matchCount
   };
 }
