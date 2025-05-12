@@ -4,12 +4,10 @@ import { generatePresignedUrl } from "@/lib/cloudflare-r2";
 
 export const getCloudflareUploadUrl = async () => {
   try {
-    // Validate environment variables
     if (!process.env.CLOUDFLARE_R2_BUCKET_NAME) {
       throw new Error("R2 bucket name is not configured");
     }
 
-    // Use timestamp and random string for unique filenames
     const fileName = `${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 7)}.webp`;
