@@ -23,6 +23,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ViewMoreModal } from "./view-more";
+import { ChevronUp } from "lucide-react";
 
 interface ProfileDetailsProps {
   profile: Profile;
@@ -120,23 +121,42 @@ export function ProfileDetails({
             </a>
           )}
         </div>
-
-        {/* Add View More button for matches */}
-        {isMatch && (
-          <div className="pt-1">
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowViewMore(true);
-              }}
-              size="sm"
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-xs"
-            >
-              View More ✨
-            </Button>
-          </div>
-        )}
       </div>
+
+      {/* Floating Up Arrow Button for Mobile - Positioned like Tinder */}
+      {isMatch && isMobile && (
+        <div 
+          className="absolute right-[25%] top-1/2 -translate-y-1/2 transform"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowViewMore(true);
+          }}
+        >
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-12 w-12 rounded-full bg-white/90 dark:bg-gray-950/90 shadow-lg hover:scale-105 transition-all duration-200"
+          >
+            <ChevronUp className="h-6 w-6 text-pink-500" />
+          </Button>
+        </div>
+      )}
+
+      {/* Desktop View More Button */}
+      {isMatch && !isMobile && (
+        <div className="pt-1">
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowViewMore(true);
+            }}
+            size="sm"
+            className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-xs"
+          >
+            View More ✨
+          </Button>
+        </div>
+      )}
 
       {/* View More Modal */}
       <ViewMoreModal

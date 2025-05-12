@@ -149,7 +149,7 @@ export function ExploreMobileV2({
         console.error('Error refreshing chat data:', error);
       });
     }
-  }, 30000); // Refresh every 30 seconds
+  }, 30000); 
 
   // Fetch and sync matches and likes
   const syncMatchesAndLikes = useCallback(async () => {
@@ -169,7 +169,6 @@ export function ExploreMobileV2({
       }
 
       if (likesResult.profiles) {
-        // Filter out profiles that are now matches
         const newLikes = likesResult.profiles.filter(
           (profile: Profile) =>
             !matchesResult.matches?.some(
@@ -181,21 +180,16 @@ export function ExploreMobileV2({
       }
     } catch (error) {
       console.error("Error syncing matches and likes:", error);
-      // Set loading states to false even if there's an error
       setIsMatchesLoading(false);
       setIsLikesLoading(false);
     }
   }, []);
 
-  // Initial sync
+  // Only sync on mount and when a change is detected
   useEffect(() => {
     syncMatchesAndLikes();
   }, [syncMatchesAndLikes]);
 
-  // Periodic sync every 30 seconds
-  useInterval(syncMatchesAndLikes, 30000);
-
-  // Sync after any swipe action
   useEffect(() => {
     if (swipedProfiles.length > 0) {
       syncMatchesAndLikes();
@@ -209,20 +203,17 @@ export function ExploreMobileV2({
       setIsAnimating(true);
       setSwipeDirection(direction);
 
-      // Start recording the swipe immediately but don't await it
       const swipePromise = recordSwipe(
         profiles[currentIndex].userId,
         direction === "right" ? "like" : "pass"
       );
 
-      // Reduce the animation time for faster transitions
       setTimeout(() => {
         setCurrentIndex((prev) => prev - 1);
         setSwipeDirection(null);
         setIsAnimating(false);
-      }, 150); // Reduced from 300ms to 150ms for faster transitions
+      }, 150);
 
-      // Process the result after the animation has started
       const result = await swipePromise;
 
       if (direction === "right") {
@@ -237,7 +228,6 @@ export function ExploreMobileV2({
           setMatchedProfile(updatedProfile);
           setMatches((prev) => [...prev, updatedProfile]);
           
-          // Trigger confetti
           confetti({
             particleCount: 100,
             spread: 70,
@@ -288,23 +278,18 @@ export function ExploreMobileV2({
     try {
       const result = await handleLike(userId);
       if (result.success) {
-        // Remove from likes immediately
         setLikes((prev) => prev.filter((profile) => profile.userId !== userId));
 
         if (result.isMatch && result.matchedProfile) {
-          // Add to matches immediately
           setMatches((prev) => {
-            // Avoid duplicate matches
             if (prev.some((p) => p.userId === result.matchedProfile!.userId)) {
               return prev;
             }
             return [...prev, result.matchedProfile!];
           });
 
-          // Show match modal with the matched profile
           setMatchedProfile(result.matchedProfile);
 
-          // Trigger confetti
           confetti({
             particleCount: 100,
             spread: 70,
@@ -312,14 +297,13 @@ export function ExploreMobileV2({
           });
 
           toast({
-            title: "It's a match! ✨",
-            description: "You can now chat with each other!",
+            title: "It's a match ✨",
+            description: "You can now chat with each other",
             className:
               "bg-gradient-to-r from-pink-500 to-purple-500 text-white border-none",
           });
         }
 
-        // Sync with server to ensure consistency
         await syncMatchesAndLikes();
       }
       return result;
@@ -338,16 +322,22 @@ export function ExploreMobileV2({
     userId: string
   ): Promise<{ success: boolean }> => {
     try {
-      const result = await handleUnlike(userId);
+      const response = await fetch(`/api/profile/unlike`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ targetUserId: userId }),
+      });
+      
+      const result = await response.json();
+      
       if (result.success) {
-        // Remove from likes immediately
         setLikes((prev) => prev.filter((profile) => profile.userId !== userId));
-        // Also remove from matches if it was a match
         setMatches((prev) =>
           prev.filter((profile) => profile.userId !== userId)
         );
 
-        // Sync with server to ensure consistency
         syncMatchesAndLikes();
       }
       return result;
@@ -419,7 +409,6 @@ export function ExploreMobileV2({
             matchId={selectedChatId}
             onClose={() => setSelectedChatId(null)}
             partner={matches.find((match) => match.matchId === selectedChatId) as Profile}
-
           />
         </div>
       )}
@@ -445,7 +434,7 @@ export function ExploreMobileV2({
                     {/* Preload the next profiles (hidden but loaded in DOM) */}
                     {visibleProfiles.slice(1).map((profile, idx) => (
                       <div 
-                        key={`preload-${profile.userId}`} 
+                        key={`preload-${profile.userId}-${idx}`} 
                         className={idx < 2 ? "absolute inset-0 opacity-0 pointer-events-none" : "hidden"}
                       >
                         <SwipeableCard
@@ -460,7 +449,7 @@ export function ExploreMobileV2({
               </AnimatePresence>
             </div>
 
-            {/* Swipe Controls - Fixed at bottom */}
+            {/* Swipe Controls - Fixed at bottom - SMALLER FOR MOBILE */}
             <div className="fixed bottom-12 left-0 right-0 px-4 pb-4 z-50">
               <SwipeControls
                 onSwipeLeft={() => handleSwipe("left")}
@@ -476,7 +465,7 @@ export function ExploreMobileV2({
                   });
                 }}
                 disabled={isAnimating || currentIndex < 0}
-                className="mx-auto max-w-lg"
+                className="mx-auto max-w-lg scale-90 sm:scale-100" // Added scale-90 for mobile
                 currentProfileId={profiles[currentIndex]?.userId}
               />
             </div>
@@ -490,15 +479,17 @@ export function ExploreMobileV2({
                   onClick={() => setShowMatches(true)}
                   className="relative"
                 >
-                  <Heart className="h-6 w-6 text-pink-500" />
-                  {!isMatchesLoading && matches.length > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
-                      {matches.length}
-                    </span>
-                  )}
-                  {isMatchesLoading && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-pink-500/30 animate-pulse"></span>
-                  )}
+                  <Heart className="h-5 w-5 sm:h-6 sm:w-6 text-pink-500" />
+                  {/* Fix for counter flickering - showing persistent counter */}
+                  <span className={`absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs transition-all duration-200 ${
+                    isMatchesLoading
+                      ? "bg-pink-500/30"
+                      : matches.length > 0
+                      ? "bg-pink-500 text-white"
+                      : "opacity-0"
+                  }`}>
+                    {!isMatchesLoading && matches.length > 0 ? matches.length : ""}
+                  </span>
                 </Button>
 
                 <Button
@@ -508,7 +499,7 @@ export function ExploreMobileV2({
                   onMouseEnter={handleChatHover}
                   className="relative"
                 >
-                  <MessageCircle className="h-6 w-6 text-blue-500" />
+                  <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
                   {unreadMessages.unreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-blue-500 animate-pulse" />
                   )}
@@ -521,7 +512,7 @@ export function ExploreMobileV2({
                       size="icon"
                       className="relative hover:bg-accent/50 transition-colors duration-200"
                     >
-                      <Avatar className="h-8 w-8 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-200">
+                      <Avatar className="h-7 w-7 sm:h-8 sm:w-8 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-200">
                         <AvatarImage
                           src={currentUser?.image || undefined}
                           alt={currentUser?.name || "User"}
@@ -564,15 +555,17 @@ export function ExploreMobileV2({
                   onClick={() => setShowLikes(true)}
                   className="relative"
                 >
-                  <Star className="h-6 w-6 text-yellow-500" />
-                  {!isLikesLoading && likes.length > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-yellow-500 text-white text-xs flex items-center justify-center">
-                      {likes.length}
-                    </span>
-                  )}
-                  {isLikesLoading && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-yellow-500/30 animate-pulse"></span>
-                  )}
+                  <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
+                  {/* Fix for counter flickering - showing persistent counter */}
+                  <span className={`absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs transition-all duration-200 ${
+                    isLikesLoading
+                      ? "bg-yellow-500/30"
+                      : likes.length > 0
+                      ? "bg-yellow-500 text-white"
+                      : "opacity-0"
+                  }`}>
+                    {!isLikesLoading && likes.length > 0 ? likes.length : ""}
+                  </span>
                 </Button>
               </div>
             </div>
