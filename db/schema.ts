@@ -289,10 +289,13 @@ export const profileViews = pgTable("profile_views", {
   viewedId: text("viewed_id")
     .notNull()
     .references(() => users.id),
-  viewedAt: timestamp("viewed_at").defaultNow().notNull()
+  viewedAt: timestamp("viewed_at").defaultNow().notNull(),
+  source: text("source").$type<"VIEW_MORE" | "PROFILE_CARD" | "SEARCH" | "MATCHES">().default("VIEW_MORE"),
+  viewDuration: integer("view_duration"), // Duration in seconds
 }, (table) => ({
   viewerIdx: index("profile_views_viewer_idx").on(table.viewerId),
   viewedIdx: index("profile_views_viewed_idx").on(table.viewedId),
+  viewedAtIdx: index("profile_views_viewed_at_idx").on(table.viewedAt),
 }));
 
 // Relations

@@ -43,7 +43,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ChatWindow } from "@/components/chat/chat-window";
-import { getStalkerCount } from "@/lib/actions/stalker.actions";
+import { getStalkers } from "@/lib/actions/stalker.actions";
 import { Badge } from "@/components/ui/badge";
 
 interface ExploreMobileV2Props {
@@ -610,8 +610,8 @@ function StalkersCount() {
 
   useEffect(() => {
     const updateCount = async () => {
-      const newCount = await getStalkerCount();
-      setCount(newCount);
+      const newCount = await getStalkers();
+      setCount(newCount.length);
     };
     updateCount();
     const interval = setInterval(updateCount, 10000);

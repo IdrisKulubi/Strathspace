@@ -59,7 +59,7 @@ export function ProfileAnalyticsView({ userId }: ProfileAnalyticsProps) {
       title: "Profile Visits",
       value: analytics.visitCount,
       icon: Eye,
-      description: "people checked you out",
+      description: "people checked you out today",
       gradient: "from-blue-500 to-purple-500",
     },
     {
