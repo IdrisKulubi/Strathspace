@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import db from "@/db/drizzle";
-import { profileViews, users, profiles } from "@/db/schema";
+import { profileViews, users } from "@/db/schema";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
 import { safeAction } from "@/lib/safe-action";
 import { z } from "zod";

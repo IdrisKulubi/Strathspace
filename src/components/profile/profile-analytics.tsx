@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ProfileAnalytics } from "@/lib/actions/profile-analytics.actions";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ChartBar, Crown, Heart, Eye, Clock, Trophy, ArrowUp, Users } from "lucide-react";
+import {  Crown, Heart, Eye, Clock, Trophy, ArrowUp, Users } from "lucide-react";
 import { FaFire } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 
