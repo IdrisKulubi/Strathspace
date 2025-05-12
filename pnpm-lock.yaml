@@ -225,7 +225,7 @@ importers:
         specifier: ^7.54.2
         version: 7.56.2(react@19.1.0)
       react-icons:
-        specifier: ^5.4.0
+        specifier: ^5.5.0
         version: 5.5.0(react@19.1.0)
       react-resizable-panels:
         specifier: ^2.1.7
@@ -234,7 +234,7 @@ importers:
         specifier: ^5.2.2
         version: 5.2.2(react@19.1.0)
       recharts:
-        specifier: ^2.15.0
+        specifier: ^2.15.3
         version: 2.15.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       sonner:
         specifier: ^1.7.2

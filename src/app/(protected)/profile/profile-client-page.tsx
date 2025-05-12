@@ -7,7 +7,8 @@ import { MobileNav } from "@/components/explore/mobile/mobile-nav";
 import { StalkersList } from "@/components/profile/stalkers-list";
 import { ProfileCompletion } from "@/components/profile/profile-completion";
 import { ProfilePreview } from "@/components/profile/profile-preview";
-import { Sparkles, User, Heart, Eye, EyeOff } from "lucide-react";
+import { ProfileAnalyticsView } from "@/components/profile/profile-analytics";
+import { Sparkles, User, Heart, Eye, EyeOff, ChartBar } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -70,10 +71,11 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
             
             <TooltipProvider delayDuration={300}>
               <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-3 w-full mb-4 p-1.5 bg-pink-50/50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl relative overflow-hidden">
+                <TabsList className="grid grid-cols-4 w-full mb-4 p-1.5 bg-pink-50/50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl relative overflow-hidden">
                   {/* Visual separators between tabs */}
-                  <div className="absolute top-3 bottom-3 left-1/3 w-px bg-pink-200 dark:bg-pink-800/50"></div>
-                  <div className="absolute top-3 bottom-3 left-2/3 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+                  <div className="absolute top-3 bottom-3 left-1/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+                  <div className="absolute top-3 bottom-3 left-1/2 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+                  <div className="absolute top-3 bottom-3 left-3/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
                   
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -135,6 +137,27 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
                     </TooltipTrigger>
                     <TooltipContent side="bottom" align="center" className={tooltipStyles}>
                       See recent profile activity
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <TabsTrigger 
+                        value="analytics" 
+                        className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 
+                          data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 
+                          rounded-lg py-2.5 relative overflow-hidden transition-all duration-300
+                          hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
+                          after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2  
+                          after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
+                      >
+                        <ChartBar className="w-4 h-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline font-medium">Analytics</span>
+                        <span className="sm:hidden">Stats</span>
+                      </TabsTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="center" className={tooltipStyles}>
+                      View your profile analytics and stats
                     </TooltipContent>
                   </Tooltip>
                 </TabsList>
@@ -222,6 +245,16 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
                       Profile Activity
                     </h2>
                     <StalkersList />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="analytics" className="mt-6 animate-in fade-in-50 duration-300">
+                  <div className="bg-white dark:bg-background rounded-lg p-6 border border-pink-100 dark:border-pink-950 shadow-sm">
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                      <ChartBar className="w-5 h-5 text-pink-500" />
+                      Profile Analytics
+                    </h2>
+                    <ProfileAnalyticsView userId={profile.userId} />
                   </div>
                 </TabsContent>
               </Tabs>

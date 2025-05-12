@@ -31,6 +31,7 @@ async function invalidateProfileCache(userId: string) {
 }
 
 export type ProfileFormData = {
+  userId: string;
   photos: string[];
   bio: string;
   interests: string[];
