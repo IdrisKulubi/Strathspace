@@ -128,24 +128,19 @@ export function ChatSection({
 
     try {
       const channel = pusherClient.subscribe(channelName);
-
-      channel.bind(eventName, (data: any) => {
-        console.log(`Pusher event received: ${eventName} on ${channelName}`, data);
-        // Don't fetch immediately - wait a short delay to batch potential multiple events
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+      channel.bind(eventName, (_data: any) => {
         setTimeout(() => fetchChats(true), 300);
       });
 
-      // Optional: Bind to subscription success/error for debugging
       channel.bind('pusher:subscription_succeeded', () => {
-        console.log(`Successfully subscribed to ${channelName}`);
       });
-
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
       channel.bind('pusher:subscription_error', (status: any) => {
         console.error(`Failed to subscribe to ${channelName}: `, status);
       });
       
       return () => {
-        console.log(`Unsubscribing from ${channelName}`);
         pusherClient.unsubscribe(channelName);
       };
     } catch (error) {
@@ -160,7 +155,6 @@ export function ChatSection({
         key={chat.id} 
         className={cn(
           "transition-colors hover:bg-muted/50",
-          // Add top border to first item to match design
           index === 0 && "border-t border-border"
         )}
       >

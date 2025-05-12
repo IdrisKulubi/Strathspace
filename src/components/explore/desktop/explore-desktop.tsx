@@ -16,7 +16,6 @@ import {
   Search,
   Filter,
   Sparkles,
-  MessageSquare as FeedbackIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +47,7 @@ import { NoMoreProfiles } from "../empty-state";
 import Image from "next/image";
 import { SwipeControls } from "../controls/swipe-controls";
 import { Spinner } from "@/components/ui/spinner";
+import { FeedbackModal } from "@/components/shared/feedback-modal";
 
 interface ExploreDesktopProps {
   initialProfiles: Profile[];
@@ -99,11 +99,8 @@ export function ExploreDesktop({
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("discover");
   const [previewProfile, setPreviewProfile] = useState<Profile | null>(null);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  // Add loading states for matches and likes
   const [isMatchesLoading, setIsMatchesLoading] = useState(true);
   const [isLikesLoading, setIsLikesLoading] = useState(true);
-  // Add a state for cached chat data with proper typing
   const [cachedChats, setCachedChats] = useState<Array<{
     id: string;
     userId: string;
@@ -119,23 +116,19 @@ export function ExploreDesktop({
     };
   }>>([]);
 
-  // Initialize matches from likedProfiles where isMatch is true
   const [matches, setMatches] = useState<Profile[]>(
     initialLikedProfiles.filter((p) => p.isMatch)
   );
 
-  // Initialize likes from likedByProfiles
   const [likes, setLikes] = useState<Profile[]>(initialLikedByProfiles);
 
   const { toast } = useToast();
   const unreadMessages = useUnreadMessages(currentUser.id);
 
-  // Preload buffer for profiles - Improved to load more profiles in advance
   const visibleProfiles = useMemo(() => {
     if (currentIndex < 0) return [];
     
-    // Get the current profile and the next few profiles for preloading
-    // Increased from 3 to 5 profiles for better preloading
+
     const buffer = [];
     for (let i = 0; i < 5; i++) {
       const index = currentIndex - i;
@@ -146,10 +139,8 @@ export function ExploreDesktop({
     return buffer;
   }, [currentIndex, profiles]);
 
-  // Fetch and sync matches and likes
   const syncMatchesAndLikes = useCallback(async () => {
     try {
-      // Only show loading indicator on initial fetch
       if (matches.length === 0 && likes.length === 0) {
         setIsMatchesLoading(true);
         setIsLikesLoading(true);
@@ -161,10 +152,8 @@ export function ExploreDesktop({
       ]);
 
       if (matchesResult.matches) {
-        // Only update state if the data has actually changed
         const newMatches = matchesResult.matches as unknown as Profile[];
         
-        // Compare arrays by stringifying key properties
         const currentMatchesKey = matches.map(m => m.userId).sort().join(',');
         const newMatchesKey = newMatches.map(m => m.userId).sort().join(',');
         
@@ -175,7 +164,6 @@ export function ExploreDesktop({
       }
 
       if (likesResult.profiles) {
-        // Filter out profiles that are now matches
         const filteredLikes = likesResult.profiles.filter(
           (profile: Profile) =>
             !matchesResult.matches?.some(
@@ -194,7 +182,6 @@ export function ExploreDesktop({
       }
     } catch (error) {
       console.error("Error syncing matches and likes:", error);
-      // Set loading states to false even if there's an error
       setIsMatchesLoading(false);
       setIsLikesLoading(false);
     }
@@ -205,10 +192,8 @@ export function ExploreDesktop({
     syncMatchesAndLikes();
   }, [syncMatchesAndLikes]);
 
-  // Periodic sync every 30 seconds
   useInterval(syncMatchesAndLikes, 30000);
 
-  // Sync after any swipe action
   useEffect(() => {
     if (swipedProfiles.length > 0) {
       syncMatchesAndLikes();
@@ -347,7 +332,6 @@ export function ExploreDesktop({
     }
   };
 
-  // Preload chat data on component mount
   useEffect(() => {
     if (!isChatLoaded) {
       console.time('Initial chat data preloading');
@@ -363,12 +347,10 @@ export function ExploreDesktop({
     }
   }, [isChatLoaded]);
 
-  // Periodically refresh chat data in the background
   useInterval(() => {
     if (isChatLoaded && activeTab === "messages") {
       console.time('Background chat update');
       getChats().then((result) => {
-        // Only update state if the data has actually changed
         const currentChatsKey = cachedChats.map(c => `${c.matchId}-${c.lastMessage.createdAt}`).join(',');
         const newChatsKey = result.map(c => `${c.matchId}-${c.lastMessage.createdAt}`).join(',');
         
@@ -386,10 +368,8 @@ export function ExploreDesktop({
     }
   }, 30000);
 
-  // Preload chat data when chat icon is hovered
   const handleChatHover = useCallback(() => {
     if (!isChatLoaded) {
-      // Preload chat data
       console.time('Chat data preloading');
       getChats().then((result) => {
         console.timeEnd('Chat data preloading');
@@ -402,7 +382,6 @@ export function ExploreDesktop({
     }
   }, [isChatLoaded]);
 
-  // Handle chat selection
   const handleSelectChat = (matchId: string) => {
     console.time('Chat selection');
     setSelectedChatId(matchId);
@@ -410,18 +389,14 @@ export function ExploreDesktop({
     console.timeEnd('Chat selection');
   };
 
-  // Handle profile view
   const handleViewProfile = (profile: Profile) => {
     setPreviewProfile(profile);
   };
 
-  // Handle unlike action - returns a Promise with success boolean
   const handleUnlike = async (userId: string): Promise<{ success: boolean }> => {
     try {
-      // Implement the unlike functionality
       await unlikeAction(userId);
       
-      // Update the local state
       setLikes((prev) => prev.filter((like) => like.userId !== userId));
       
       return { success: true };
@@ -431,7 +406,6 @@ export function ExploreDesktop({
     }
   };
 
-  // Convert profile to the expected type for ProfileDetailsModal
   const convertToProfileDetailsType = (profile: Profile | null): ProfileDetailsType | null => {
     if (!profile) return null;
     
@@ -572,15 +546,10 @@ export function ExploreDesktop({
                 </Link>
               </Button>
               
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                size="lg"
-                onClick={() => setShowFeedbackModal(true)}
-              >
-                <FeedbackIcon className="mr-2 h-4 w-4" />
-                Feedback
-              </Button>
+              <div className="w-full flex justify-start px-2 py-1.5">
+                <FeedbackModal />
+              </div>
+
             </div>
           </div>
           
@@ -621,7 +590,6 @@ export function ExploreDesktop({
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          {/* Hidden TabsList for accessibility - we're using the sidebar for visual navigation */}
           <TabsList className="sr-only">
             <TabsTrigger value="discover">Discover</TabsTrigger>
             <TabsTrigger value="matches">Matches</TabsTrigger>
@@ -637,7 +605,7 @@ export function ExploreDesktop({
               className="h-full flex flex-col items-center justify-center relative bg-gradient-to-b from-pink-100/20 to-transparent dark:from-pink-950/20 pt-4"
             >
               {profiles.length > 0 && currentIndex >= 0 ? (
-                <div className="relative w-full max-w-sm mx-auto h-[calc(100vh-8rem)] mb-16">
+                <div className="relative w-full max-w-[340px] mx-auto h-[calc(100vh-6rem)] mb-16">
                   {/* Remove debug element in production */}
                   {process.env.NODE_ENV !== 'production' && (
                     <div className="fixed top-0 left-0 bg-white p-2 text-xs z-[999]" style={{ pointerEvents: 'none' }}>
@@ -648,8 +616,6 @@ export function ExploreDesktop({
                   <AnimatePresence>
                     {profiles[currentIndex] && (
                       (() => {
-                        // Call console.log outside of JSX
-                        console.log('[ExploreDesktop] Rendering card for:', profiles[currentIndex].firstName);
                         
                         return (
                           <>
@@ -666,7 +632,7 @@ export function ExploreDesktop({
                                 }}
                                 active={true}
                                 customStyles={{
-                                  card: "aspect-[3/5] rounded-xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900",
+                                  card: "w-full h-full rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900",
                                   image: "h-full w-full object-cover",
                                   info: "absolute bottom-0 left-0 right-0 p-5 pb-20 bg-gradient-to-t from-black/80 via-black/50 to-transparent text-white",
                                   name: "text-2xl font-bold mb-1",
@@ -676,7 +642,6 @@ export function ExploreDesktop({
                               />
                             </div>
                             
-                            {/* Preload the next profiles (hidden but loaded in DOM) */}
                             {visibleProfiles.slice(1).map((profile, idx) => (
                               <div 
                                 key={`preload-${profile.userId}`} 
@@ -687,7 +652,7 @@ export function ExploreDesktop({
                                   onSwipe={() => {}}
                                   active={false}
                                   customStyles={{
-                                    card: "aspect-[3/5] rounded-xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900",
+                                    card: "w-full h-full rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900",
                                     image: "h-full w-full object-cover",
                                     info: "absolute bottom-0 left-0 right-0 p-5 pb-20 bg-gradient-to-t from-black/80 via-black/50 to-transparent text-white",
                                     name: "text-2xl font-bold mb-1",
@@ -703,14 +668,12 @@ export function ExploreDesktop({
                     )}
                   </AnimatePresence>
                   
-                  {/* Swipe Controls - positioned with proper distance from card bottom */}
                   <motion.div 
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3, duration: 0.4 }}
-                    className="absolute -bottom-24 left-0 right-0"
+                    className="absolute -bottom-16 left-0 right-0"
                     onClick={(e) => {
-                      // Stop propagation to prevent clicks from bubbling to card
                       e.stopPropagation();
                     }}
                   >
@@ -990,21 +953,6 @@ export function ExploreDesktop({
         onClose={() => setPreviewProfile(null)}
         profile={convertToProfileDetailsType(previewProfile) as ProfileDetailsType}
       />
-      
-      {/* Feedback modal - replace with your actual FeedbackModal implementation */}
-      {showFeedbackModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-background rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Send Feedback</h3>
-            <p className="text-muted-foreground mb-4">Your feedback helps us improve our service!</p>
-            <div className="text-right">
-              <Button variant="outline" onClick={() => setShowFeedbackModal(false)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 

@@ -110,7 +110,7 @@ export function SwipeControls({
         }}
         disabled={disabled}
         className={cn(
-          "rounded-full h-14 w-14 bg-white border-2 border-blue-400 shadow-lg",
+          "rounded-full h-12 w-12 bg-white border-2 border-blue-400 shadow-lg",
           "transition-all duration-200 hover:scale-110 hover:shadow-xl",
           activeButton === "superLike" && "bg-blue-50"
         )}

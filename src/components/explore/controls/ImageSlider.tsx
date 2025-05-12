@@ -4,7 +4,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/pagination";
 import type { Swiper as SwiperType } from "swiper";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Pagination } from "swiper/modules";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -12,21 +12,25 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 interface ImageSliderProps {
   slug: string[];
   className?: string;
+  onSlideChange?: (index: number) => void;
 }
 
-const ImageSlider = ({ slug, className }: ImageSliderProps) => {
+const ImageSlider = ({ slug, className, onSlideChange }: ImageSliderProps) => {
   const [swiper, setSwiper] = useState<null | SwiperType>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const imagesPreloaded = useRef<boolean>(false);
+  
+  const onSlideChangeRef = useRef(onSlideChange);
+  
+  useEffect(() => {
+    onSlideChangeRef.current = onSlideChange;
+  }, [onSlideChange]);
 
   const [slideConfig, setSlideConfig] = useState({
     isBeginning: true,
     isEnd: activeIndex === (slug?.length ?? 0) - 1,
   });
 
-  
-
-  // Preload images for smoother transitions - this replaces the preloadImages prop
   useEffect(() => {
     if (imagesPreloaded.current || !slug || slug.length === 0) return;
     
@@ -43,25 +47,32 @@ const ImageSlider = ({ slug, className }: ImageSliderProps) => {
     imagesPreloaded.current = true;
   }, [slug]);
 
+  // Create a stable slide change handler
+  const handleSlideChangeStable = useCallback(() => {
+    if (!swiper) return;
+    
+    const newIndex = swiper.activeIndex;
+    setActiveIndex(newIndex);
+    setSlideConfig({
+      isBeginning: swiper.activeIndex === 0,
+      isEnd: swiper.activeIndex === (slug?.length ?? 0) - 1,
+    });
+    
+    if (onSlideChangeRef.current) {
+      onSlideChangeRef.current(newIndex);
+    }
+  }, [swiper, slug]);
+
   useEffect(() => {
     if (!swiper) return;
 
-    const handleSlideChange = () => {
-      setActiveIndex(swiper.activeIndex);
-      setSlideConfig({
-        isBeginning: swiper.activeIndex === 0,
-        isEnd: swiper.activeIndex === (slug?.length ?? 0) - 1,
-      });
-    };
-
-    swiper.on("slideChange", handleSlideChange);
+    swiper.on("slideChange", handleSlideChangeStable);
 
     return () => {
-      swiper.off("slideChange", handleSlideChange);
+      swiper.off("slideChange", handleSlideChangeStable);
     };
-  }, [swiper, slug]);
+  }, [swiper, handleSlideChangeStable]);
 
-  // Create Swiper params object to properly configure Swiper
   const swiperParams = {
     pagination: {
       renderBullet: (_: number, className: string) => {
@@ -72,14 +83,10 @@ const ImageSlider = ({ slug, className }: ImageSliderProps) => {
     spaceBetween: 0,
     modules: [Pagination],
     slidesPerView: 1,
-    speed: 300, // Faster slide transitions
-    // The problematic props have been removed and handled manually in the useEffect above
+    speed: 300, 
   };
 
-  // Log the Swiper params for debugging
   useEffect(() => {
-    // Remove the reference to SwiperType.version as it's not accessible this way
-    console.log('[ImageSlider] Swiper initialized:', swiper ? 'yes' : 'no');
   }, [swiper]);
 
   return (
@@ -92,7 +99,6 @@ const ImageSlider = ({ slug, className }: ImageSliderProps) => {
         console.log('[ImageSlider] Container clicked at:', e.clientX, e.clientY);
       }}
     >
-      {/* Next button - placed directly, not in a container */}
       {slug && slug.length > 1 && !slideConfig.isEnd && (
         <button
           onClick={(e) => {
@@ -108,7 +114,6 @@ const ImageSlider = ({ slug, className }: ImageSliderProps) => {
         </button>
       )}
       
-      {/* Previous button - placed directly, not in a container */}
       {slug && slug.length > 1 && !slideConfig.isBeginning && (
         <button
           onClick={(e) => {
@@ -124,7 +129,6 @@ const ImageSlider = ({ slug, className }: ImageSliderProps) => {
         </button>
       )}
 
-      {/* Swiper component */}
       <Swiper
         className="h-full w-full"
         {...swiperParams}
@@ -134,13 +138,13 @@ const ImageSlider = ({ slug, className }: ImageSliderProps) => {
             <div className="relative w-full h-full">
               <Image
                 fill
-                loading={i === 0 ? "eager" : "lazy"} // Load first image eagerly
+                loading={i === 0 ? "eager" : "lazy"} 
                 className="object-cover will-change-transform"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 70vw, 50vw"
                 src={url}
                 alt={`Profile image ${i + 1}`}
                 quality={75}
-                priority={i === 0} // Prioritize loading the first image
+                priority={i === 0} 
               />
             </div>
           </SwiperSlide>
