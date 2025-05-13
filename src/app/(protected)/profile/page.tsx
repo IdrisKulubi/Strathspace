@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { getProfile } from "@/lib/actions/profile.actions";
+import { getProfile, ProfileFormData } from "@/lib/actions/profile.actions";
 import { ProfileClientPage } from "./profile-client-page";
 import { getProfileModes } from "@/lib/actions/profile-modes";
 
@@ -25,7 +25,7 @@ export default async function ProfilePage({
 
   return (
     <ProfileClientPage 
-      profile={profile} 
+      profile={profile as ProfileFormData} 
       initialActiveSection={searchParams?.section} 
       initialModes={modes || {
         datingEnabled: true,

@@ -158,6 +158,7 @@ export const profiles = pgTable(
     role: text("role").$type<"user" | "admin">().default("user"),
     isVisible: boolean("is_visible").default(true),
     lastActive: timestamp("last_active").defaultNow(),
+    profileCompleted: boolean("profile_completed").default(false),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     visibilityMode: text("visibility_mode").default("standard"),

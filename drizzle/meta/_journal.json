@@ -127,6 +127,13 @@
       "when": 1747126179609,
       "tag": "0017_yummy_living_lightning",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1747128221516,
+      "tag": "0018_silent_black_cat",
+      "breakpoints": true
     }
   ]
 }
