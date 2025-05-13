@@ -56,15 +56,15 @@ export function ModeSelectClient() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="relative group"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 rounded-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
             <Link href="/friends/setup?mode=friends" className="block">
-              <div className="bg-white/50 dark:bg-background/50 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-blue-100 dark:border-blue-950 space-y-6 text-center hover:scale-105 transition-transform duration-300">
+              <div className="bg-white/50 dark:bg-background/50 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-pink-100 dark:border-pink-950 space-y-6 text-center hover:scale-105 transition-transform duration-300">
                 <div className="text-6xl">👥</div>
                 <h2 className="text-2xl font-semibold">Friends & Study Buddies</h2>
                 <p className="text-muted-foreground">
                   Connect with like-minded people for friendship and study sessions
                 </p>
-                <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white">
                   Find Friends
                 </Button>
               </div>

@@ -115,6 +115,7 @@ export const profiles = pgTable(
     // Basic info (required for both modes)
     firstName: text("first_name").notNull(),
     lastName: text("last_name").notNull(),
+    phoneNumber: text("phone_number").notNull(),
     bio: text("bio"),
     age: integer("age"),
     gender: text("gender"),

@@ -77,7 +77,7 @@ const CACHE_KEYS = {
   PROFILE_PHOTOS: (userId: string) => `profile:${userId}:photos`,
 } as const;
 
-export async function getProfile() {
+export async function getProfile(userId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -152,7 +152,7 @@ export async function getProfile() {
           profile[0].photos &&
           profile[0].isVisible &&
           profile[0].lastActive &&
-          profile[0].isComplete
+          profile[0].profileCompleted
       ),
     };
 
@@ -426,7 +426,7 @@ export async function removePhoto(photoUrl: string) {
       };
     }
 
-    const profile = await getProfile();
+    const profile = await getProfile(session.user.id);
     if (!profile) {
       return {
         success: false,

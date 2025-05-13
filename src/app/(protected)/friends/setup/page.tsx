@@ -222,7 +222,7 @@ export default function FriendsSetupForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-blue-950 dark:to-background p-6 pt-16">
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white dark:from-pink-950 dark:to-background p-6 pt-16">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -240,7 +240,7 @@ export default function FriendsSetupForm() {
             <motion.div
               key={s.id}
               className={`h-2 flex-1 rounded-full ${
-                i <= step ? "bg-blue-500" : "bg-blue-100 dark:bg-blue-900"
+                i <= step ? "bg-pink-500" : "bg-pink-100 dark:bg-pink-900"
               }`}
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
@@ -355,7 +355,7 @@ export default function FriendsSetupForm() {
               <Button
                 type="button"
                 onClick={handleNext}
-                className="ml-auto bg-blue-500 hover:bg-blue-600"
+                className="ml-auto bg-pink-500 hover:bg-pink-600"
               >
                 Next
               </Button>
@@ -366,7 +366,7 @@ export default function FriendsSetupForm() {
               >
                 <Button
                   type="submit"
-                  className="ml-auto bg-blue-500 hover:bg-blue-600"
+                  className="ml-auto bg-pink-500 hover:bg-pink-600"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (

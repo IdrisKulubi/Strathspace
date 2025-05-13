@@ -72,7 +72,7 @@ export function ModeSwitch({ initialModes }: ModeSwitchProps) {
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <Label className="text-base">
-              <Users className="w-4 h-4 inline-block mr-2 text-blue-500" />
+              <Users className="w-4 h-4 inline-block mr-2 text-pink-500" />
               Friends Mode
             </Label>
             <p className="text-sm text-muted-foreground">

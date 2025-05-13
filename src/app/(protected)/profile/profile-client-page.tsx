@@ -8,17 +8,24 @@ import { StalkersList } from "@/components/profile/stalkers-list";
 import { ProfileCompletion } from "@/components/profile/profile-completion";
 import { ProfilePreview } from "@/components/profile/profile-preview";
 import { ProfileAnalyticsView } from "@/components/profile/profile-analytics";
-import { Sparkles, User, Heart, Eye, EyeOff, ChartBar } from "lucide-react";
+import { Sparkles, User, Heart, Eye, EyeOff, ChartBar, Settings } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ModeSwitch } from "@/components/friends/mode-switch";
 
 interface ProfileClientPageProps {
   profile: ProfileFormData;
   initialActiveSection?: string | null;
+  initialModes: {
+    datingEnabled: boolean;
+    friendsEnabled: boolean;
+    datingProfileCompleted: boolean;
+    friendsProfileCompleted: boolean;
+  };
 }
 
-export function ProfileClientPage({ profile, initialActiveSection = null }: ProfileClientPageProps) {
+export function ProfileClientPage({ profile, initialActiveSection = null, initialModes }: ProfileClientPageProps) {
   const [activeTab, setActiveTab] = useState<string>("profile");
   const [activeSection, setActiveSection] = useState<string | null>(initialActiveSection);
   const [formValues, setFormValues] = useState<ProfileFormData>(profile);
@@ -71,23 +78,16 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
             
             <TooltipProvider delayDuration={300}>
               <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-4 w-full mb-4 p-1.5 bg-pink-50/50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl relative overflow-hidden">
+                <TabsList className="grid grid-cols-5 w-full mb-4 p-1.5 bg-pink-50/50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl relative overflow-hidden">
                   {/* Visual separators between tabs */}
-                  <div className="absolute top-3 bottom-3 left-1/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
-                  <div className="absolute top-3 bottom-3 left-1/2 w-px bg-pink-200 dark:bg-pink-800/50"></div>
-                  <div className="absolute top-3 bottom-3 left-3/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+                  <div className="absolute top-3 bottom-3 left-1/5 w-px bg-pink-200 dark:bg-pink-800/50" />
+                  <div className="absolute top-3 bottom-3 left-2/5 w-px bg-pink-200 dark:bg-pink-800/50" />
+                  <div className="absolute top-3 bottom-3 left-3/5 w-px bg-pink-200 dark:bg-pink-800/50" />
+                  <div className="absolute top-3 bottom-3 left-4/5 w-px bg-pink-200 dark:bg-pink-800/50" />
                   
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <TabsTrigger 
-                        value="profile" 
-                        className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 
-                          data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 
-                          rounded-lg py-2.5 relative overflow-hidden transition-all duration-300
-                          hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
-                          after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2  
-                          after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
-                      >
+                      <TabsTrigger value="profile">
                         <User className="w-4 h-4 mr-1 sm:mr-2" />
                         <span className="hidden sm:inline font-medium">Profile</span>
                         <span className="sm:hidden">Profile</span>
@@ -100,15 +100,7 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
                   
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <TabsTrigger 
-                        value="completion" 
-                        className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 
-                          data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 
-                          rounded-lg py-2.5 relative overflow-hidden transition-all duration-300
-                          hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
-                          after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2  
-                          after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
-                      >
+                      <TabsTrigger value="completion">
                         <Sparkles className="w-4 h-4 mr-1 sm:mr-2" />
                         <span className="hidden sm:inline font-medium">Progress</span>
                         <span className="sm:hidden">Progress</span>
@@ -118,39 +110,23 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
                       Track your profile completion progress
                     </TooltipContent>
                   </Tooltip>
-                  
+
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <TabsTrigger 
-                        value="stalkers" 
-                        className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 
-                          data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 
-                          rounded-lg py-2.5 relative overflow-hidden transition-all duration-300
-                          hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
-                          after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2  
-                          after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
-                      >
+                      <TabsTrigger value="stalkers">
                         <Heart className="w-4 h-4 mr-1 sm:mr-2" />
                         <span className="hidden sm:inline font-medium">Activity</span>
                         <span className="sm:hidden">Activity</span>
                       </TabsTrigger>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" align="center" className={tooltipStyles}>
-                      See recent profile activity
+                      View who's interested in your profile
                     </TooltipContent>
                   </Tooltip>
-                  
+
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <TabsTrigger 
-                        value="analytics" 
-                        className="text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 
-                          data-[state=active]:shadow-md data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 
-                          rounded-lg py-2.5 relative overflow-hidden transition-all duration-300
-                          hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
-                          after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2  
-                          after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
-                      >
+                      <TabsTrigger value="analytics">
                         <ChartBar className="w-4 h-4 mr-1 sm:mr-2" />
                         <span className="hidden sm:inline font-medium">Analytics</span>
                         <span className="sm:hidden">Stats</span>
@@ -158,6 +134,19 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
                     </TooltipTrigger>
                     <TooltipContent side="bottom" align="center" className={tooltipStyles}>
                       View your profile analytics and stats
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <TabsTrigger value="modes">
+                        <Settings className="w-4 h-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline font-medium">Modes</span>
+                        <span className="sm:hidden">Modes</span>
+                      </TabsTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="center" className={tooltipStyles}>
+                      Manage your connection modes
                     </TooltipContent>
                   </Tooltip>
                 </TabsList>
@@ -255,6 +244,12 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
                       Profile Analytics
                     </h2>
                     <ProfileAnalyticsView userId={profile.userId} />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="modes" className="mt-6 animate-in fade-in-50 duration-300">
+                  <div className="bg-white dark:bg-background rounded-lg shadow-sm">
+                    <ModeSwitch initialModes={initialModes} />
                   </div>
                 </TabsContent>
               </Tabs>
