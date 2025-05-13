@@ -2,16 +2,18 @@
 
 import { auth } from "@/auth";
 import db from "@/db/drizzle";
-import { eq, count as countFn, sql, desc, and, gte, lt } from "drizzle-orm";
+import { eq, count as countFn, sql, desc, and, gte, lt, or } from "drizzle-orm";
 import { 
   users, 
   profiles, 
+  profileModes, 
   matches, 
   swipes, 
 } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import {  redirect } from "next/navigation";
 import {  sub, format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
+import { deleteUploadThingFile } from "@/lib/actions/upload.actions";
 
 async function checkAdmin() {
   const session = await auth();
@@ -68,7 +70,11 @@ export async function getUsers() {
   
   const allUsers = await db.query.users.findMany({
     with: {
-      profile: true,
+      profile: {
+        with: {
+          modes: true,
+        },
+      },
     },
     orderBy: [desc(users.createdAt)],
   });
@@ -76,9 +82,10 @@ export async function getUsers() {
   return allUsers.map(user => ({
     ...user,
     photos: user.profile?.photos as string[] || [],
-    profileCompleted: !!user.profile?.profileCompleted,
-    createdAt: user.createdAt.toISOString(),
-    lastActive: user.lastActive.toISOString(),
+    profileCompleted: !!(user.profile?.modes?.datingProfileCompleted || user.profile?.modes?.friendsProfileCompleted),
+    createdAt: format(user.createdAt, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
+    lastActive: format(user.lastActive, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
+    updatedAt: format(user.updatedAt, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
   }));
 }
 
@@ -86,10 +93,64 @@ export async function getUsers() {
 export async function deleteUser(userId: string) {
   await checkAdmin();
   
-  await db.delete(users).where(eq(users.id, userId));
-  
-  revalidatePath("/admin");
-  return { success: true };
+  try {
+    // Start a transaction to ensure data consistency
+    return await db.transaction(async (tx) => {
+      // Get user's profile first to handle photo deletion
+      const userProfile = await tx.query.profiles.findFirst({
+        where: eq(profiles.userId, userId),
+      });
+
+      // Delete photos if they exist
+      if (userProfile?.photos?.length) {
+        const photos = userProfile.photos as string[];
+        await Promise.all(
+          photos.map(async (url) => {
+            if (url.includes("utfs.io") || url.includes("uploadthing")) {
+              try {
+                await deleteUploadThingFile(url);
+              } catch (error) {
+                console.error("Error deleting photo:", url, error);
+              }
+            }
+          })
+        );
+      }
+
+      // Delete all related data in order
+      await tx.delete(swipes).where(
+        or(
+          eq(swipes.swiperId, userId),
+          eq(swipes.swipedId, userId)
+        )
+      );
+
+      await tx.delete(matches).where(
+        or(
+          eq(matches.user1Id, userId),
+          eq(matches.user2Id, userId)
+        )
+      );
+
+      // Delete profile modes
+      await tx.delete(profileModes).where(eq(profileModes.userId, userId));
+
+      // Delete profile
+      await tx.delete(profiles).where(eq(profiles.userId, userId));
+      
+      // Finally delete the user
+      await tx.delete(users).where(eq(users.id, userId));
+      
+      revalidatePath("/admin");
+      return { success: true };
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Failed to delete user" 
+    };
+  }
 }
 
 // Update user role
@@ -282,11 +343,11 @@ export async function getAnalyticsData() {
   
   const profileCompletion = await db
     .select({
-      status: profiles.profileCompleted,
+      status: sql<boolean>`CASE WHEN "dating_profile_completed" OR "friends_profile_completed" THEN true ELSE false END`,
       count: countFn(),
     })
-    .from(profiles)
-    .groupBy(profiles.profileCompleted)
+    .from(profileModes)
+    .groupBy(sql`CASE WHEN "dating_profile_completed" OR "friends_profile_completed" THEN true ELSE false END`)
     .execute();
     
   const completionData = profileCompletion.map(item => ({

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { User } from "next-auth";
+import { format } from "date-fns";
 import {
   Card,
   CardContent,
@@ -96,8 +97,21 @@ export function UserManagement({ users }: UserManagementProps) {
       user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Format date consistently
+  const formatDate = (dateStr: string | Date) => {
+    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+    return format(date, "MMM d, yyyy");
+  };
+
+  // Format time consistently
+  const formatDateTime = (dateStr: string | Date) => {
+    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+    return format(date, "MMM d, yyyy HH:mm");
+  };
+
   // Convert string dates to Date objects for UserAvatar component
   const prepareUserForAvatar = (user: UserWithProfile) => {
+    if (!user) return null;
     return {
       ...user,
       lastActive: typeof user.lastActive === 'string' ? new Date(user.lastActive) : user.lastActive,
@@ -177,7 +191,7 @@ export function UserManagement({ users }: UserManagementProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {new Date(user.lastActive).toLocaleDateString()}
+                  {formatDate(user.lastActive)}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -299,7 +313,7 @@ export function UserManagement({ users }: UserManagementProps) {
                       <div>
                         <h3 className="font-medium text-muted-foreground">Last Active</h3>
                         <p className="text-sm">
-                          {new Date(selectedUser.lastActive).toLocaleDateString()} - {new Date(selectedUser.lastActive).toLocaleTimeString()}
+                          {formatDateTime(selectedUser.lastActive)}
                         </p>
                       </div>
                       <div>

@@ -83,6 +83,26 @@ export const verificationTokens = pgTable(
   })
 );
 
+// Profile modes table to track which modes are active for each user
+export const profileModes = pgTable(
+  "profile_modes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    datingEnabled: boolean("dating_enabled").default(false),
+    friendsEnabled: boolean("friends_enabled").default(false),
+    datingProfileCompleted: boolean("dating_profile_completed").default(false),
+    friendsProfileCompleted: boolean("friends_profile_completed").default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: uniqueIndex("profile_modes_user_id_idx").on(table.userId),
+  })
+);
+
 // Extended user profiles
 export const profiles = pgTable(
   "profiles",
@@ -91,60 +111,67 @@ export const profiles = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    
+    // Basic info (required for both modes)
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
     bio: text("bio"),
     age: integer("age"),
     gender: text("gender"),
-    role: text("role").$type<"user" | "admin">().default("user"),
-
-    interests: json("interests").$type<string[]>(),
-    photos: json("photos").$type<string[]>(), // Array of photo URLs
-    isVisible: boolean("is_visible").default(true),
-    lastActive: timestamp("last_active").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-    isComplete: boolean("is_complete").default(false),
-    profileCompleted: boolean("profile_completed").default(false),
-    lookingFor: text("looking_for"),
     course: text("course"),
     yearOfStudy: integer("year_of_study"),
-    instagram: text("instagram"),
-    spotify: text("spotify"),
-    snapchat: text("snapchat"),
     profilePhoto: text("profile_photo"),
-    phoneNumber: text("phone_number"),
-    firstName: text("first_name").notNull().default(""),
-    lastName: text("last_name").notNull().default(""),
-    isMatch: boolean("is_match").default(false),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    interests: json("interests").$type<string[]>(),
+    photos: json("photos").$type<string[]>(),
+
+    // Study/Friends specific fields
+    studyPreferences: json("study_preferences").$type<{
+      preferredStudyTime?: string;
+      studyStyle?: string;
+      subjectInterests?: string[];
+      groupSize?: string;
+      academicGoals?: string[];
+    }>(),
+    academicFocus: text("academic_focus"),
+    studyAvailability: json("study_availability").$type<string[]>(),
+    projectInterests: json("project_interests").$type<string[]>(),
     
-    // New lifestyle attributes
+    // Dating specific fields
+    lookingFor: text("looking_for"),
+    relationshipGoals: text("relationship_goals"),
     drinkingPreference: text("drinking_preference"),
     workoutFrequency: text("workout_frequency"),
     socialMediaUsage: text("social_media_usage"),
     sleepingHabits: text("sleeping_habits"),
-    
-    // New personality attributes
     personalityType: text("personality_type"),
     communicationStyle: text("communication_style"),
     loveLanguage: text("love_language"),
     zodiacSign: text("zodiac_sign"),
     
-    // Profile visibility and privacy settings
+    // Social media (optional for both)
+    instagram: text("instagram"),
+    spotify: text("spotify"),
+    snapchat: text("snapchat"),
+    
+    // System fields
+    role: text("role").$type<"user" | "admin">().default("user"),
+    isVisible: boolean("is_visible").default(true),
+    lastActive: timestamp("last_active").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
     visibilityMode: text("visibility_mode").default("standard"),
     incognitoMode: boolean("incognito_mode").default(false),
     discoveryPaused: boolean("discovery_paused").default(false),
     readReceiptsEnabled: boolean("read_receipts_enabled").default(true),
     showActiveStatus: boolean("show_active_status").default(true),
-    
-    // Username for profile sharing
     username: text("username"),
   },
   (table) => ({
-    userIdIdx: index("profile_user_id_idx").on(table.userId),
+    userIdIdx: uniqueIndex("profile_user_id_idx").on(table.userId),
+    usernameIdx: uniqueIndex("profile_username_idx").on(table.username),
     isVisibleIdx: index("profile_is_visible_idx").on(table.isVisible),
     genderIdx: index("profile_gender_idx").on(table.gender),
     lastActiveIdx: index("profile_last_active_idx").on(table.lastActive),
-    completedIdx: index("profile_completed_idx").on(table.profileCompleted),
-    usernameIdx: index("profile_username_idx").on(table.username),
   })
 );
 
@@ -350,9 +377,33 @@ export const profileViewsRelations = relations(profileViews, ({ one }) => ({
   }),
 }));
 
-// Then create type references at the end
+// Define relations
+export const profilesRelations = relations(profiles, ({ one }) => ({
+  user: one(users, {
+    fields: [profiles.userId],
+    references: [users.id],
+  }),
+  modes: one(profileModes, {
+    fields: [profiles.userId],
+    references: [profileModes.userId],
+  }),
+}));
+
+export const profileModesRelations = relations(profileModes, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [profileModes.userId],
+    references: [profiles.userId],
+  }),
+  user: one(users, {
+    fields: [profileModes.userId],
+    references: [users.id],
+  }),
+}));
+
+// Update Profile type
 export type Profile = typeof profiles.$inferSelect & {
-  isMatch: boolean | null;
+  modes?: typeof profileModes.$inferSelect;
+  isMatch?: boolean;
   userId: string;
   unreadMessages?: number;
   matchId?: string;
