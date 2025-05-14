@@ -21,7 +21,7 @@ This workflow runs on pushes to any branch except main. It:
 - Performs TypeScript type checking
 - Deploys to Vercel's preview environment
 - Creates a pull request to merge the branch into main
-- Enables auto-merge for the pull request
+- Enables auto-merge for the pull request that was made
 
 ## Required Secrets
 
