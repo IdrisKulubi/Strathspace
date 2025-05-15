@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Profile } from "@/db/schema";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MatchCard } from "../cards/match-card";
@@ -72,7 +72,7 @@ export function LikesModal({
       console.error("Failed to like back", error);
       toast({
         title: "Oops! 🙈",
-        description: "Something went wrong while matching. Try again!",
+        description: "Something went wrong while matching. Try again",
         variant: "destructive",
       });
     } finally {
@@ -129,6 +129,9 @@ export function LikesModal({
         onClose();
       }}
     >
+      <DialogTitle>
+        People who liked you
+      </DialogTitle>
       <DialogContent className="max-w-md p-6 bg-gradient-to-b from-white to-purple-50/50 dark:from-background dark:to-purple-950/20">
         <div className="relative">
           {/* Decorative hearts */}
