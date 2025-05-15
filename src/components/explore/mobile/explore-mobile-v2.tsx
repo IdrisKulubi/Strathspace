@@ -46,6 +46,8 @@ import { ChatWindow } from "@/components/chat/chat-window";
 import { getStalkers } from "@/lib/actions/stalker.actions";
 import { Badge } from "@/components/ui/badge";
 import { MobileNavbar } from "./mobile-navbar";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
 
 interface ExploreMobileV2Props {
   initialProfiles: Profile[];
@@ -55,6 +57,12 @@ interface ExploreMobileV2Props {
   likedByProfiles: Profile[];
   markAsRead: (matchId: string) => void;  
 }
+
+// Dynamically import LikesModalServer with client-side rendering (no SSR)
+const LikesModalServer = dynamic(
+  () => import("../modals/likes-modal-server"),
+  { ssr: false }
+);
 
 export function ExploreMobileV2({
   initialProfiles,
@@ -570,13 +578,16 @@ export function ExploreMobileV2({
           currentUser={currentUser}
         />
 
-        <LikesModal
-          isOpen={showLikes}
-          onClose={() => setShowLikes(false)}
-          likes={likes}
-          onUnlike={handleUnlike}
-          onUpdate={syncMatchesAndLikes}
-        />
+        {/* Replace with server component */}
+        <Suspense fallback={null}>
+          {showLikes && (
+            <LikesModalServer
+              isOpen={showLikes}
+              onClose={() => setShowLikes(false)}
+              onUpdate={syncMatchesAndLikes}
+            />
+          )}
+        </Suspense>
 
         <ProfilePreviewModal
           isOpen={!!previewProfile}

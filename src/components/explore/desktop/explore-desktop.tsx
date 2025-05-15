@@ -48,6 +48,8 @@ import Image from "next/image";
 import { SwipeControls } from "../controls/swipe-controls";
 import { Spinner } from "@/components/ui/spinner";
 import { FeedbackModal } from "@/components/shared/feedback-modal";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
 
 interface ExploreDesktopProps {
   initialProfiles: Profile[];
@@ -76,6 +78,12 @@ interface ProfileDetailsType {
   profilePhoto?: string;
   lookingFor?: string;
 }
+
+// Dynamically import LikesModalServer with client-side rendering (no SSR)
+const LikesModalServer = dynamic(
+  () => import("../modals/likes-modal-server"),
+  { ssr: false }
+);
 
 export function ExploreDesktop({
   initialProfiles,
@@ -936,13 +944,16 @@ export function ExploreDesktop({
         currentUser={currentUser}
       />
 
-      <LikesModal
-        isOpen={showLikes}
-        onClose={() => setShowLikes(false)}
-        likes={likes}
-        onUnlike={handleUnlike}
-        onUpdate={syncMatchesAndLikes}
-      />
+      {/* Replace with server component */}
+      <Suspense fallback={null}>
+        {showLikes && (
+          <LikesModalServer
+            isOpen={showLikes}
+            onClose={() => setShowLikes(false)}
+            onUpdate={syncMatchesAndLikes}
+          />
+        )}
+      </Suspense>
 
       <ProfileDetailsModal
         isOpen={!!previewProfile}

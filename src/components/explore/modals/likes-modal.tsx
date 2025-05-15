@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { handleLike, handleUnlike } from "@/lib/actions/like.actions";
+import { useRouter } from "next/navigation";
 
 interface LikesModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export function LikesModal({
   onUpdate,
 }: LikesModalProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isProcessing, setIsProcessing] = useState<string>("");
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
@@ -41,7 +43,7 @@ export function LikesModal({
       const result = await handleLike(userId);
 
       if (result.success) {
-        // Remove from likes list immediately
+        // Remove from likes list immediately for UI responsiveness
         setRemovedIds((prev) => new Set([...prev, userId]));
 
         if (result.isMatch) {
@@ -65,8 +67,11 @@ export function LikesModal({
           }, 1500);
         }
 
-        // Update parent components to refresh the likes and matches lists
-        await onUpdate?.();
+        // Refresh the server data
+        router.refresh();
+        
+        // Update parent components if needed
+        onUpdate?.();
       }
     } catch (error) {
       console.error("Failed to like back", error);
@@ -86,7 +91,7 @@ export function LikesModal({
       const result = await handleUnlike(userId);
 
       if (result.success) {
-        // Remove from likes list immediately
+        // Remove from likes list immediately for UI responsiveness
         setRemovedIds((prev) => new Set([...prev, userId]));
 
         toast({
@@ -94,7 +99,10 @@ export function LikesModal({
           description: "They're gone faster than my motivation on Mondays",
         });
 
-        // Update parent components to refresh the likes list
+        // Refresh the server data
+        router.refresh();
+        
+        // Update parent components if needed
         onUpdate?.();
       }
     } catch (error) {
@@ -110,7 +118,7 @@ export function LikesModal({
     }
   };
 
-  // Filter out removed and duplicate profiles
+  // Filter out removed and duplicate profiles for UI display
   const visibleLikes = [
     ...new Map(
       likes
