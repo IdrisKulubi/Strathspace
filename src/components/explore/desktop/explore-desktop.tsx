@@ -723,9 +723,7 @@ export function ExploreDesktop({
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Your Matches</h2>
-                <Button size="sm" variant="outline" className="gap-1">
-                  <Filter className="h-4 w-4" /> Filter
-                </Button>
+               
               </div>
 
               <ScrollArea className="h-[calc(100vh-10rem)] pr-4">
@@ -837,9 +835,7 @@ export function ExploreDesktop({
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-pink-500 bg-clip-text text-transparent">People Who Like You</h2>
-                <Button size="sm" variant="outline" className="gap-1">
-                  <Filter className="h-4 w-4" /> Filter
-                </Button>
+                
               </div>
 
               <ScrollArea className="h-[calc(100vh-10rem)] pr-4">

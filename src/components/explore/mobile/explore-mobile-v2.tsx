@@ -480,16 +480,12 @@ export function ExploreMobileV2({
                   className="relative"
                 >
                   <Heart className="h-5 w-5 sm:h-6 sm:w-6 text-pink-500" />
-                  {/* Fix for counter flickering - showing persistent counter */}
-                  <span className={`absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs transition-all duration-200 ${
-                    isMatchesLoading
-                      ? "bg-pink-500/30"
-                      : matches.length > 0
-                      ? "bg-pink-500 text-white"
-                      : "opacity-0"
-                  }`}>
-                    {!isMatchesLoading && matches.length > 0 ? matches.length : ""}
-                  </span>
+                  {/* Only show counter if there are matches, no flicker/loading state */}
+                  {matches.length > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-pink-500 text-white">
+                      {matches.length}
+                    </span>
+                  )}
                 </Button>
 
                 <Button
@@ -556,16 +552,12 @@ export function ExploreMobileV2({
                   className="relative"
                 >
                   <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
-                  {/* Fix for counter flickering - showing persistent counter */}
-                  <span className={`absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs transition-all duration-200 ${
-                    isLikesLoading
-                      ? "bg-yellow-500/30"
-                      : likes.length > 0
-                      ? "bg-yellow-500 text-white"
-                      : "opacity-0"
-                  }`}>
-                    {!isLikesLoading && likes.length > 0 ? likes.length : ""}
-                  </span>
+                  {/* Only show counter if there are likes, no flicker/loading state */}
+                  {likes.length > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-yellow-500 text-white">
+                      {likes.length}
+                    </span>
+                  )}
                 </Button>
               </div>
             </div>

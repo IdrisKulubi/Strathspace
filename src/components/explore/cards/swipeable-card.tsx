@@ -6,12 +6,13 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { Profile } from "@/db/schema";
 import { Card } from "@/components/ui/card";
 import ImageSlider from "../controls/ImageSlider";
-import { ChevronDown, Info, X, Heart } from 'lucide-react';
+import { ChevronDown, Info, X, Heart, ChevronUp } from 'lucide-react';
 import { ProfileDetailsModal } from '../profile-details-modal';
 import { trackProfileView } from "@/lib/actions/stalker.actions";
 import { useAction } from "next-safe-action/hooks";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 const initInteractionTroubleshooter = () => {
   if (process.env.NODE_ENV !== 'production') {
@@ -179,6 +180,8 @@ export function SwipeableCard({
     setShowExtraInfo(!showExtraInfo);
   };
 
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
   if (!active) return null;
 
   return (
@@ -251,17 +254,37 @@ export function SwipeableCard({
               ))}
               
               {showViewMoreBadge && (
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    "bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs py-1 px-2.5 cursor-pointer flex items-center gap-1 rounded-full",
-                    showExtraInfo && "bg-white/20"
-                  )}
-                  onClick={toggleExtraInfo}
-                >
-                  {viewMoreBadgeText}
-                  <ChevronDown className={cn("h-3 w-3 transition-transform duration-200 ml-0.5", showExtraInfo && "rotate-180")} />
-                </Badge>
+                isMobile ? (
+                  <button
+                    aria-label={viewMoreBadgeText}
+                    onClick={toggleExtraInfo}
+                    className={cn(
+                      'absolute right-0 -translate-x-1/2 z-30',
+                      'rounded-full bg-pink-500/90 hover:bg-pink-600 text-white shadow-lg',
+                      'transition-all duration-200',
+                      showExtraInfo ? 'bg-pink-700' : '',
+                      'top-[calc(100%-8.5rem)] md:hidden',
+                      'w-10 h-10 flex items-center justify-center',
+                    )}
+                    style={{
+                      marginBottom: '-1.5rem',
+                    }}
+                  >
+                    <ChevronUp className={cn('h-6 w-6 transition-transform', showExtraInfo && 'rotate-180')} />
+                  </button>
+                ) : (
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs py-1 px-2.5 cursor-pointer flex items-center gap-1 rounded-full",
+                      showExtraInfo && "bg-white/20"
+                    )}
+                    onClick={toggleExtraInfo}
+                  >
+                    {viewMoreBadgeText}
+                    <ChevronDown className={cn("h-3 w-3 transition-transform duration-200 ml-0.5", showExtraInfo && "rotate-180")} />
+                  </Badge>
+                )
               )}
             </div>
             
