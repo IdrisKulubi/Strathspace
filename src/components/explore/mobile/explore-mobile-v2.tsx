@@ -152,13 +152,15 @@ export function ExploreMobileV2({
     }
   }, 30000); 
 
+  // Add new states for loading indicators
+  const [hasLoadedMatches, setHasLoadedMatches] = useState(false);
+  const [hasLoadedLikes, setHasLoadedLikes] = useState(false);
+
   // Fetch and sync matches and likes
   const syncMatchesAndLikes = useCallback(async () => {
     try {
-      // Set loading states to true before fetching data
       setIsMatchesLoading(true);
       setIsLikesLoading(true);
-      
       const [matchesResult, likesResult] = await Promise.all([
         getMatches(),
         getLikedByProfiles(),
@@ -167,6 +169,7 @@ export function ExploreMobileV2({
       if (matchesResult.matches) {
         setMatches(matchesResult.matches as unknown as Profile[]);
         setIsMatchesLoading(false);
+        setHasLoadedMatches(true);
       }
 
       if (likesResult.profiles) {
@@ -178,11 +181,14 @@ export function ExploreMobileV2({
         );
         setLikes(newLikes);
         setIsLikesLoading(false);
+        setHasLoadedLikes(true);
       }
     } catch (error) {
       console.error("Error syncing matches and likes:", error);
       setIsMatchesLoading(false);
       setIsLikesLoading(false);
+      setHasLoadedMatches(true);
+      setHasLoadedLikes(true);
     }
   }, []);
 
@@ -459,13 +465,14 @@ export function ExploreMobileV2({
                   className="relative"
                 >
                   <Heart className="h-6 w-6 text-pink-500" />
-                  {!isMatchesLoading && matches.length > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-pink-500 text-white">
-                      {matches.length}
-                    </span>
-                  )}
-                  {isMatchesLoading && (
+                  {!hasLoadedMatches ? (
                     <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-pink-500/30 animate-pulse" />
+                  ) : (
+                    matches.length > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-pink-500 text-white">
+                        {matches.length}
+                      </span>
+                    )
                   )}
                 </Button>
 
@@ -533,13 +540,14 @@ export function ExploreMobileV2({
                   className="relative"
                 >
                   <Star className="h-6 w-6 text-yellow-500" />
-                  {!isLikesLoading && likes.length > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-yellow-500 text-white">
-                      {likes.length}
-                    </span>
-                  )}
-                  {isLikesLoading && (
+                  {!hasLoadedLikes ? (
                     <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-yellow-500/30 animate-pulse" />
+                  ) : (
+                    likes.length > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-yellow-500 text-white">
+                        {likes.length}
+                      </span>
+                    )
                   )}
                 </Button>
               </div>

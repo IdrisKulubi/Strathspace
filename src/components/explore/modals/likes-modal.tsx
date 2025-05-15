@@ -130,7 +130,7 @@ export function LikesModal({
       }}
     >
       <DialogTitle>
-        People who liked you
+      
       </DialogTitle>
       <DialogContent className="max-w-md p-6 bg-gradient-to-b from-white to-purple-50/50 dark:from-background dark:to-purple-950/20">
         <div className="relative">
