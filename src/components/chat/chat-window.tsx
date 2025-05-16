@@ -23,7 +23,6 @@ interface ChatWindowProps {
 }
 
 export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
-  console.time('ChatWindow - initialization');
   const {
     messages,
     isTyping,
@@ -31,7 +30,6 @@ export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
     handleTyping,
     isLoading,
   } = useChat(matchId, partner);
-  console.timeEnd('ChatWindow - initialization');
 
   const router = useRouter();
   const pathname = usePathname();
@@ -39,9 +37,8 @@ export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
 
   const { data: session } = useSession();
   const { markAsRead } = useUnreadMessages(session?.user.id ?? "");
-  const markAsReadRef = useRef(markAsRead);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const hasMarkedReadRef = useRef(false);
+  const hasInitialized = useRef(false);
 
   // Safely handle potentially undefined partner
   const partnerName = partner?.firstName || "this person";
@@ -58,37 +55,34 @@ export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
     }
   };
 
+  // Consolidated useEffect that handles marking messages as read and scrolling
   useEffect(() => {
-    markAsReadRef.current = markAsRead;
-  }, [markAsRead]);
+    // Handle message reading
+    const handleInitialTasks = async () => {
+      if (hasInitialized.current || !session?.user?.id) return;
+      
+      try {
+        // Mark messages as read client-side
+        markAsRead(matchId);
+        
+        // Mark messages as read server-side
+        await markMessagesAsRead(matchId, session.user.id);
+        
+        // Set initialization flag
+        hasInitialized.current = true;
+      } catch (error) {
+        console.error('Error marking messages as read:', error);
+      }
+    };
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
+    handleInitialTasks();
+    
+    // Scroll to bottom when messages change
     if (scrollAreaRef.current && messages.length > 0) {
       const scrollArea = scrollAreaRef.current;
       scrollArea.scrollTop = scrollArea.scrollHeight;
     }
-  }, [messages.length]);
-
-  // Fix for infinite update loop - only mark as read once when component mounts
-  useEffect(() => {
-    const markRead = async () => {
-      if (hasMarkedReadRef.current || !session?.user?.id) return;
-      
-      try {
-        console.time('ChatWindow - markAsRead');
-        markAsReadRef.current(matchId);
-        await markMessagesAsRead(matchId, session.user.id);
-        hasMarkedReadRef.current = true;
-        console.timeEnd('ChatWindow - markAsRead');
-      } catch (error) {
-        console.error('Error marking messages as read:', error);
-        console.timeEnd('ChatWindow - markAsRead');
-      }
-    };
-
-    markRead();
-  }, [matchId, session]);
+  }, [matchId, session, messages.length, markAsRead]);
 
   // Prepare message lists for rendering
   const regularMessages = messages.slice(0, Math.max(0, messages.length - 5));

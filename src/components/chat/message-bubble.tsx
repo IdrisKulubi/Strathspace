@@ -20,6 +20,9 @@ export const MessageBubble = ({ message, isUser }: MessageBubbleProps) => {
   const contentLength = content.length;
   const isShortMessage = contentLength < 20;
   const isLongMessage = contentLength > 100;
+  
+  const messageDate = message?.createdAt ? new Date(message.createdAt) : new Date();
+  const formattedTime = format(messageDate, "HH:mm");
 
   return (
     <div className={cn(
@@ -51,7 +54,7 @@ export const MessageBubble = ({ message, isUser }: MessageBubbleProps) => {
             "text-xs opacity-75",
             isUser ? "text-white/90" : "text-muted-foreground"
           )}>
-            {format(new Date(message?.createdAt || new Date()), "HH:mm")}
+            {formattedTime}
           </span>
           
           {isUser && (
