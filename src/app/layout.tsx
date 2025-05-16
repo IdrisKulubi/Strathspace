@@ -13,6 +13,7 @@ import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PHProvider, PostHogPageview } from "@/components/providers/posthog";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import InitialLoading from "@/components/shared/initial-loading";
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -60,6 +61,7 @@ export default async function RootLayout({
                       <Toaster />
                       <PostHogPageview />
                     </div>
+                    <InitialLoading />
                   </TooltipProvider>
                 </PHProvider>
               </SwipeCounterProvider>
