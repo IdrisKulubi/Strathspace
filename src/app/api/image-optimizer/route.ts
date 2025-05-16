@@ -4,7 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import sharp from "sharp";
 
 // Configure for Edge Runtime
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 // Configure S3 client
 const s3Client = new S3Client({

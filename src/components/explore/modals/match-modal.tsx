@@ -7,19 +7,26 @@ import { Heart, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
-import type { ProfileFormData } from "@/lib/actions/profile.actions";
-
 interface MatchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  matchedProfile: ProfileFormData;
-  currentUserProfile: ProfileFormData;
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  matchedProfile: any;
+  currentUser: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+  };
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  currentUserProfile: any;
   onStartChat?: () => void;
 }
 
 export function MatchModal({
   isOpen,
   onClose,
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  currentUser,
   matchedProfile,
   currentUserProfile,
   onStartChat,
@@ -52,6 +59,7 @@ export function MatchModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogTitle></DialogTitle>
       <DialogContent
         className="max-w-sm w-full mx-auto bg-white dark:bg-gray-950 p-6 rounded-3xl shadow-2xl border-0 relative overflow-visible"
         aria-label="It's a Match!"

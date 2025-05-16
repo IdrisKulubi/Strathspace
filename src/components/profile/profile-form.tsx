@@ -22,7 +22,6 @@ import { Sparkles, UserRound, Heart, Coffee, Stars, Smartphone, Loader2, InfoIco
 import {
   updateProfilePhoto,
   removePhoto,
-  type ProfileFormData,
   updateProfile,
 } from "@/lib/actions/profile.actions";
 import { useRouter } from "next/navigation";
@@ -43,6 +42,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "../ui/input";
+import { ProfileFormData } from "@/lib/constants";
 
 interface ProfileFormProps {
   initialData: ProfileFormData;

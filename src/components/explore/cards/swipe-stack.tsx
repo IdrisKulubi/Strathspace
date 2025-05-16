@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { SidePanels } from "./side-panels";
 import { NoMoreProfiles } from "../empty-state";
 
-// Number of profiles to preload and keep ready
 const PRELOAD_BUFFER_SIZE = 3;
 
 interface SwipeStackProps {
@@ -206,14 +205,21 @@ export function SwipeStack({
           </div>
         </div>
       </div>
-
-      <MatchModal
-        isOpen={!!matchedProfile}
-        onClose={() => setMatchedProfile(null)}
-        matchedProfile={matchedProfile!}
-        currentUserProfile={currentUserProfile}
-        currentUser={currentUser}
-      />
+{/*   TO DO  specify the type of matchedProfile and currentUserProfile */}
+      {matchedProfile && (
+        <MatchModal
+          isOpen={!!matchedProfile}
+          currentUser={currentUser}
+          onClose={() => setMatchedProfile(null)}
+          matchedProfile={{
+            ...matchedProfile,
+            
+          }}
+          currentUserProfile={{
+            ...currentUserProfile,
+          }}
+        />
+      )}
     </div>
   );
 }

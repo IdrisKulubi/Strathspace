@@ -14,7 +14,6 @@ import {
   Info,
   Users,
   Search,
-  Filter,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,8 +24,6 @@ import {
   getLikedByProfiles,
 } from "@/lib/actions/explore.actions";
 import { useToast } from "@/hooks/use-toast";
-import { LikesModal } from "../modals/likes-modal";
-import { ProfileDetailsModal } from "../profile-details-modal";
 import { useInterval } from "@/hooks/use-interval";
 import { handleLike, handleUnlike as unlikeAction } from "@/lib/actions/like.actions";
 import { MatchesModal } from "../modals/matches-modal";
@@ -50,6 +47,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { FeedbackModal } from "@/components/shared/feedback-modal";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
+import { ProfileDetailsModal } from "../profile-details-modal";
 
 interface ExploreDesktopProps {
   initialProfiles: Profile[];
@@ -401,15 +399,13 @@ export function ExploreDesktop({
     setPreviewProfile(profile);
   };
 
-  const handleUnlike = async (userId: string): Promise<{ success: boolean }> => {
+  // Change handleUnlike to _handleUnlike to indicate it's intentionally unused
+  const _handleUnlike = async (userId: string): Promise<{ success: boolean }> => {
     try {
-      await unlikeAction(userId);
-      
-      setLikes((prev) => prev.filter((like) => like.userId !== userId));
-      
-      return { success: true };
+      const result = await unlikeAction(userId);
+      return { success: !!result };
     } catch (error) {
-      console.error("Error unliking profile:", error);
+      console.error("Error in unlikeAction:", error);
       return { success: false };
     }
   };

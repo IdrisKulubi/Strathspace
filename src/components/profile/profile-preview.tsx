@@ -1,11 +1,10 @@
 "use client";
 
-import { ProfileFormData } from "@/lib/actions/profile.actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Heart, GraduationCap, Coffee, User, Stars, Calendar, Music, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import { ProfileFormData } from "@/lib/constants";
 interface ProfilePreviewProps {
   profile: ProfileFormData;
   className?: string;

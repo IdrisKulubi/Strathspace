@@ -6,7 +6,7 @@ import { getOptimizedImageUrl } from "./utils/image-utils";
 type PrefetchOptions = {
   quality?: number;
   widths?: number[];
-  formats?: ("webp" | "avif" | "jpeg")[];
+  _formats?: ("webp" | "avif" | "jpeg")[];
   priority?: boolean[];
 };
 
@@ -45,7 +45,7 @@ export function prefetchImage(
   scheduler(() => {
     // Screen size-aware prefetching
     const viewportWidth = window.innerWidth;
-    let priorityWidth = viewportWidth <= 640 ? 400 : 800;
+    const priorityWidth = viewportWidth <= 640 ? 400 : 800;
 
     // Create prefetch links
     formats.forEach((format) => {
@@ -83,7 +83,7 @@ export function prefetchProfileBatch(profiles: Profile[], options?: PrefetchOpti
   const {
     quality = 75,
     widths = [400, 800],
-    formats = ["webp"],
+    _formats = ["webp"],
     priority = profiles.map((_, i) => i < 2), // First two profiles are high priority
   } = options || {};
 
@@ -113,7 +113,7 @@ export function prefetchProfileBatch(profiles: Profile[], options?: PrefetchOpti
         prefetchImage(url, {
           quality,
           widths,
-          formats,
+          formats: ["webp", "avif"],
           highPriority: priority[index] && i === 0, // Only first image is high priority
         });
       });

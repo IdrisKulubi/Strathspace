@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { Profile } from "@/db/schema";
-import { BlurImage } from "./blur-image";
 import { ImageGallery } from "./image-gallery";
 import { Button } from "./button";
 import { cn } from "@/lib/utils";
@@ -41,6 +40,7 @@ export function OptimizedProfileCard({
   isProcessing = false,
   index = 0,
 }: OptimizedProfileCardProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
   
@@ -72,6 +72,7 @@ export function OptimizedProfileCard({
   }, [active, profile.profilePhoto, isMobile]);
 
   // Handle drag end
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDragEnd = (event: any, info: any) => {
     // Get drag velocity & direction
     const { velocity, offset } = info;
@@ -148,9 +149,9 @@ export function OptimizedProfileCard({
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-2xl font-bold flex items-center">
             {profile.firstName}, {profile.age}
-            {profile.isVerified && (
+            {/* {profile.isVerified && (
               <BadgeCheck className="ml-1 h-5 w-5 text-blue-400" />
-            )}
+            )} */}
           </h2>
           <Button
             variant="ghost"

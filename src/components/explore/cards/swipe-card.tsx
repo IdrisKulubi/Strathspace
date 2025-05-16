@@ -1,42 +1,33 @@
 "use client";
 
-import { AnimationControls, motion } from "framer-motion";
+import { AnimatePresence, AnimationControls, motion } from "framer-motion";
 import { Profile } from "@/db/schema";
 import { cn } from "@/lib/utils";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination } from "swiper/modules";
+
 import { useState, useEffect, useMemo } from "react";
 import {
   GraduationCap,
-  Instagram,
-  Music,
   X,
-  Undo,
   Heart,
-  User,
   Loader2,
-  BadgeCheck,
   Info,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import Link from "next/link";
-import { OptimizedImage } from "@/components/shared/optimized-image";
-import { BlurImage } from "@/components/ui/blur-image";
+
 import { ImageGallery } from "@/components/ui/image-gallery";
 
 interface SwipeCardProps {
   profile: Profile;
   onSwipe: (direction: "left" | "right") => void;
-  onRevert?: () => void;
+  _onRevert?: () => void;
   active: boolean;
   animate?: "left" | "right" | null;
   variants?: Record<string, unknown>; // Assuming motion.Variants is a type alias for Record<string, unknown>
   style?: React.CSSProperties;
   children?: React.ReactNode;
-  isAnimating?: boolean;
+  _isAnimating?: boolean;
   canRevert?: boolean;
   onViewProfile?: () => void;
 }
@@ -44,21 +35,20 @@ interface SwipeCardProps {
 export function SwipeCard({
   profile,
   onSwipe,
-  onRevert,
+  _onRevert,
   active,
   animate,
   variants,
   style,
-  isAnimating,
+  _isAnimating,
   onViewProfile,
 }: SwipeCardProps) {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  // We need currentSlide for the Swiper component
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [_currentSlide, _setCurrentSlide] = useState(0);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [swipeDirection, _setSwipeDirection] = useState<"left" | "right" | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
@@ -148,6 +138,11 @@ export function SwipeCard({
     }
   }, [optimizedPhotos, active]);
 
+  // Fix: handleInfoClick should call onViewProfile if provided
+  const handleInfoClick = () => {
+    if (onViewProfile) onViewProfile();
+  };
+
   return (
     <motion.div
       className={cn(
@@ -202,9 +197,9 @@ export function SwipeCard({
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-2xl font-bold flex items-center">
               {profile.firstName}, {profile.age}
-              {profile.isVerified && (
+              {/* {profile.isVerified && (
                 <BadgeCheck className="ml-1 h-5 w-5 text-blue-400" />
-              )}
+              )} */}
             </h2>
             <button
               onClick={handleInfoClick}

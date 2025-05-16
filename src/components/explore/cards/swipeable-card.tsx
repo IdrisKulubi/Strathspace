@@ -53,7 +53,6 @@ export function SwipeableCard({
   active,
   customStyles = {},
 }: SwipeableCardProps) {
-  const [exitX, setExitX] = useState(0);
   const [showExtraInfo, setShowExtraInfo] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const x = useMotionValue(0);
@@ -64,6 +63,7 @@ export function SwipeableCard({
   const rightTextOpacity = useTransform(x, [0, 100, 200], [0, 0.5, 1]);
   const [showDetails, setShowDetails] = useState(false);
   const { execute: trackView } = useAction(trackProfileView as any);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isDragging, setIsDragging] = useState(false);
   const [hasSwiped, setHasSwiped] = useState(false);
   

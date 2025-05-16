@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select";
 import { Heart, GraduationCap, Calendar, Phone } from "lucide-react";
 import { genders, ageRange } from "@/lib/constants";
-import { ProfileFormData } from "@/lib/actions/profile.actions";
 import { Control } from "react-hook-form";
 import { useEffect, useState } from "react";
 import { parsePhoneNumber, isValidPhoneNumber, CountryCode, parsePhoneNumberWithError } from 'libphonenumber-js';
@@ -24,6 +23,7 @@ import {
   SelectTrigger as PhoneSelectTrigger,
   SelectValue as PhoneSelectValue,
 } from "@/components/ui/select";
+import { ProfileFormData } from "@/lib/constants";
 import { countries } from "@/lib/constants/countries";
 
 interface DetailsInputProps {

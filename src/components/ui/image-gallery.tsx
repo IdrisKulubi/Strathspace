@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import type { Swiper as SwiperInstance } from "swiper/types";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Thumbs } from "swiper/modules";
 import { BlurImage } from "./blur-image";
@@ -9,7 +10,6 @@ import { getResponsiveSizes } from "@/lib/utils/image-utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./button";
 
-// Import Swiper styles
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -36,10 +36,10 @@ export function ImageGallery({
   onImageClick,
   enableZoom = false,
 }: ImageGalleryProps) {
-  const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
+  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperInstance | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoomed, setZoomed] = useState(false);
-  const mainSwiperRef = useRef<any>(null);
+  const mainSwiperRef = useRef<SwiperInstance | null>(null);
 
   // Aspect ratio classes
   const aspectRatioClasses = {
@@ -57,7 +57,7 @@ export function ImageGallery({
   });
 
   // Handle swiper initialization
-  const handleSwiperInit = (swiper: any) => {
+  const handleSwiperInit = (swiper: SwiperInstance) => {
     mainSwiperRef.current = swiper;
   };
 
@@ -101,6 +101,8 @@ export function ImageGallery({
           src={images[0]}
           alt="Image"
           fill={true}
+          width={800}
+          height={1067}
           priority={priority}
           sizes={responsiveSizes}
           className={cn(
@@ -141,7 +143,8 @@ export function ImageGallery({
                   src={image}
                   alt={`Image ${index + 1}`}
                   fill={true}
-                  sizes={responsiveSizes}
+                  width={800}
+                  height={1067}
                   priority={priority || index === 0}
                   className={cn(
                     "object-cover transition-all duration-300",
@@ -204,6 +207,8 @@ export function ImageGallery({
                     src={image}
                     alt={`Thumbnail ${index + 1}`}
                     fill={true}
+                    width={800}
+                    height={1067}
                     sizes="(max-width: 768px) 25vw, 100px"
                     className="object-cover"
                   />
