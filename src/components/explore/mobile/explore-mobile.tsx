@@ -18,7 +18,6 @@ import { MobileCrushesModal } from "../cards/mobile-crushes-modal";
 import { MatchModal } from "../modals/match-modal";
 import { useToast } from "@/hooks/use-toast";
 import { recordSwipe, undoLastSwipe } from "@/lib/actions/explore.actions";
-import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { MobileLikes } from "./mobile-likes";
 import { MobileViewMore } from "./mobile-view-more";
 import { EmptyMobileView } from "../cards/empty-mobile";
@@ -300,15 +299,7 @@ export function ExploreMobile({
           onClose={() => setShowMatch(false)}
           matchedProfile={matchedProfile}
           currentUser={currentUser}
-        >
-          <DialogTitle className="text-2xl font-bold text-center bg-gradient-to-r from-pink-500 to-pink-700 bg-clip-text text-transparent">
-            It&apos;s a Match ✨
-          </DialogTitle>
-          <DialogDescription className="text-center text-muted-foreground">
-            You and {matchedProfile.firstName} liked each other! Time to slide
-            into those DMs 💖
-          </DialogDescription>
-        </MatchModal>
+        />
       )}
 
       {selectedProfile && (

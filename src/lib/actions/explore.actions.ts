@@ -328,7 +328,7 @@ export async function getLikedByProfiles() {
   }
 
   try {
-    // Check cache with proper handling
+    // Check cache with proper handling and longer TTL
     const cached = await getCachedData<Profile[]>(
       CACHE_KEYS.LIKED_BY_PROFILES(session.user.id)
     );
@@ -374,11 +374,11 @@ export async function getLikedByProfiles() {
       isMatch: !!r.matchId,
     }));
 
-    // Cache with proper serialization
+    // Cache with longer TTL (300 seconds = 5 minutes) for better performance
     await setCachedData(
       CACHE_KEYS.LIKED_BY_PROFILES(session.user.id),
       formattedProfiles,
-      60
+      300 // 5 minute TTL
     );
 
     return {

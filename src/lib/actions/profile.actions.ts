@@ -6,6 +6,7 @@ import { Profile, profiles, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { profileSchema } from "../validators";
+import { ProfileFormData } from "../constants";
 import { deleteUploadThingFile } from "./upload.actions";
 import { getRedisInstance } from "@/lib/redis";
 import { getCachedData, setCachedData } from "../utils/redis-helpers";
@@ -29,47 +30,6 @@ async function invalidateProfileCache(userId: string) {
     // Continue even if cache invalidation fails
   }
 }
-
-export type ProfileFormData = {
-  userId: string;
-  photos: string[];
-  bio: string;
-  interests: string[];
-  lookingFor: "friends" | "dating" | "both";
-  course: string;
-  yearOfStudy: number;
-  instagram?: string;
-  spotify?: string;
-  snapchat?: string;
-  gender: "male" | "female" | "non-binary" | "other";
-  age: number;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  profilePhoto?: string;
-  
-  // New lifestyle attributes
-  drinkingPreference?: "not_for_me" | "socially" | "frequently" | "prefer_not_to_say";
-  workoutFrequency?: "never" | "sometimes" | "often" | "active";
-  socialMediaUsage?: "passive_scroller" | "active_poster" | "influencer" | "minimal";
-  sleepingHabits?: "night_owl" | "early_bird" | "it_varies";
-  
-  // New personality attributes
-  personalityType?: string;
-  communicationStyle?: string;
-  loveLanguage?: string;
-  zodiacSign?: string;
-  
-  // Profile visibility and privacy settings
-  visibilityMode?: "standard" | "incognito";
-  incognitoMode?: boolean;
-  discoveryPaused?: boolean;
-  readReceiptsEnabled?: boolean;
-  showActiveStatus?: boolean;
-  
-  // Username for profile sharing
-  username?: string;
-};
 
 // Add these cache keys
 const CACHE_KEYS = {

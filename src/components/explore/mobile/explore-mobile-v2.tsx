@@ -45,6 +45,9 @@ import {
 import { ChatWindow } from "@/components/chat/chat-window";
 import { getStalkers } from "@/lib/actions/stalker.actions";
 import { Badge } from "@/components/ui/badge";
+import { MobileNavbar } from "./mobile-navbar";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
 
 interface ExploreMobileV2Props {
   initialProfiles: Profile[];
@@ -54,6 +57,12 @@ interface ExploreMobileV2Props {
   likedByProfiles: Profile[];
   markAsRead: (matchId: string) => void;  
 }
+
+// Dynamically import LikesModalServer with client-side rendering (no SSR)
+const LikesModalServer = dynamic(
+  () => import("../modals/likes-modal-server"),
+  { ssr: false }
+);
 
 export function ExploreMobileV2({
   initialProfiles,
@@ -151,13 +160,15 @@ export function ExploreMobileV2({
     }
   }, 30000); 
 
+  // Add new states for loading indicators
+  const [hasLoadedMatches, setHasLoadedMatches] = useState(false);
+  const [hasLoadedLikes, setHasLoadedLikes] = useState(false);
+
   // Fetch and sync matches and likes
   const syncMatchesAndLikes = useCallback(async () => {
     try {
-      // Set loading states to true before fetching data
       setIsMatchesLoading(true);
       setIsLikesLoading(true);
-      
       const [matchesResult, likesResult] = await Promise.all([
         getMatches(),
         getLikedByProfiles(),
@@ -166,6 +177,7 @@ export function ExploreMobileV2({
       if (matchesResult.matches) {
         setMatches(matchesResult.matches as unknown as Profile[]);
         setIsMatchesLoading(false);
+        setHasLoadedMatches(true);
       }
 
       if (likesResult.profiles) {
@@ -177,11 +189,14 @@ export function ExploreMobileV2({
         );
         setLikes(newLikes);
         setIsLikesLoading(false);
+        setHasLoadedLikes(true);
       }
     } catch (error) {
       console.error("Error syncing matches and likes:", error);
       setIsMatchesLoading(false);
       setIsLikesLoading(false);
+      setHasLoadedMatches(true);
+      setHasLoadedLikes(true);
     }
   }, []);
 
@@ -219,40 +234,21 @@ export function ExploreMobileV2({
       if (direction === "right") {
         setSwipedProfiles((prev) => [...prev, profiles[currentIndex]]);
         
-        if (result.isMatch) {
-          const updatedProfile = {
-            ...profiles[currentIndex],
-            isMatch: true,
-            matchId: result.matchedProfile?.id,
-          } satisfies Profile;
-          setMatchedProfile(updatedProfile);
-          setMatches((prev) => [...prev, updatedProfile]);
-          
-          confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.3, x: 0.5 },
+        if (result.isMatch && result.matchedProfile) {
+          setMatches((prev) => {
+            if (prev.some((p) => p.userId === result.matchedProfile!.userId)) {
+              return prev;
+            }
+            return [...prev, result.matchedProfile!];
           });
-          
-          toast({
-            title: "It's a match ✨",
-            description: `You matched with ${updatedProfile.firstName}! Start chatting now!`,
-            className: "bg-gradient-to-r from-pink-500 to-purple-500 text-white border-none",
-          });
-        } else {
-          toast({
-            title: "Yasss 💖",
-            description: `You liked ${profiles[currentIndex].firstName}! Fingers crossed for a match!`,
-            variant: "default",
-            className:
-              "bg-gradient-to-r from-pink-500 to-purple-500 text-white border-none",
-          });
+
+          setMatchedProfile(result.matchedProfile);
         }
       } else {
         setSwipedProfiles((prev) => [...prev, profiles[currentIndex]]);
       }
     },
-    [currentIndex, isAnimating, profiles, toast]
+    [currentIndex, isAnimating, profiles]
   );
 
   const handleRevert = useCallback(async () => {
@@ -347,10 +343,8 @@ export function ExploreMobileV2({
     }
   };
 
-  // Preload chat data when chat icon is hovered
   const handleChatHover = useCallback(() => {
     if (!isChatLoaded) {
-      // Preload chat data
       console.time('Chat data preloading');
       getChats().then((result) => {
         console.timeEnd('Chat data preloading');
@@ -364,7 +358,6 @@ export function ExploreMobileV2({
     }
   }, [isChatLoaded]);
 
-  // Add event listener for chat section close
   useEffect(() => {
     const handleCloseChatSection = () => {
       setShowChat(false);
@@ -377,7 +370,6 @@ export function ExploreMobileV2({
     };
   }, []);
 
-  // Handle chat selection
   const handleSelectChat = (matchId: string) => {
     setSelectedChatId(matchId);
     setShowChatList(false);
@@ -385,7 +377,7 @@ export function ExploreMobileV2({
 
   return (
     <div className="relative h-full">
-      {/* Chat List */}
+        <MobileNavbar />
       <Sheet open={showChatList} onOpenChange={setShowChatList}>
         <SheetContent side="right" className="w-full sm:w-[400px] p-0">
           <SheetHeader className="p-4 border-b">
@@ -413,10 +405,11 @@ export function ExploreMobileV2({
         </div>
       )}
 
-      <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-background">
+      <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-background pt-12">
         {profiles.length > 0 ? (
           <>
-            <div className="relative w-[calc(100%-32px)] mx-auto h-[calc(100vh-5rem)]">
+            {/* Make card edge-to-edge on mobile */}
+            <div className="relative w-full max-w-full mx-0" style={{ height: 'calc(100vh - 56px - 50px - 56px)' }}>
               <AnimatePresence>
                 {profiles[currentIndex] && (
                   <>
@@ -450,7 +443,7 @@ export function ExploreMobileV2({
             </div>
 
             {/* Swipe Controls - Fixed at bottom - SMALLER FOR MOBILE */}
-            <div className="fixed bottom-12 left-0 right-0 px-4 pb-4 z-50">
+            <div className="fixed bottom-12 left-0 right-0 px-4 pb-4 z-50 flex justify-center">
               <SwipeControls
                 onSwipeLeft={() => handleSwipe("left")}
                 onSwipeRight={() => handleSwipe("right")}
@@ -465,31 +458,30 @@ export function ExploreMobileV2({
                   });
                 }}
                 disabled={isAnimating || currentIndex < 0}
-                className="mx-auto max-w-lg scale-90 sm:scale-100" // Added scale-90 for mobile
+                className="mx-auto max-w-lg scale-90 sm:scale-100"
                 currentProfileId={profiles[currentIndex]?.userId}
               />
             </div>
 
-            {/* Bottom Navigation */}
+            {/* Bottom Navigation - evenly spaced icons */}
             <div className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t border-border/50">
-              <div className="flex justify-around items-center h-16 px-4">
+              <div className="flex justify-between items-center h-16 px-6 max-w-md mx-auto">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowMatches(true)}
                   className="relative"
                 >
-                  <Heart className="h-5 w-5 sm:h-6 sm:w-6 text-pink-500" />
-                  {/* Fix for counter flickering - showing persistent counter */}
-                  <span className={`absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs transition-all duration-200 ${
-                    isMatchesLoading
-                      ? "bg-pink-500/30"
-                      : matches.length > 0
-                      ? "bg-pink-500 text-white"
-                      : "opacity-0"
-                  }`}>
-                    {!isMatchesLoading && matches.length > 0 ? matches.length : ""}
-                  </span>
+                  <Heart className="h-6 w-6 text-pink-500" />
+                  {!hasLoadedMatches ? (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-pink-500/30 animate-pulse" />
+                  ) : (
+                    matches.length > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-pink-500 text-white">
+                        {matches.length}
+                      </span>
+                    )
+                  )}
                 </Button>
 
                 <Button
@@ -499,7 +491,7 @@ export function ExploreMobileV2({
                   onMouseEnter={handleChatHover}
                   className="relative"
                 >
-                  <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
+                  <MessageCircle className="h-6 w-6 text-blue-500" />
                   {unreadMessages.unreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-blue-500 animate-pulse" />
                   )}
@@ -512,7 +504,7 @@ export function ExploreMobileV2({
                       size="icon"
                       className="relative hover:bg-accent/50 transition-colors duration-200"
                     >
-                      <Avatar className="h-7 w-7 sm:h-8 sm:w-8 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-200">
+                      <Avatar className="h-8 w-8 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-200">
                         <AvatarImage
                           src={currentUser?.image || undefined}
                           alt={currentUser?.name || "User"}
@@ -555,17 +547,16 @@ export function ExploreMobileV2({
                   onClick={() => setShowLikes(true)}
                   className="relative"
                 >
-                  <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
-                  {/* Fix for counter flickering - showing persistent counter */}
-                  <span className={`absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs transition-all duration-200 ${
-                    isLikesLoading
-                      ? "bg-yellow-500/30"
-                      : likes.length > 0
-                      ? "bg-yellow-500 text-white"
-                      : "opacity-0"
-                  }`}>
-                    {!isLikesLoading && likes.length > 0 ? likes.length : ""}
-                  </span>
+                  <Star className="h-6 w-6 text-yellow-500" />
+                  {!hasLoadedLikes ? (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-yellow-500/30 animate-pulse" />
+                  ) : (
+                    likes.length > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-yellow-500 text-white">
+                        {likes.length}
+                      </span>
+                    )
+                  )}
                 </Button>
               </div>
             </div>
@@ -587,13 +578,16 @@ export function ExploreMobileV2({
           currentUser={currentUser}
         />
 
-        <LikesModal
-          isOpen={showLikes}
-          onClose={() => setShowLikes(false)}
-          likes={likes}
-          onUnlike={handleUnlike}
-          onUpdate={syncMatchesAndLikes}
-        />
+        {/* Replace with server component */}
+        <Suspense fallback={null}>
+          {showLikes && (
+            <LikesModalServer
+              isOpen={showLikes}
+              onClose={() => setShowLikes(false)}
+              onUpdate={syncMatchesAndLikes}
+            />
+          )}
+        </Suspense>
 
         <ProfilePreviewModal
           isOpen={!!previewProfile}

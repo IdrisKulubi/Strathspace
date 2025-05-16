@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { ProfileForm } from "@/components/profile/profile-form";
-import { ProfileFormData } from "@/lib/actions/profile.actions";
 import { MobileNav } from "@/components/explore/mobile/mobile-nav";
 import { StalkersList } from "@/components/profile/stalkers-list";
 import { ProfileCompletion } from "@/components/profile/profile-completion";
@@ -12,6 +11,7 @@ import { Sparkles, User, Heart, Eye, EyeOff, ChartBar } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ProfileFormData } from "@/lib/constants";
 
 interface ProfileClientPageProps {
   profile: ProfileFormData;

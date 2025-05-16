@@ -1,38 +1,33 @@
 "use client";
 
-import { AnimationControls, motion } from "framer-motion";
+import { AnimatePresence, AnimationControls, motion } from "framer-motion";
 import { Profile } from "@/db/schema";
 import { cn } from "@/lib/utils";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination } from "swiper/modules";
+
 import { useState, useEffect, useMemo } from "react";
 import {
   GraduationCap,
-  Instagram,
-  Music,
   X,
-  Undo,
   Heart,
-  User,
   Loader2,
+  Info,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import Link from "next/link";
-import { OptimizedImage } from "@/components/shared/optimized-image";
+
+import { ImageGallery } from "@/components/ui/image-gallery";
 
 interface SwipeCardProps {
   profile: Profile;
   onSwipe: (direction: "left" | "right") => void;
-  onRevert?: () => void;
+  _onRevert?: () => void;
   active: boolean;
   animate?: "left" | "right" | null;
   variants?: Record<string, unknown>; // Assuming motion.Variants is a type alias for Record<string, unknown>
   style?: React.CSSProperties;
   children?: React.ReactNode;
-  isAnimating?: boolean;
+  _isAnimating?: boolean;
   canRevert?: boolean;
   onViewProfile?: () => void;
 }
@@ -40,21 +35,20 @@ interface SwipeCardProps {
 export function SwipeCard({
   profile,
   onSwipe,
-  onRevert,
+  _onRevert,
   active,
   animate,
   variants,
   style,
-  isAnimating,
+  _isAnimating,
   onViewProfile,
 }: SwipeCardProps) {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  // We need currentSlide for the Swiper component
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [_currentSlide, _setCurrentSlide] = useState(0);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [swipeDirection, _setSwipeDirection] = useState<"left" | "right" | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
@@ -144,6 +138,11 @@ export function SwipeCard({
     }
   }, [optimizedPhotos, active]);
 
+  // Fix: handleInfoClick should call onViewProfile if provided
+  const handleInfoClick = () => {
+    if (onViewProfile) onViewProfile();
+  };
+
   return (
     <motion.div
       className={cn(
@@ -183,140 +182,85 @@ export function SwipeCard({
       )}
       
       <div className="relative w-full h-full">
-        <Swiper
-          modules={[Navigation, Pagination]}
-          navigation
-          pagination={{ clickable: true }}
+        <ImageGallery
+          images={[profile.profilePhoto, ...(profile.photos || [])].filter(Boolean) as string[]}
+          aspectRatio="portrait"
+          priority={active}
+          showPagination={true}
           className="w-full h-full group"
-          onSlideChange={(swiper) => setCurrentSlide(swiper.activeIndex)}
-        >
-          {[profile.profilePhoto, ...(profile.photos || [])].map(
-            (photo, index) => (
-              <SwiperSlide key={index} className="relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60" />
-                {photo && (
-                  <OptimizedImage
-                    src={photo}
-                    alt={`${profile.firstName}'s photo ${index + 1}`}
-                    width={500}
-                    height={500}
-                    className="w-full h-full object-cover"
-                    priority={index === 0 || index === 1} // Prioritize first two images
-                    loading={index < 2 ? "eager" : "lazy"} // Eager load first two images
-                  />
-                )}
-              </SwiperSlide>
-            )
-          )}
-        </Swiper>
+          onImageClick={() => handleInfoClick()}
+        />
 
-        {/* Profile Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-white z-10">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold">
-                {profile.firstName}, {profile.age}
-              </h2>
-              <span className="text-blue-400">✓</span>
-            </div>
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-transparent to-black/60" />
 
-            <div className="flex items-center gap-2 text-sm">
-              <GraduationCap className="h-4 w-4" />
-              <span>
-                {profile.course}, Year {profile.yearOfStudy}
-              </span>
-            </div>
-
-            {profile.bio && (
-              <p className="text-sm line-clamp-2 opacity-90">{profile.bio}</p>
-            )}
-
-            {profile.interests && profile.interests.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2">
-                {profile.interests.map((interest: string, index: number) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 rounded-full bg-white/20 text-xs backdrop-blur-sm"
-                  >
-                    {interest}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="flex gap-3 pt-2">
-              {profile.instagram && (
-                <Link
-                  href={`https://instagram.com/${profile.instagram}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-pink-400 hover:text-pink-300"
-                >
-                  <Instagram className="h-5 w-5" />
-                </Link>
-              )}
-              {profile.spotify && (
-                <Link
-                  href={profile.spotify}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-green-400 hover:text-green-300"
-                >
-                  <Music className="h-5 w-5" />
-                </Link>
-              )}
-            </div>
+        <div className="absolute bottom-0 left-0 w-full p-4 text-white z-10">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-2xl font-bold flex items-center">
+              {profile.firstName}, {profile.age}
+              {/* {profile.isVerified && (
+                <BadgeCheck className="ml-1 h-5 w-5 text-blue-400" />
+              )} */}
+            </h2>
+            <button
+              onClick={handleInfoClick}
+              className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition"
+              aria-label="View profile details"
+            >
+              <Info className="h-5 w-5 text-white" />
+            </button>
           </div>
+
+          {profile.course && (
+            <div className="flex items-center gap-1 text-sm text-white/90 mt-1">
+              <GraduationCap className="h-4 w-4" />
+              <span>{profile.course}</span>
+              {profile.yearOfStudy && (
+                <span className="opacity-75">• Year {profile.yearOfStudy}</span>
+              )}
+            </div>
+          )}
+
+          {profile.interests && profile.interests.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {profile.interests.slice(0, 3).map((interest, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-1 text-xs rounded-full bg-white/20 backdrop-blur-sm"
+                >
+                  {interest}
+                </span>
+              ))}
+              {profile.interests.length > 3 && (
+                <span className="px-2 py-1 text-xs rounded-full bg-white/20 backdrop-blur-sm">
+                  +{profile.interests.length - 3} more
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Controls overlay - Only show when active and images are loaded */}
-        {active && imagesLoaded && (
-          <div className="fixed bottom-16 left-0 right-0 flex justify-center items-center gap-6 z-20">
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-12 w-12 rounded-full border-2 shadow-lg bg-blue-500/20 border-blue-500 transition-transform duration-200 hover:scale-110"
-              onClick={onRevert}
-              disabled={isAnimating}
+        <AnimatePresence>
+          {swipeDirection === "left" && (
+            <motion.div
+              className="absolute top-1/4 left-8 bg-red-500/90 text-white py-1 px-3 rounded-lg transform -rotate-12"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
             >
-              <Undo className="h-5 w-5 text-blue-500" />
-            </Button>
-
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-14 w-14 rounded-full border-2 shadow-lg bg-red-500/20 border-red-500 transition-transform duration-200 hover:scale-110"
-              onClick={() => onSwipe("left")}
-              disabled={isAnimating}
+              <X className="h-8 w-8" />
+            </motion.div>
+          )}
+          {swipeDirection === "right" && (
+            <motion.div
+              className="absolute top-1/4 right-8 bg-pink-500/90 text-white py-1 px-3 rounded-lg transform rotate-12"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
             >
-              <X className="h-6 w-6 text-red-500" />
-            </Button>
-
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-14 w-14 rounded-full border-2 shadow-lg bg-pink-500/20 border-pink-500 transition-transform duration-200 hover:scale-110"
-              onClick={() => onSwipe("right")}
-              disabled={isAnimating}
-            >
-              <Heart className="h-6 w-6 text-pink-500" />
-            </Button>
-          </div>
-        )}
-
-        {/* View Profile Button */}
-        {active && imagesLoaded && (
-          <div className="absolute top-4 right-4 z-20">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm"
-              onClick={onViewProfile}
-            >
-              <User className="h-5 w-5 text-white" />
-            </Button>
-          </div>
-        )}
+              <Heart className="h-8 w-8" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

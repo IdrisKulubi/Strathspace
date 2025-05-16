@@ -5,11 +5,11 @@ import {
   calculateProfileCompletion, 
   getCompletionMessage
 } from "@/lib/utils/profile-completion";
-import { ProfileFormData } from "@/lib/actions/profile.actions";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Edit, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { ProfileFormData } from "@/lib/constants";
 
 interface ProfileCompletionProps {
   profile: Partial<ProfileFormData>;
@@ -138,7 +138,7 @@ export function ProfileCompletion({ profile, onSectionClick }: ProfileCompletion
           ) : (
             <div className="border-t border-gray-100 dark:border-gray-800 p-4 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <span className="text-sm font-medium">Your profile is complete! Looking great 🎉</span>
+              <span className="text-sm font-medium">Your profile is complete Looking great 🎉</span>
             </div>
           )}
 

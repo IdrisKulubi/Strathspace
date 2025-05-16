@@ -2,10 +2,11 @@
 
 import { swipes, matches } from "@/db/schema";
 import { eq, and, or } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import db from "@/db/drizzle";
 import { recordSwipe } from "./explore.actions";
+import { CACHE_KEYS, invalidateCachedData } from "@/lib/constants/cache";
 
 /**
  * Handle liking a profile (swiping right)
@@ -19,9 +20,16 @@ export async function handleLike(targetUserId: string) {
   try {
     const result = await recordSwipe(targetUserId, "like");
 
-    // No need to create match here since it's handled in recordSwipe
+    // Revalidate both path and tag-based caches
     revalidatePath("/explore");
     revalidatePath("/matches");
+    revalidateTag("likes-by-profiles");
+
+    // Invalidate specific cache keys
+    if (session?.user?.id) {
+      await invalidateCachedData(CACHE_KEYS.LIKED_BY_PROFILES(session.user.id));
+      await invalidateCachedData(CACHE_KEYS.LIKED_PROFILES(session.user.id));
+    }
 
     return {
       success: true,
@@ -70,8 +78,16 @@ export async function handleUnlike(targetUserId: string) {
         )
       );
 
+    // Revalidate both path and tag-based caches
     revalidatePath("/explore");
     revalidatePath("/matches");
+    revalidateTag("likes-by-profiles");
+
+    // Invalidate specific cache keys
+    if (session?.user?.id) {
+      await invalidateCachedData(CACHE_KEYS.LIKED_BY_PROFILES(session.user.id));
+      await invalidateCachedData(CACHE_KEYS.LIKED_PROFILES(session.user.id));
+    }
 
     return { success: true };
   } catch (error) {

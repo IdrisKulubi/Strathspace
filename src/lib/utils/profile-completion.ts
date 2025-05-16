@@ -1,4 +1,4 @@
-import { ProfileFormData } from "../actions/profile.actions";
+import { ProfileFormData } from "../constants";
 
 // Define sections and their weights in the overall completion percentage
 export const PROFILE_SECTIONS = {

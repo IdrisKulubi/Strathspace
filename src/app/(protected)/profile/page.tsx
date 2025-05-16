@@ -1,9 +1,10 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { checkProfileCompletion } from "@/lib/checks";
-import { getProfile, ProfileFormData } from "@/lib/actions/profile.actions";
-import { ProfileClientPage } from "./profile-client-page"; // Import the new client component
+import { getProfile } from "@/lib/actions/profile.actions";
+import { ProfileClientPage } from "./profile-client-page"; 
 import { Suspense } from "react";
+import { ProfileFormData } from "@/lib/constants";
 
 // Loading component for Suspense fallback
 function ProfileLoadingSkeleton() {

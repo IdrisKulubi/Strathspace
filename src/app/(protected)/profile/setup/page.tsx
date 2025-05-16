@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ProfileFormData, submitProfile } from "@/lib/actions/profile.actions";
+import {  submitProfile } from "@/lib/actions/profile.actions";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { InterestSelector } from "@/components/shared/profile/interest-selector";
@@ -17,6 +17,7 @@ import { DetailsInput } from "@/components/shared/profile/details-input";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { deleteUploadThingFile } from "@/lib/actions/upload.actions";
+import { ProfileFormData } from "@/lib/constants";
 
 import { useSession } from "next-auth/react";
 
@@ -202,10 +203,8 @@ function SetupForm() {
   const isFormValid = (formData: ProfileFormData) => {
     const digitsOnly = formData.phoneNumber?.replace(/[^0-9]/g, "") || "";
 
-    // Add console logs to debug validation
 
     return (
-      // Required fields from schema
       formData.photos.length > 0 &&
       formData.bio?.split(/\s+/).filter(Boolean).length >= 10 &&
       formData.interests.length >= 3 &&
@@ -225,13 +224,11 @@ function SetupForm() {
     );
   };
 
-  // Cleanup function for when component unmounts or user navigates away
   useEffect(() => {
     return () => {
-      // Cleanup uploaded images if form wasn't submitted
       const photos = form.getValues("photos");
       if (photos.length > 0) {
-        photos.forEach(async (url) => {
+        photos.forEach(async (url: string) => {
           await deleteUploadThingFile(url);
         });
       }
@@ -319,7 +316,7 @@ function SetupForm() {
                   age: form.watch("age") || 0,
                   phoneNumber: form.watch("phoneNumber") || "",
                 }}
-                onChange={(field, value) => form.setValue(field, value)}
+                onChange={(field, value) => form.setValue(field as keyof ProfileFormData, value)}
                 errors={{
                   firstName: form.formState.errors.firstName?.message,
                   lastName: form.formState.errors.lastName?.message,
@@ -328,6 +325,7 @@ function SetupForm() {
                   yearOfStudy: form.formState.errors.yearOfStudy?.message,
                   gender: form.formState.errors.gender?.message,
                   age: form.formState.errors.age?.message,
+                  
                   phoneNumber: form.formState.errors.phoneNumber?.message,
                 }}
               >

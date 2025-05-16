@@ -42,6 +42,7 @@ export const interests = [
   "🎮 Gaming",
   "🎵 Music",
   "📚 Reading",
+  "🎧 Podcasts",
 
   "🎨 Art",
   "🏃‍♂️ Sports",
@@ -56,7 +57,7 @@ export const interests = [
   "🎭 Theatre",
   
   "🎪 Events",
-    "🎲 Board Games",
+  "🎲 Board Games",
 ];
 
 export const genders = [
@@ -68,29 +69,47 @@ export const genders = [
 
 export const ageRange = Array.from({ length: 8 }, (_, i) => i + 18);
 
-export type Profile = {
-  id: string;
+// Moved ProfileFormData type from actions/profile.actions.ts
+export type ProfileFormData = {
   userId: string;
+  photos: string[];
+  bio: string;
+  interests: string[];
+  lookingFor: "friends" | "dating" | "both";
+  course: string;
+  yearOfStudy: number;
+  instagram?: string;
+  spotify?: string;
+  snapchat?: string;
+  gender: "male" | "female" | "non-binary" | "other";
+  age: number;
   firstName: string;
   lastName: string;
-  bio: string | null;
-  age: number | null;
-  gender: string | null;
-  interests: string[] | null;
-  photos: string[] | null;
-  course: string | null;
-  yearOfStudy: number | null;
-  profilePhoto: string | null;
-  updatedAt: Date;
-  role: "user" | "admin" | null;
-  isVisible: boolean;
-  lastActive: Date;
-  isComplete: boolean;
-  profileCompleted: boolean;
-  lookingFor: string | null;
-  snapchat: string | null;
-  instagram: string | null;
-  spotify: string | null;
   phoneNumber: string;
-  isMatch?: boolean;
+  profilePhoto?: string;
+  
+  // New lifestyle attributes
+  drinkingPreference?: "not_for_me" | "socially" | "frequently" | "prefer_not_to_say";
+  workoutFrequency?: "never" | "sometimes" | "often" | "active";
+  socialMediaUsage?: "passive_scroller" | "active_poster" | "influencer" | "minimal";
+  sleepingHabits?: "night_owl" | "early_bird" | "it_varies";
+  
+  // New personality attributes
+  personalityType?: string;
+  communicationStyle?: string;
+  loveLanguage?: string;
+  zodiacSign?: string;
+  
+  // Profile visibility and privacy settings
+  visibilityMode?: "standard" | "incognito";
+  incognitoMode?: boolean;
+  discoveryPaused?: boolean;
+  readReceiptsEnabled?: boolean;
+  showActiveStatus?: boolean;
+  
+  // Username for profile sharing
+  username?: string;
 };
+
+// Keeping original Profile type if needed elsewhere
+// export type OriginalProfileType = Profile;

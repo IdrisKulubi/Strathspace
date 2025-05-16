@@ -20,9 +20,9 @@ const nextConfig = {
         pathname: "/**",
       }, 
     ],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    formats: ["image/webp", "image/avif"],
+    formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 604800,
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -36,6 +36,8 @@ const nextConfig = {
     },
     optimizeCss: true,
     nextScriptWorkers: true,
+    webpackBuildWorker: true,
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
 };
 

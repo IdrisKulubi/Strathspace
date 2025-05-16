@@ -14,7 +14,6 @@ import {
   Info,
   Users,
   Search,
-  Filter,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,8 +24,6 @@ import {
   getLikedByProfiles,
 } from "@/lib/actions/explore.actions";
 import { useToast } from "@/hooks/use-toast";
-import { LikesModal } from "../modals/likes-modal";
-import { ProfileDetailsModal } from "../profile-details-modal";
 import { useInterval } from "@/hooks/use-interval";
 import { handleLike, handleUnlike as unlikeAction } from "@/lib/actions/like.actions";
 import { MatchesModal } from "../modals/matches-modal";
@@ -48,6 +45,9 @@ import Image from "next/image";
 import { SwipeControls } from "../controls/swipe-controls";
 import { Spinner } from "@/components/ui/spinner";
 import { FeedbackModal } from "@/components/shared/feedback-modal";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
+import { ProfileDetailsModal } from "../profile-details-modal";
 
 interface ExploreDesktopProps {
   initialProfiles: Profile[];
@@ -76,6 +76,12 @@ interface ProfileDetailsType {
   profilePhoto?: string;
   lookingFor?: string;
 }
+
+// Dynamically import LikesModalServer with client-side rendering (no SSR)
+const LikesModalServer = dynamic(
+  () => import("../modals/likes-modal-server"),
+  { ssr: false }
+);
 
 export function ExploreDesktop({
   initialProfiles,
@@ -393,15 +399,13 @@ export function ExploreDesktop({
     setPreviewProfile(profile);
   };
 
-  const handleUnlike = async (userId: string): Promise<{ success: boolean }> => {
+  // Change handleUnlike to _handleUnlike to indicate it's intentionally unused
+  const _handleUnlike = async (userId: string): Promise<{ success: boolean }> => {
     try {
-      await unlikeAction(userId);
-      
-      setLikes((prev) => prev.filter((like) => like.userId !== userId));
-      
-      return { success: true };
+      const result = await unlikeAction(userId);
+      return { success: !!result };
     } catch (error) {
-      console.error("Error unliking profile:", error);
+      console.error("Error in unlikeAction:", error);
       return { success: false };
     }
   };
@@ -723,9 +727,7 @@ export function ExploreDesktop({
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Your Matches</h2>
-                <Button size="sm" variant="outline" className="gap-1">
-                  <Filter className="h-4 w-4" /> Filter
-                </Button>
+               
               </div>
 
               <ScrollArea className="h-[calc(100vh-10rem)] pr-4">
@@ -837,9 +839,7 @@ export function ExploreDesktop({
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-pink-500 bg-clip-text text-transparent">People Who Like You</h2>
-                <Button size="sm" variant="outline" className="gap-1">
-                  <Filter className="h-4 w-4" /> Filter
-                </Button>
+                
               </div>
 
               <ScrollArea className="h-[calc(100vh-10rem)] pr-4">
@@ -940,13 +940,16 @@ export function ExploreDesktop({
         currentUser={currentUser}
       />
 
-      <LikesModal
-        isOpen={showLikes}
-        onClose={() => setShowLikes(false)}
-        likes={likes}
-        onUnlike={handleUnlike}
-        onUpdate={syncMatchesAndLikes}
-      />
+      {/* Replace with server component */}
+      <Suspense fallback={null}>
+        {showLikes && (
+          <LikesModalServer
+            isOpen={showLikes}
+            onClose={() => setShowLikes(false)}
+            onUpdate={syncMatchesAndLikes}
+          />
+        )}
+      </Suspense>
 
       <ProfileDetailsModal
         isOpen={!!previewProfile}
