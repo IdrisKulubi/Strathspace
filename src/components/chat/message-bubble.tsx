@@ -11,11 +11,13 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble = ({ message, isUser }: MessageBubbleProps) => {
-  const isSent = message.status === "sent";
-  const isDelivered = message.status === "delivered";
-  const isRead = message.status === "read";
+  const messageStatus = message?.status || "sent";
+  const isSent = messageStatus === "sent";
+  const isDelivered = messageStatus === "delivered";
+  const isRead = messageStatus === "read";
 
-  const contentLength = message.content.length;
+  const content = message?.content || "";
+  const contentLength = content.length;
   const isShortMessage = contentLength < 20;
   const isLongMessage = contentLength > 100;
 
@@ -39,7 +41,7 @@ export const MessageBubble = ({ message, isUser }: MessageBubbleProps) => {
           : "bg-secondary border border-border/50 text-foreground",
         isUser ? "rounded-br-sm" : "rounded-bl-sm"
       )}>
-        <p className="break-words whitespace-pre-wrap">{message.content}</p>
+        <p className="break-words whitespace-pre-wrap">{content}</p>
         
         <div className={cn(
           "flex items-center gap-2",
@@ -49,7 +51,7 @@ export const MessageBubble = ({ message, isUser }: MessageBubbleProps) => {
             "text-xs opacity-75",
             isUser ? "text-white/90" : "text-muted-foreground"
           )}>
-            {format(new Date(message.createdAt), "HH:mm")}
+            {format(new Date(message?.createdAt || new Date()), "HH:mm")}
           </span>
           
           {isUser && (
