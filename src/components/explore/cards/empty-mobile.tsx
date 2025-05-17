@@ -1,16 +1,10 @@
 "use client";
 
-import { Share } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { MobileCrushesModal } from "./mobile-crushes-modal";
-import { MobileMatchesModal } from "./mobile-matches-modal";
 import { ShareAppModal } from "@/components/shared/share-app";
-import { NotifyMobile } from "../modals/notify-mobile";
-import { ProfileDetails } from "./profile-details";
+
 
 interface EmptyMobileViewProps {
   onShare: () => void;
@@ -18,19 +12,14 @@ interface EmptyMobileViewProps {
 }
 
 export function EmptyMobileView({
-  onShare,
-  currentUser,
+ 
 }: EmptyMobileViewProps) {
-  const [crushesOpen, setCrushesOpen] = useState(false);
-  const [matchesOpen, setMatchesOpen] = useState(false);
+ 
   const [shareOpen, setShareOpen] = useState(false);
 
  
 
-  const handleShare = () => {
-    setShareOpen(true);
-    onShare();
-  };
+ 
 
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] bg-gradient-to-b from-pink-50/30 to-white dark:from-pink-950/30 dark:to-background">

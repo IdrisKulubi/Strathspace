@@ -13,9 +13,10 @@ interface NoMoreProfilesProps {
 }
 
 export function NoMoreProfiles({
-  initialLikedProfiles,
+  
   currentUser,
 }: NoMoreProfilesProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [mounted, setMounted] = useState(false);
  
   const [showShareModal, setShowShareModal] = useState(false);

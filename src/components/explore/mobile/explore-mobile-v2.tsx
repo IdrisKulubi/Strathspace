@@ -563,9 +563,7 @@ export function ExploreMobileV2({
           </>
         ) : (
           <EmptyMobileView
-            likedProfiles={matches}
             onShare={() => {}}
-            onUnlike={async () => {}}
             currentUser={currentUser}
           />
         )}
