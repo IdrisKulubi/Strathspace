@@ -18,9 +18,10 @@ import { prefetchProfileImages } from "@/lib/actions/image-prefetch";
 async function invalidateProfileCache(userId: string) {
   try {
     const redis = getRedisInstance();
-    if (redis) {
+    const redisInstance = await redis;
+    if (redisInstance) {
       // Delete profile cache
-      await (await redis).del(`profile:${userId}`);
+      await redisInstance.del(`profile:${userId}`);
     }
     
     // Revalidate the profile page
@@ -48,10 +49,17 @@ export async function getProfile() {
 
     // Validate cached profile structure
     if (cached && isValidProfile(cached)) {
-      if (cached.photos?.length) {
-        await prefetchProfileImages(cached.photos);
+      // Ensure anonymous fields are present, even if from an older cache structure
+      const validatedCachedProfile = {
+        ...cached,
+        anonymous: cached.anonymous || false,
+        anonymousAvatar: cached.anonymousAvatar || null,
+        anonymousRevealRequested: cached.anonymousRevealRequested || false,
+      };
+      if (validatedCachedProfile.photos?.length) {
+        await prefetchProfileImages(validatedCachedProfile.photos);
       }
-      return cached;
+      return validatedCachedProfile;
     }
 
     // Find user by email with all user fields
@@ -66,7 +74,7 @@ export async function getProfile() {
         updatedAt: users.updatedAt,
         lastActive: users.lastActive,
         isOnline: users.isOnline,
-        photos: users.image,
+        photos: users.image, // maps to users.image which might be the Clerk/Auth.js image
       })
       .from(users)
       .where(eq(users.email, session.user.email))
@@ -79,40 +87,58 @@ export async function getProfile() {
 
     const actualUserId = user[0].id;
 
-    // Get complete profile data
-    const profile = await db
+    // Get complete profile data from 'profiles' table
+    const profileRow = await db
       .select()
       .from(profiles)
       .where(eq(profiles.userId, actualUserId))
       .limit(1);
 
-    // If no profile exists yet, return basic user info
-    if (!profile || profile.length === 0) {
+    // If no profile row exists yet, return basic user info plus default anonymous fields
+    if (!profileRow || profileRow.length === 0) {
       return {
         ...user[0],
-        profilePhoto: user[0].photos,
+        profilePhoto: user[0].photos, // This uses the users.image as a fallback
         profileCompleted: false,
+        anonymous: false, // Default anonymous status
+        anonymousAvatar: null, // Default avatar
+        anonymousRevealRequested: false, // Default reveal status
+        // Ensure all other essential fields expected by Profile type are present with defaults if necessary
+        bio: "",
+        age: 0,
+        gender: "other",
+        interests: [],
+        lookingFor: "dating",
+        course: "",
+        yearOfStudy: 0,
+        // ... any other fields from 'profiles' table that need defaults
       };
     }
+
+    const existingProfileData = profileRow[0];
 
     // Combine user and profile data
     const combinedProfile = {
       ...user[0],
-      ...profile[0],
-      profilePhoto: profile[0].profilePhoto || user[0].photos,
+      ...existingProfileData,
+      profilePhoto: existingProfileData.profilePhoto || user[0].photos, // Prioritize profile table's photo
+      // Ensure anonymous fields from the profile table are correctly mapped
+      anonymous: existingProfileData.anonymous || false,
+      anonymousAvatar: existingProfileData.anonymousAvatar || null,
+      anonymousRevealRequested: existingProfileData.anonymousRevealRequested || false,
       profileCompleted: Boolean(
-        profile[0].firstName &&
-          profile[0].lastName &&
-          profile[0].bio &&
-          profile[0].age &&
-          profile[0].gender &&
-          profile[0].lookingFor &&
-          profile[0].course &&
-          profile[0].yearOfStudy &&
-          profile[0].photos &&
-          profile[0].isVisible &&
-          profile[0].lastActive &&
-          profile[0].isComplete
+        existingProfileData.firstName &&
+        existingProfileData.lastName &&
+        existingProfileData.bio &&
+        existingProfileData.age &&
+        existingProfileData.gender &&
+        existingProfileData.lookingFor &&
+        existingProfileData.course &&
+        existingProfileData.yearOfStudy &&
+        existingProfileData.photos && existingProfileData.photos.length > 0 &&
+        existingProfileData.isVisible &&
+        // existingProfileData.lastActive && // lastActive is on user table primarily
+        existingProfileData.isComplete
       ),
     };
 
@@ -130,7 +156,7 @@ export async function getProfile() {
     return combinedProfile;
   } catch (error) {
     console.error("Error in getProfile:", error);
-    throw error;
+    throw error; // Re-throw to allow caller to handle
   }
 }
 

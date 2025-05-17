@@ -7,11 +7,12 @@ import { StalkersList } from "@/components/profile/stalkers-list";
 import { ProfileCompletion } from "@/components/profile/profile-completion";
 import { ProfilePreview } from "@/components/profile/profile-preview";
 import { ProfileAnalyticsView } from "@/components/profile/profile-analytics";
-import { Sparkles, User, Heart, Eye, EyeOff, ChartBar } from "lucide-react";
+import { Sparkles, User, Heart, Eye, EyeOff, ChartBar} from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProfileFormData } from "@/lib/constants";
+import { AnonymousModeAlert } from "@/components/anonymous/AnonymousModeAlert";
 
 interface ProfileClientPageProps {
   profile: ProfileFormData;
@@ -23,8 +24,10 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
   const [activeSection, setActiveSection] = useState<string | null>(initialActiveSection);
   const [formValues, setFormValues] = useState<ProfileFormData>(profile);
   const [showPreview, setShowPreview] = useState(true);
+  const [showAnonymousAlert, setShowAnonymousAlert] = useState(!profile.anonymous);
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [attemptNavigateToPrivacy, setAttemptNavigateToPrivacy] = useState(0);
 
-  // Handle initial section if provided in URL
   useEffect(() => {
     if (initialActiveSection) {
       setActiveSection(initialActiveSection);
@@ -33,9 +36,7 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
 
   const handleSectionClick = (sectionId: string) => {
     setActiveSection(sectionId);
-    setActiveTab("profile"); // Switch to profile tab when clicking a section
-    
-    // Add a small delay to ensure the state updates before scrolling
+    setActiveTab("profile");
     setTimeout(() => {
       const section = document.getElementById(`section-${sectionId}`);
       if (section) {
@@ -44,9 +45,66 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
     }, 100);
   };
 
-  // Handle form value changes for real-time preview
+ 
+
+  useEffect(() => {
+    if (attemptNavigateToPrivacy === 0) return;
+
+    if (activeTab === "profile") {
+      const timerId = setTimeout(() => {
+        const mainTabsContainer = document.querySelector('.main-tabs-container');
+        if (!mainTabsContainer) {
+          console.error("ValspaceDev: .main-tabs-container element NOT FOUND.");
+          return;
+        }
+
+        const mainProfileTabPanel = mainTabsContainer.querySelector(
+          '[role="tabpanel"][data-state="active"][value="profile"]'
+        );
+
+        if (!mainProfileTabPanel) {
+          // It's possible the active state update for the tabpanel is delayed
+          // or the value attribute isn't the sole unique identifier when not active.
+          // We already ensure activeTab === "profile", so the tab content for profile should be active.
+          console.error("ValspaceDev: Active Profile Tab Panel ([role='tabpanel'][data-state='active'][value='profile']) within .main-tabs-container NOT FOUND.");
+          return;
+        }
+        
+        const profileFormInternalTabsContainer = mainProfileTabPanel.querySelector('.tabs-container');
+        if (!profileFormInternalTabsContainer) {
+          console.error("ValspaceDev: ProfileForm's internal .tabs-container within profile tab panel NOT FOUND.");
+          return;
+        }
+
+        const privacyTabButton = profileFormInternalTabsContainer.querySelector(
+          '[role="tab"][value="privacy"]'
+        ) as HTMLButtonElement;
+
+        if (privacyTabButton) {
+          privacyTabButton.click();
+
+          setTimeout(() => {
+            const privacySection = document.getElementById('section-privacy');
+            if (privacySection) {
+              privacySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+              console.error("ValspaceDev: section-privacy NOT FOUND for scrolling.");
+            }
+          }, 150); 
+        } else {
+          console.error("ValspaceDev: Privacy tab button ([role='tab'][value='privacy']) in ProfileForm's internal tabs NOT FOUND.");
+        }
+      }, 100); // Timeout for DOM readiness
+
+      return () => clearTimeout(timerId); // Cleanup timeout
+    }
+  }, [activeTab, attemptNavigateToPrivacy]);
+
   const handleFormValuesChange = (values: ProfileFormData) => {
     setFormValues(values);
+    if (values.anonymous && showAnonymousAlert) {
+      setShowAnonymousAlert(false);
+    }
   };
 
   if (!profile) {
@@ -64,15 +122,19 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
       <MobileNav />
       <div className="min-h-screen bg-gradient-to-b from-pink-50/30 to-white dark:from-pink-950/30 dark:to-background">
         <div className="container max-w-7xl pt-16 pb-20">
-          <div className="sticky top-0 z-10 backdrop-blur-md bg-white/80 dark:bg-background/80 pb-2 pt-2 border-b">
+          {showAnonymousAlert && (
+            <AnonymousModeAlert 
+              onDismiss={() => setShowAnonymousAlert(false)}
+            />
+          )}
+          <div className="sticky top-0 z-20 backdrop-blur-lg bg-white/90 dark:bg-background/90 pb-4 pt-3 border-b border-pink-100 dark:border-pink-900 shadow-md px-4 sm:px-6 -mx-4 sm:-mx-6 md:mx-0 rounded-b-xl">
             <h1 className="text-2xl font-bold tracking-tight text-center mb-4 text-gradient bg-gradient-to-r from-pink-500 to-pink-700 dark:from-pink-400 dark:to-pink-600 bg-clip-text text-transparent">
               StrathSpace
             </h1>
             
             <TooltipProvider delayDuration={300}>
-              <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-4 w-full mb-4 p-1.5 bg-pink-50/50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl relative overflow-hidden">
-                  {/* Visual separators between tabs */}
+              <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab} className="w-full main-tabs-container">
+                <TabsList className="grid grid-cols-4 w-full mb-2 p-2 bg-pink-50/80 dark:bg-pink-950/40 border border-pink-100 dark:border-pink-800 rounded-xl relative overflow-hidden shadow-md">
                   <div className="absolute top-3 bottom-3 left-1/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
                   <div className="absolute top-3 bottom-3 left-1/2 w-px bg-pink-200 dark:bg-pink-800/50"></div>
                   <div className="absolute top-3 bottom-3 left-3/4 w-px bg-pink-200 dark:bg-pink-800/50"></div>
@@ -87,6 +149,7 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
                           hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-sm
                           after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2  
                           after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-pink-500 after:transition-all after:duration-300"
+                        data-profile-tab="main"
                       >
                         <User className="w-4 h-4 mr-1 sm:mr-2" />
                         <span className="hidden sm:inline font-medium">Profile</span>
@@ -164,7 +227,6 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
 
                 <TabsContent value="profile" className="mt-6 animate-in fade-in-50 duration-300">
                   <div className="flex flex-col lg:flex-row gap-6">
-                    {/* Show/Hide Preview Toggle (Mobile) */}
                     <div className="lg:hidden mb-3">
                       <Button
                         variant="outline"
@@ -186,14 +248,12 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
                       </Button>
                     </div>
 
-                    {/* Mobile Preview (Conditional) */}
                     {showPreview && (
                       <div className="lg:hidden mb-6">
                         <ProfilePreview profile={formValues} className="shadow-md" />
                       </div>
                     )}
                     
-                    {/* Form Section (Left on Desktop) */}
                     <div className="flex-1 relative rounded-lg overflow-hidden border border-pink-100 dark:border-pink-950 bg-white/50 dark:bg-background/50 shadow-sm">
                       <div className="p-4 sm:p-6">
                         <ProfileForm 
@@ -204,7 +264,6 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
                       </div>
                     </div>
                     
-                    {/* Preview Section (Right on Desktop) */}
                     <div className="hidden lg:block w-80 xl:w-96 sticky top-24 self-start">
                       <ProfilePreview profile={formValues} className="shadow-md" />
                     </div>

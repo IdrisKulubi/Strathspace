@@ -2,6 +2,7 @@ import {
   getSwipableProfiles,
   getLikedProfiles,
   getLikedByProfiles,
+  getAnonymousSwipableProfiles,
 } from "@/lib/actions/explore.actions";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
@@ -43,12 +44,21 @@ export default async function ExplorePage() {
     redirect("/profile/setup");
   }
 
-  const profiles = await getSwipableProfiles();
-  const { profiles: likedProfiles } = await getLikedProfiles();
-  const { profiles: likedByProfiles } = await getLikedByProfiles();
-
   // Current user's profile
   const currentUserProfile = await getProfile();
+  
+  // Determine which profile fetching function to use based on anonymous mode
+  let profiles;
+  if (currentUserProfile?.anonymous) {
+    // Use the specialized anonymous filtering logic
+    profiles = await getAnonymousSwipableProfiles();
+  } else {
+    // Use the standard filtering logic for non-anonymous users
+    profiles = await getSwipableProfiles();
+  }
+  
+  const { profiles: likedProfiles } = await getLikedProfiles();
+  const { profiles: likedByProfiles } = await getLikedByProfiles();
 
   return (
     <div className="h-screen w-full overflow-hidden">

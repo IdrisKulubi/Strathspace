@@ -18,7 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Sparkles, UserRound, Heart, Coffee, Stars, Smartphone, Loader2, InfoIcon, Save } from "lucide-react";
+import { Sparkles, UserRound, Heart, Coffee, Stars, Smartphone, Loader2, InfoIcon, Save, LockKeyhole } from "lucide-react";
 import {
   updateProfilePhoto,
   removePhoto,
@@ -43,6 +43,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "../ui/input";
 import { ProfileFormData } from "@/lib/constants";
+import { PrivacySettings } from "./PrivacySettings";
 
 interface ProfileFormProps {
   initialData: ProfileFormData;
@@ -286,13 +287,14 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
       
       {/* Navigation Tabs for Profile Sections */}
       <TooltipProvider delayDuration={300}>
-        <Tabs defaultValue={activeTab || "details"} className="w-full">
-          <TabsList className="grid grid-cols-5 sm:grid-cols-5 w-full mb-6 p-1.5 bg-pink-50/50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl relative overflow-hidden">
+        <Tabs defaultValue={activeTab || "details"} className="w-full tabs-container">
+          <TabsList className="grid grid-cols-6 sm:grid-cols-6 w-full mb-6 p-1.5 bg-pink-50/80 dark:bg-pink-950/40 border border-pink-100 dark:border-pink-800 rounded-xl relative overflow-hidden shadow-md">
             {/* Visual separators between tabs */}
-            <div className="absolute top-3 bottom-3 left-1/5 w-px bg-pink-200 dark:bg-pink-800/50"></div>
-            <div className="absolute top-3 bottom-3 left-2/5 w-px bg-pink-200 dark:bg-pink-800/50"></div>
-            <div className="absolute top-3 bottom-3 left-3/5 w-px bg-pink-200 dark:bg-pink-800/50"></div>
-            <div className="absolute top-3 bottom-3 left-4/5 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-1/6 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-2/6 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-3/6 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-4/6 w-px bg-pink-200 dark:bg-pink-800/50"></div>
+            <div className="absolute top-3 bottom-3 left-5/6 w-px bg-pink-200 dark:bg-pink-800/50"></div>
             
             <Tooltip>
               <TooltipTrigger asChild>
@@ -396,6 +398,44 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
               </TooltipTrigger>
               <TooltipContent side="bottom" align="center" className={tooltipStyles}>
                 Your personality traits and communication style
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger
+                  value="privacy"
+                  className={cn(
+                    "text-xs sm:text-sm rounded-lg py-2.5 relative overflow-hidden transition-all duration-300 group",
+                    "bg-purple-50 dark:bg-purple-900/40 border-2 border-purple-200 dark:border-purple-700",
+                    "hover:bg-white/80 dark:hover:bg-slate-900/80 hover:shadow-lg hover:border-purple-300",
+                    "focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+                    "data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950",
+                    "data-[state=active]:border-purple-400 dark:data-[state=active]:border-purple-500",
+                    "data-[state=active]:shadow-xl data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400",
+                    "data-[state=inactive]:animate-pulse-glow-light data-[state=active]:animate-none", // Conditional bounce/glow
+                    "after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2",
+                    "after:w-0 data-[state=active]:after:w-4/5 after:h-0.5 after:bg-purple-500 after:transition-all after:duration-300"
+                  )}
+                >
+                  {/* Shine effect */}
+                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/50 to-transparent transform -translate-x-full transition-transform duration-700 ease-out group-hover:translate-x-full group-focus:translate-x-full data-[state=active]:-translate-x-full"></span>
+                  <div className="relative flex items-center justify-center z-10">
+                    <div className="relative">
+                      <LockKeyhole className="w-4 h-4 mr-1 sm:mr-2" />
+                      {/* Enhanced Pulse for inactive state */}
+                      <span className="absolute -top-1.5 -right-1.5 w-3 h-3 flex items-center justify-center data-[state=inactive]:animate-bounce">
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75 data-[state=inactive]:animate-ping"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                      </span>
+                    </div>
+                    <span className="hidden sm:inline font-medium">Privacy</span>
+                    <span className="sm:hidden">Privacy</span>
+                  </div>
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="top" className={tooltipStyles}>
+                Manage your privacy settings
               </TooltipContent>
             </Tooltip>
           </TabsList>
@@ -781,6 +821,14 @@ export function ProfileForm({ initialData, activeTab, onFormValuesChange }: Prof
                 onChange={(field, value) => handleFieldUpdate(field, value)}
               />
           </div>
+          </TabsContent>
+
+          {/* Privacy Tab Content */}
+          <TabsContent value="privacy" className="mt-4 space-y-4 animate-in fade-in-50">
+            <PrivacySettings 
+              profile={form.getValues()} 
+              onUpdate={handleFieldUpdate}
+            />
           </TabsContent>
         </Tabs>
       </TooltipProvider>

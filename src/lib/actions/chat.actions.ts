@@ -74,7 +74,6 @@ export async function sendMessage(
         ]);
       } catch (pusherError) {
         console.error("Pusher trigger failed in sendMessage:", pusherError);
-        // Log and continue, message sending itself succeeded.
       }
     }
 

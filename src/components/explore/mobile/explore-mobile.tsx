@@ -243,7 +243,6 @@ export function ExploreMobile({
         </>
       ) : (
         <EmptyMobileView
-          likedProfiles={likedProfiles}
           currentUser={currentUser}
           onShare={handleShare}
           onUnlike={async (profileId) => {
@@ -259,7 +258,7 @@ export function ExploreMobile({
             } else {
               toast({
                 title: "Error",
-                description: "Failed to unlike profile. Please try again later",
+                description: "Failed to unlike profile. Please try again later.",
                 variant: "destructive",
               });
             }

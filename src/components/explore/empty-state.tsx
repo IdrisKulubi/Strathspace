@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {  useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Share } from "lucide-react";
 import type { Profile } from "@/db/schema";
-import { undoLastSwipe } from "@/lib/actions/explore.actions";
-import { useToast } from "@/hooks/use-toast";
 import { EmptyMobileView } from "./cards/empty-mobile";
 import { ShareAppModal } from "../shared/share-app";
-import { getLikedByProfiles } from "@/lib/actions/explore.actions";
-import { SidePanels } from "./cards/side-panels";
 
 interface NoMoreProfilesProps {
   initialLikedProfiles: Profile[];
@@ -17,42 +13,14 @@ interface NoMoreProfilesProps {
 }
 
 export function NoMoreProfiles({
-  initialLikedProfiles,
+  
   currentUser,
 }: NoMoreProfilesProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [mounted, setMounted] = useState(false);
-  const [likedProfiles, setLikedProfiles] = useState(initialLikedProfiles);
-  const [likedByProfiles, setLikedByProfiles] = useState<Profile[]>([]);
+ 
   const [showShareModal, setShowShareModal] = useState(false);
-  const { toast } = useToast();
 
-  useEffect(() => {
-    const loadProfiles = async () => {
-      // Load profiles that liked you
-      const { profiles } = await getLikedByProfiles();
-      setLikedByProfiles(profiles);
-    };
-
-    loadProfiles();
-    setMounted(true);
-  }, []);
-
-  const handleUnlike = async (profileId: string) => {
-    const result = await undoLastSwipe(profileId);
-    if (result.success) {
-      setLikedProfiles((prev) => prev.filter((p) => p.userId !== profileId));
-      toast({
-        title: "Profile unliked",
-        description: "The profile has been removed from your likes",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to unlike profile. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleShare = () => {
     setShowShareModal(true);
@@ -60,19 +28,7 @@ export function NoMoreProfiles({
 
   return (
     <div className="relative flex flex-col lg:flex-row w-full">
-      {/* Side Panels - Fixed with reduced width */}
-      <div className="lg:w-[320px] lg:fixed lg:left-0 lg:top-[80px] lg:bottom-0 lg:pl-4">
-        <SidePanels
-          profiles={likedByProfiles}
-          likedByProfiles={likedByProfiles}
-          onUnlike={handleUnlike}
-          onLikeBack={async (profileId) => {
-            setLikedByProfiles((prev) =>
-              prev.filter((p) => p.userId !== profileId)
-            );
-          }}
-        />
-      </div>
+     
 
       {/* Main Content Area */}
       <div className="flex-1 lg:ml-[80px] flex flex-col items-center justify-start pt-2">
@@ -159,10 +115,8 @@ export function NoMoreProfiles({
             {/* Mobile View */}
             <div className="block md:hidden">
               <EmptyMobileView
-                likedProfiles={likedProfiles}
                 currentUser={currentUser}
                 onShare={handleShare}
-                onUnlike={handleUnlike}
               />
             </div>
           </div>

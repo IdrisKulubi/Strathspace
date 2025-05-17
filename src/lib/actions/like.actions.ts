@@ -27,8 +27,8 @@ export async function handleLike(targetUserId: string) {
 
     // Invalidate specific cache keys
     if (session?.user?.id) {
-      await invalidateCachedData(CACHE_KEYS.LIKED_BY_PROFILES(session.user.id));
-      await invalidateCachedData(CACHE_KEYS.LIKED_PROFILES(session.user.id));
+      await invalidateCachedData(CACHE_KEYS.MATCHING.LIKED_BY(session.user.id));
+      await invalidateCachedData(CACHE_KEYS.MATCHING.LIKED(session.user.id));
     }
 
     return {
@@ -85,8 +85,8 @@ export async function handleUnlike(targetUserId: string) {
 
     // Invalidate specific cache keys
     if (session?.user?.id) {
-      await invalidateCachedData(CACHE_KEYS.LIKED_BY_PROFILES(session.user.id));
-      await invalidateCachedData(CACHE_KEYS.LIKED_PROFILES(session.user.id));
+      await invalidateCachedData(CACHE_KEYS.MATCHING.LIKED_BY(session.user.id));
+      await invalidateCachedData(CACHE_KEYS.MATCHING.LIKED(session.user.id));
     }
 
     return { success: true };

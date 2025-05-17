@@ -5,6 +5,8 @@ import { getChatMessages, sendMessage } from "@/lib/actions/chat.actions";
 import { useSession } from "next-auth/react";
 import type { Channel } from "pusher-js";
 import { toast } from "./use-toast";
+import { CACHE_KEYS, CACHE_TTL } from "@/lib/constants/cache";
+import {  getCachedData, setCachedData } from "@/lib/utils/redis-helpers";
 
 type MessageWithSender = Message & {
   sender?: {
@@ -14,7 +16,6 @@ type MessageWithSender = Message & {
   };
 };
 
-// Helper to ensure unique IDs for messages
 const ensureUniqueId = (message: Message): Message => {
   if (!message.id || message.id === '') {
     console.warn('Message with empty ID detected, assigning temporary ID', message);
@@ -37,6 +38,7 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
   const hasInitialized = useRef<boolean>(false);
   const messageIdsRef = useRef<Set<string>>(new Set<string>());
   const pusherRef = useRef<Pusher | null>(null);
+  const cacheKeyRef = useRef<string>(CACHE_KEYS.CHAT.MESSAGES(matchId));
 
   const handleNewMessage = useCallback((message: Message) => {
     // Ensure the new message has a unique ID
@@ -51,12 +53,32 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
           ...processedMessage,
           id: `${processedMessage.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
         };
-        return [uniqueMessage as MessageWithSender, ...prev];
+        
+        // Update the cache with the new messages
+        const updatedMessages = [uniqueMessage as MessageWithSender, ...prev];
+        setCachedData(
+          cacheKeyRef.current, 
+          updatedMessages, 
+          CACHE_TTL.CHAT.MESSAGES,
+          { compress: true }
+        ).catch(err => console.error("Failed to update message cache:", err));
+        
+        return updatedMessages;
       }
       
       // Add to our tracking set
       messageIdsRef.current.add(processedMessage.id);
-      return [processedMessage as MessageWithSender, ...prev];
+      
+      // Update the cache with the new messages  
+      const updatedMessages = [processedMessage as MessageWithSender, ...prev];
+      setCachedData(
+        cacheKeyRef.current, 
+        updatedMessages, 
+        CACHE_TTL.CHAT.MESSAGES,
+        { compress: true }
+      ).catch(err => console.error("Failed to update message cache:", err));
+      
+      return updatedMessages;
     });
   }, []);
 
@@ -71,33 +93,98 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
     const initChat = async () => {
       try {
         setIsLoading(true);
-        const { messages: chatMessages } = await getChatMessages(matchId);
         
-        // Ensure all loaded messages have unique IDs
-        const uniqueMessages = chatMessages.map(ensureUniqueId);
+        // Try to get messages from cache first
+        const cachedMessages = await getCachedData<MessageWithSender[]>(cacheKeyRef.current);
         
-        // Create a set of IDs for tracking
-        const messageIds = new Set<string>();
-        const processedMessages: MessageWithSender[] = [];
-        
-        // Process each message to ensure uniqueness
-        uniqueMessages.forEach(msg => {
-          if (messageIds.has(msg.id)) {
-            // Generate a unique ID for the duplicate
-            const uniqueId = `${msg.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-            console.warn(`Duplicate message ID detected on load: ${msg.id}, assigning new ID: ${uniqueId}`);
-            const uniqueMsg = { ...msg, id: uniqueId };
-            processedMessages.push(uniqueMsg as MessageWithSender);
-            messageIds.add(uniqueId);
-          } else {
-            messageIds.add(msg.id);
-            processedMessages.push(msg as MessageWithSender);
-          }
-        });
-        
-        // Update our tracking ref
-        messageIdsRef.current = messageIds;
-        setMessages(processedMessages);
+        if (cachedMessages && Array.isArray(cachedMessages) && cachedMessages.length > 0) {
+          console.log("Using cached messages");
+          
+          // Ensure all cached messages have unique IDs and build ID tracking set
+          const messageIds = new Set<string>();
+          const processedMessages = cachedMessages.map(msg => {
+            const processedMsg = ensureUniqueId(msg);
+            messageIds.add(processedMsg.id);
+            return processedMsg as MessageWithSender;
+          });
+          
+          messageIdsRef.current = messageIds;
+          setMessages(processedMessages);
+          
+          // Still fetch fresh messages in the background to update cache
+          getChatMessages(matchId)
+            .then(({ messages: freshMessages }) => {
+              if (freshMessages.length > cachedMessages.length) {
+                // Process new messages and update state
+                const uniqueMessages = freshMessages.map(ensureUniqueId);
+                const messageIds = new Set<string>();
+                const processedMessages: MessageWithSender[] = [];
+                
+                uniqueMessages.forEach(msg => {
+                  if (messageIds.has(msg.id)) {
+                    const uniqueId = `${msg.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                    console.warn(`Duplicate message ID detected on load: ${msg.id}, assigning new ID: ${uniqueId}`);
+                    const uniqueMsg = { ...msg, id: uniqueId };
+                    processedMessages.push(uniqueMsg as MessageWithSender);
+                    messageIds.add(uniqueId);
+                  } else {
+                    messageIds.add(msg.id);
+                    processedMessages.push(msg as MessageWithSender);
+                  }
+                });
+                
+                // Update our tracking ref and state
+                messageIdsRef.current = messageIds;
+                setMessages(processedMessages);
+                
+                // Update cache with fresh data
+                setCachedData(
+                  cacheKeyRef.current, 
+                  processedMessages, 
+                  CACHE_TTL.CHAT.MESSAGES,
+                  { compress: true }
+                ).catch(err => console.error("Failed to update message cache:", err));
+              }
+            })
+            .catch(err => console.error("Error fetching fresh messages:", err));
+        } else {
+          // No cache or invalid cache, fetch from DB
+          const { messages: chatMessages } = await getChatMessages(matchId);
+          
+          // Ensure all loaded messages have unique IDs
+          const uniqueMessages = chatMessages.map(ensureUniqueId);
+          
+          // Create a set of IDs for tracking
+          const messageIds = new Set<string>();
+          const processedMessages: MessageWithSender[] = [];
+          
+          // Process each message to ensure uniqueness
+          uniqueMessages.forEach(msg => {
+            if (messageIds.has(msg.id)) {
+              // Generate a unique ID for the duplicate
+              const uniqueId = `${msg.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+              console.warn(`Duplicate message ID detected on load: ${msg.id}, assigning new ID: ${uniqueId}`);
+              const uniqueMsg = { ...msg, id: uniqueId };
+              processedMessages.push(uniqueMsg as MessageWithSender);
+              messageIds.add(uniqueId);
+            } else {
+              messageIds.add(msg.id);
+              processedMessages.push(msg as MessageWithSender);
+            }
+          });
+          
+          // Update our tracking ref
+          messageIdsRef.current = messageIds;
+          setMessages(processedMessages);
+          
+          // Cache the messages
+          setCachedData(
+            cacheKeyRef.current, 
+            processedMessages, 
+            CACHE_TTL.CHAT.MESSAGES,
+            { compress: true }
+          ).catch(err => console.error("Failed to cache messages:", err));
+        }
         
         const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
           cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
@@ -125,7 +212,7 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
     };
 
     initChat();
-  }, [matchId, handleNewMessage, handleTypingEvent,channel]);
+  }, [matchId, handleNewMessage, handleTypingEvent, channel]);
 
   const handleSend = useCallback(
     async (content: string) => {
@@ -152,7 +239,20 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
       // Track this ID
       messageIdsRef.current.add(uniqueId);
       
-      setMessages(prev => [...prev, tempMessage]);
+      // Update messages state and cache
+      setMessages(prev => {
+        const updatedMessages = [...prev, tempMessage];
+        
+        // Update cache with optimistic update
+        setCachedData(
+          cacheKeyRef.current, 
+          updatedMessages, 
+          CACHE_TTL.CHAT.MESSAGES,
+          { compress: true }
+        ).catch(err => console.error("Failed to update message cache:", err));
+        
+        return updatedMessages;
+      });
 
       try {
         const { message } = await sendMessage(matchId, content, session.user.id);
@@ -170,18 +270,44 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
         messageIdsRef.current.delete(tempMessage.id);
         messageIdsRef.current.add(processedMessage.id);
         
-        setMessages(prev =>
-          prev.map(m => m.id === tempMessage.id ? 
-            { ...processedMessage, sender: tempMessage.sender } as MessageWithSender : m
-          )
-        );
+        // Update messages state
+        setMessages(prev => {
+          const updatedMessages = prev.map(m => 
+            m.id === tempMessage.id ? 
+              { ...processedMessage, sender: tempMessage.sender } as MessageWithSender : m
+          );
+          
+          // Update cache with confirmed message
+          setCachedData(
+            cacheKeyRef.current, 
+            updatedMessages, 
+            CACHE_TTL.CHAT.MESSAGES,
+            { compress: true }
+          ).catch(err => console.error("Failed to update message cache:", err));
+          
+          return updatedMessages;
+        });
       } catch (error) {
         console.error("Failed to send message:", error);
         
         // Remove from tracking
         messageIdsRef.current.delete(tempMessage.id);
         
-        setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+        // Update messages state and cache on error
+        setMessages(prev => {
+          const updatedMessages = prev.filter(m => m.id !== tempMessage.id);
+          
+          // Update cache to remove failed message
+          setCachedData(
+            cacheKeyRef.current, 
+            updatedMessages, 
+            CACHE_TTL.CHAT.MESSAGES,
+            { compress: true }
+          ).catch(err => console.error("Failed to update message cache:", err));
+          
+          return updatedMessages;
+        });
+        
         toast({
           title: "Failed to send message",
           description: "Please try again",
@@ -194,7 +320,14 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
 
   const handleTyping = useCallback(async (isTyping: boolean) => {
     channel?.trigger("client-typing", { isTyping });
-  }, [channel]);
+    
+    // Cache typing status for this user in this match
+    if (session?.user?.id) {
+      const typingKey = CACHE_KEYS.CHAT.TYPING(matchId, session.user.id);
+      setCachedData(typingKey, { isTyping }, isTyping ? 10 : 1)
+        .catch(err => console.error("Failed to cache typing status:", err));
+    }
+  }, [channel, matchId, session?.user?.id]);
 
   return {
     messages,

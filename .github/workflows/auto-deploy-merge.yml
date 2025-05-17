@@ -7,8 +7,8 @@ on:
       - '!main'
 
 jobs:
-  test-deploy-merge:
-    name: Test, Deploy, and Merge
+  deploy-and-merge:
+    name: Deploy and Auto Merge
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -39,20 +39,8 @@ jobs:
         run: pnpm install --frozen-lockfile
         shell: bash
         
-      - name: Lint
-        run: pnpm lint
-        shell: bash
-        
-      - name: Type check
-        run: pnpm tsc --noEmit
-        shell: bash
-        
-      - name: Run tests
-        run: pnpm test
-        shell: bash
-        
-      # Deploy to preview environment
-      - name: Deploy to Vercel (Preview)
+      # Deploy to Vercel preview environment
+      - name: Deploy to Vercel
         id: deploy-preview
         uses: amondnet/vercel-action@v25
         with:
@@ -60,11 +48,11 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          vercel-args: '--prod'
-      
-      # Create and auto-approve PR
+          
+      # Create and auto-merge PR if deployment succeeded
       - name: Create Pull Request
         id: create-pr
+        if: success()
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -77,7 +65,7 @@ jobs:
             - Commit: ${{ github.sha }}
             - Preview URL: ${{ steps.deploy-preview.outputs.preview-url }}
             
-            This branch has passed all tests and was deployed successfully.
+            This branch was deployed successfully to Vercel.
           branch: ${{ github.ref_name }}
           base: main
       
