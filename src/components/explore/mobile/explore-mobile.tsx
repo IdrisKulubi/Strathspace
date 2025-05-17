@@ -259,7 +259,7 @@ export function ExploreMobile({
             } else {
               toast({
                 title: "Error",
-                description: "Failed to unlike profile. Please try again.",
+                description: "Failed to unlike profile. Please try again later",
                 variant: "destructive",
               });
             }
