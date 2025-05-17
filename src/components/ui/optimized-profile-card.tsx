@@ -53,15 +53,38 @@ export function OptimizedProfileCard({
   const leftOpacity = useTransform(xPercentage, [-20, 0], [1, 0]);
   const rightOpacity = useTransform(xPercentage, [0, 20], [0, 1]);
 
-  // Images to display
-  const images = [
-    ...(profile.profilePhoto ? [profile.profilePhoto] : []),
-    ...(Array.isArray(profile.photos) ? profile.photos : []),
-  ].filter(Boolean) as string[];
+  // Check if this is an anonymous profile
+  const isAnonymous = profile.anonymous;
 
-  // Preload next profile's first image when this card is active
+  // Images to display - if anonymous, don't show real photos
+  const images = isAnonymous
+    ? [] // No images for anonymous mode
+    : [
+        ...(profile.profilePhoto ? [profile.profilePhoto] : []),
+        ...(Array.isArray(profile.photos) ? profile.photos : []),
+      ].filter(Boolean) as string[];
+
+  // Get the emoji for anonymous avatar
+  const getAnonymousAvatar = () => {
+    if (!profile.anonymousAvatar) return "👤";
+    const emojiMap: Record<string, string> = {
+      "heart": "❤️",
+      "ghost": "👻",
+      "robot": "🤖",
+      "alien": "👽",
+      "unicorn": "🦄",
+      "tardis": "📱",
+      "book": "📚",
+      "coffee": "☕",
+      "star": "⭐",
+      "music": "🎵"
+    };
+    return emojiMap[profile.anonymousAvatar] || "👤";
+  };
+
+  // Preload next profile's first image when this card is active (only for non-anonymous)
   useEffect(() => {
-    if (active && profile.profilePhoto) {
+    if (active && profile.profilePhoto && !isAnonymous) {
       prefetchImage(profile.profilePhoto, {
         quality: 85,
         widths: [isMobile ? 400 : 800],
@@ -69,7 +92,7 @@ export function OptimizedProfileCard({
         highPriority: true,
       });
     }
-  }, [active, profile.profilePhoto, isMobile]);
+  }, [active, profile.profilePhoto, isMobile, isAnonymous]);
 
   // Handle drag end
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -120,62 +143,12 @@ export function OptimizedProfileCard({
       initial={false}
     >
       {/* Images */}
-      {hasImages ? (
-        <ImageGallery
-          images={images}
-          aspectRatio="portrait" 
-          priority={active}
-          showPagination
-          className="w-full h-full"
-        />
-      ) : (
-        <div className="bg-muted w-full h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className="p-4 rounded-full bg-muted-foreground/10 inline-flex mb-2">
-              <BadgeCheck className="h-12 w-12 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold">{profile.firstName}</h3>
-            <p className="text-muted-foreground">No photos available</p>
-          </div>
-        </div>
-      )}
+      {isAnonymous ? (        <div className="bg-muted w-full h-full flex items-center justify-center">          <div className="text-center">            <div className="p-8 rounded-full bg-primary/10 inline-flex mb-4">              <div className="text-6xl">{getAnonymousAvatar()}</div>            </div>            <h3 className="text-lg font-semibold">{profile.firstName?.charAt(0)}.</h3>            <p className="text-muted-foreground mt-1">Anonymous Profile</p>          </div>        </div>      ) : hasImages ? (        <ImageGallery          images={images}          aspectRatio="portrait"           priority={active}          showPagination          className="w-full h-full"        />      ) : (        <div className="bg-muted w-full h-full flex items-center justify-center">          <div className="text-center">            <div className="p-4 rounded-full bg-muted-foreground/10 inline-flex mb-2">              <BadgeCheck className="h-12 w-12 text-primary" />            </div>            <h3 className="text-lg font-semibold">{profile.firstName}</h3>            <p className="text-muted-foreground">No photos available</p>          </div>        </div>      )}
 
       {/* Gradient overlay for text readability */}
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-transparent to-black/70" />
 
-      {/* Profile Info */}
-      <div className="absolute bottom-0 left-0 w-full p-4 text-white z-10">
-        {/* Main profile info */}
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-2xl font-bold flex items-center">
-            {profile.firstName}, {profile.age}
-            {/* {profile.isVerified && (
-              <BadgeCheck className="ml-1 h-5 w-5 text-blue-400" />
-            )} */}
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onViewDetails) onViewDetails();
-            }}
-          >
-            <Info className="h-5 w-5 text-white" />
-          </Button>
-        </div>
-
-        {/* Course/department */}
-        {profile.course && (
-          <div className="flex items-center gap-1 text-sm text-white/90 mt-1">
-            <GraduationCap className="h-4 w-4" />
-            <span>{profile.course}</span>
-            {profile.yearOfStudy && (
-              <span className="opacity-75">• Year {profile.yearOfStudy}</span>
-            )}
-          </div>
-        )}
+            {/* Profile Info */}      <div className="absolute bottom-0 left-0 w-full p-4 text-white z-10">        {/* Main profile info */}        <div className="flex items-center justify-between gap-2">          <h2 className="text-2xl font-bold flex items-center">            {isAnonymous ? (              <>                {profile.firstName?.charAt(0)}., {profile.age}                <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 backdrop-blur-sm rounded text-primary-foreground">                  Anonymous                </span>              </>            ) : (              <>                {profile.firstName}, {profile.age}              </>            )}          </h2>          <Button            variant="ghost"            size="icon"            className="h-9 w-9 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"            onClick={(e) => {              e.stopPropagation();              if (onViewDetails) onViewDetails();            }}          >            <Info className="h-5 w-5 text-white" />          </Button>        </div>        {/* Course/department */}        {profile.course && (          <div className="flex items-center gap-1 text-sm text-white/90 mt-1">            <GraduationCap className="h-4 w-4" />            <span>{profile.course}</span>            {profile.yearOfStudy && (              <span className="opacity-75">• Year {profile.yearOfStudy}</span>            )}          </div>        )}
 
         {/* Interests Tags - only show a limited number */}
         {profile.interests && profile.interests.length > 0 && (

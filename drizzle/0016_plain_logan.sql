@@ -1,0 +1,12 @@
+DROP INDEX "profile_user_id_idx";
+DROP INDEX "profile_is_visible_idx";
+DROP INDEX "profile_gender_idx";
+DROP INDEX "profile_last_active_idx";
+DROP INDEX "profile_completed_idx";
+DROP INDEX "profile_username_idx";
+ALTER TABLE "profile_views" ADD COLUMN "source" text DEFAULT 'VIEW_MORE';
+ALTER TABLE "profile_views" ADD COLUMN "view_duration" integer;
+ALTER TABLE "profiles" ADD COLUMN "anonymous" boolean DEFAULT false;
+ALTER TABLE "profiles" ADD COLUMN "anonymous_avatar" text;
+ALTER TABLE "profiles" ADD COLUMN "anonymous_reveal_requested" boolean DEFAULT false;
+CREATE INDEX "profile_views_viewed_at_idx" ON "profile_views" USING btree ("viewed_at");

@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import type { Channel } from "pusher-js";
 import { toast } from "./use-toast";
 import { CACHE_KEYS, CACHE_TTL } from "@/lib/constants/cache";
-import { warmCache, getCachedData, setCachedData } from "@/lib/utils/redis-helpers";
+import {  getCachedData, setCachedData } from "@/lib/utils/redis-helpers";
 
 type MessageWithSender = Message & {
   sender?: {
@@ -16,7 +16,6 @@ type MessageWithSender = Message & {
   };
 };
 
-// Helper to ensure unique IDs for messages
 const ensureUniqueId = (message: Message): Message => {
   if (!message.id || message.id === '') {
     console.warn('Message with empty ID detected, assigning temporary ID', message);

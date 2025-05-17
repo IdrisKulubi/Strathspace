@@ -17,6 +17,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 import { ImageGallery } from "@/components/ui/image-gallery";
+import { AnonymousProfile } from "@/components/anonymous/AnonymousProfile";
 
 interface SwipeCardProps {
   profile: Profile;
@@ -80,6 +81,12 @@ export function SwipeCard({
 
   // Enhanced image prefetching with loading progress
   useEffect(() => {
+    // Skip prefetching if in anonymous mode
+    if (profile.anonymous) {
+      setImagesLoaded(true);
+      return;
+    }
+    
     const prefetchImages = async () => {
       try {
         // Reset loading state
@@ -128,15 +135,15 @@ export function SwipeCard({
       }
     };
 
-    if (optimizedPhotos.length > 0 && active) {
+    if (optimizedPhotos.length > 0 && active && !profile.anonymous) {
       prefetchImages();
-    } else if (!active) {
+    } else if (!active && !profile.anonymous) {
       // If not active, still prefetch in background but don't show loading state
       import("@/lib/actions/image-prefetch").then(
         module => module.prefetchProfileImages(optimizedPhotos.filter(Boolean) as string[])
       ).catch(error => console.error("Background prefetch failed:", error));
     }
-  }, [optimizedPhotos, active]);
+  }, [optimizedPhotos, active, profile.anonymous]);
 
   // Fix: handleInfoClick should call onViewProfile if provided
   const handleInfoClick = () => {
@@ -168,7 +175,7 @@ export function SwipeCard({
       onTouchEnd={handleTouchEnd}
     >
       {/* Loading overlay */}
-      {active && !imagesLoaded && (
+      {active && !imagesLoaded && !profile.anonymous && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
           <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
           <div className="w-48 h-2 bg-muted rounded-full overflow-hidden">
@@ -182,62 +189,72 @@ export function SwipeCard({
       )}
       
       <div className="relative w-full h-full">
-        <ImageGallery
-          images={[profile.profilePhoto, ...(profile.photos || [])].filter(Boolean) as string[]}
-          aspectRatio="portrait"
-          priority={active}
-          showPagination={true}
-          className="w-full h-full group"
-          onImageClick={() => handleInfoClick()}
-        />
+        {profile.anonymous ? (
+          <AnonymousProfile
+            profile={profile}
+            onViewProfile={handleInfoClick}
+            className="w-full h-full"
+          />
+        ) : (
+          <ImageGallery
+            images={[profile.profilePhoto, ...(profile.photos || [])].filter(Boolean) as string[]}
+            aspectRatio="portrait"
+            priority={active}
+            showPagination={true}
+            className="w-full h-full group"
+            onImageClick={() => handleInfoClick()}
+          />
+        )}
 
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-transparent to-black/60" />
+        {!profile.anonymous && <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-transparent to-black/60" />}
 
-        <div className="absolute bottom-0 left-0 w-full p-4 text-white z-10">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-2xl font-bold flex items-center">
-              {profile.firstName}, {profile.age}
-              {/* {profile.isVerified && (
-                <BadgeCheck className="ml-1 h-5 w-5 text-blue-400" />
-              )} */}
-            </h2>
-            <button
-              onClick={handleInfoClick}
-              className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition"
-              aria-label="View profile details"
-            >
-              <Info className="h-5 w-5 text-white" />
-            </button>
+        {!profile.anonymous && (
+          <div className="absolute bottom-0 left-0 w-full p-4 text-white z-10">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-2xl font-bold flex items-center">
+                {profile.firstName}, {profile.age}
+                {/* {profile.isVerified && (
+                  <BadgeCheck className="ml-1 h-5 w-5 text-blue-400" />
+                )} */}
+              </h2>
+              <button
+                onClick={handleInfoClick}
+                className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition"
+                aria-label="View profile details"
+              >
+                <Info className="h-5 w-5 text-white" />
+              </button>
+            </div>
+
+            {profile.course && (
+              <div className="flex items-center gap-1 text-sm text-white/90 mt-1">
+                <GraduationCap className="h-4 w-4" />
+                <span>{profile.course}</span>
+                {profile.yearOfStudy && (
+                  <span className="opacity-75">• Year {profile.yearOfStudy}</span>
+                )}
+              </div>
+            )}
+
+            {profile.interests && profile.interests.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {profile.interests.slice(0, 3).map((interest, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-1 text-xs rounded-full bg-white/20 backdrop-blur-sm"
+                  >
+                    {interest}
+                  </span>
+                ))}
+                {profile.interests.length > 3 && (
+                  <span className="px-2 py-1 text-xs rounded-full bg-white/20 backdrop-blur-sm">
+                    +{profile.interests.length - 3} more
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-
-          {profile.course && (
-            <div className="flex items-center gap-1 text-sm text-white/90 mt-1">
-              <GraduationCap className="h-4 w-4" />
-              <span>{profile.course}</span>
-              {profile.yearOfStudy && (
-                <span className="opacity-75">• Year {profile.yearOfStudy}</span>
-              )}
-            </div>
-          )}
-
-          {profile.interests && profile.interests.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {profile.interests.slice(0, 3).map((interest, i) => (
-                <span
-                  key={i}
-                  className="px-2 py-1 text-xs rounded-full bg-white/20 backdrop-blur-sm"
-                >
-                  {interest}
-                </span>
-              ))}
-              {profile.interests.length > 3 && (
-                <span className="px-2 py-1 text-xs rounded-full bg-white/20 backdrop-blur-sm">
-                  +{profile.interests.length - 3} more
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+        )}
 
         <AnimatePresence>
           {swipeDirection === "left" && (
@@ -250,9 +267,10 @@ export function SwipeCard({
               <X className="h-8 w-8" />
             </motion.div>
           )}
+
           {swipeDirection === "right" && (
             <motion.div
-              className="absolute top-1/4 right-8 bg-pink-500/90 text-white py-1 px-3 rounded-lg transform rotate-12"
+              className="absolute top-1/4 right-8 bg-green-500/90 text-white py-1 px-3 rounded-lg transform rotate-12"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}

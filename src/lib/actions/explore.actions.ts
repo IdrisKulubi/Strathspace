@@ -523,3 +523,119 @@ export async function getLikesForProfile(profileName: string) {
     return { error: "Failed to fetch likes", likes: [] };
   }
 }
+
+export async function getAnonymousSwipableProfiles() {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  try {
+    // Check cache with proper handling
+    const cached = await getCachedData<Profile[]>(
+      CACHE_KEYS.SWIPABLE_PROFILES(session.user.id)
+    );
+    if (cached) return cached;
+
+    // First, get the current user's profile to know their gender
+    const currentUserProfileResult = await db
+      .select({
+        gender: profiles.gender,
+        anonymous: profiles.anonymous,
+      })
+      .from(profiles)
+      .where(eq(profiles.userId, session.user.id))
+      .limit(1);
+      
+    if (!currentUserProfileResult.length) {
+      return []; 
+    }
+    
+    const currentUserGender = currentUserProfileResult[0].gender;
+    const isCurrentUserAnonymous = currentUserProfileResult[0].anonymous;
+    
+    if (!isCurrentUserAnonymous) {
+      return [];
+    }
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const whereConditions: any[] = [
+      not(eq(profiles.userId, session.user.id)),
+      eq(profiles.isVisible, true),
+      eq(profiles.profileCompleted, true),
+      not(isNull(profiles.firstName)),
+      not(isNull(profiles.lastName)),
+      eq(profiles.anonymous, true),
+    ];
+
+    // Gender filtering logic for anonymous mode
+    if (currentUserGender === "male") {
+      // Male anonymous users see female anonymous users
+      whereConditions.push(eq(profiles.gender, "female"));
+    } else if (currentUserGender === "female") {
+      // Female anonymous users see male anonymous users
+      whereConditions.push(eq(profiles.gender, "male"));
+    }
+    // Non-binary users see all anonymous users (no additional gender filter)
+
+    const results = await db
+      .select({
+        id: profiles.id,
+        userId: profiles.userId,
+        firstName: profiles.firstName,
+        lastName: profiles.lastName,
+        bio: profiles.bio,
+        age: profiles.age,
+        gender: profiles.gender,
+        interests: profiles.interests,
+        photos: profiles.photos,
+        course: profiles.course,
+        yearOfStudy: profiles.yearOfStudy,
+        profilePhoto: profiles.profilePhoto,
+        phoneNumber: profiles.phoneNumber,
+        lastActive: profiles.lastActive,
+        isMatch: matches.id, // This will be null if no match, used to derive boolean
+        isVisible: profiles.isVisible,
+        isComplete: profiles.isComplete,
+        profileCompleted: profiles.profileCompleted,
+        lookingFor: profiles.lookingFor,
+        anonymous: profiles.anonymous,
+        anonymousAvatar: profiles.anonymousAvatar,
+        anonymousRevealRequested: profiles.anonymousRevealRequested,
+      })
+      .from(profiles)
+      .leftJoin(
+        matches,
+        and(
+          or(
+            and(
+              eq(matches.user1Id, session.user.id),
+              eq(matches.user2Id, profiles.userId)
+            ),
+            and(
+              eq(matches.user2Id, session.user.id),
+              eq(matches.user1Id, profiles.userId)
+            )
+          )
+        )
+      )
+      .where(and(...whereConditions))
+      .orderBy(sql`RANDOM()`)
+      .limit(200);
+
+    // Format the profiles before caching
+    const formattedProfiles = results.map((profile) => ({
+      ...profile,
+      isMatch: !!profile.isMatch, // Convert potential match ID to boolean
+    }));
+
+    // Cache with proper serialization
+    await setCachedData(
+      CACHE_KEYS.SWIPABLE_PROFILES(session.user.id),
+      formattedProfiles,
+      300 // 5 minute TTL
+    );
+
+    return formattedProfiles;
+  } catch (error) {
+    console.error("Error fetching anonymous swipable profiles:", error);
+    return [];
+  }
+}

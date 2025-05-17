@@ -86,7 +86,7 @@ export const verificationTokens = pgTable(
 // Extended user profiles
 export const profiles = pgTable(
   "profiles",
-  {
+  { 
     id: uuid("id").defaultRandom().primaryKey(),
     userId: text("user_id")
       .notNull()
@@ -95,9 +95,8 @@ export const profiles = pgTable(
     age: integer("age"),
     gender: text("gender"),
     role: text("role").$type<"user" | "admin">().default("user"),
-
     interests: json("interests").$type<string[]>(),
-    photos: json("photos").$type<string[]>(), // Array of photo URLs
+    photos: json("photos").$type<string[]>(),
     isVisible: boolean("is_visible").default(true),
     lastActive: timestamp("last_active").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -115,38 +114,34 @@ export const profiles = pgTable(
     lastName: text("last_name").notNull().default(""),
     isMatch: boolean("is_match").default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    
-    // New lifestyle attributes
+    anonymous: boolean("anonymous").default(false),
+    anonymousAvatar: text("anonymous_avatar"),
+    anonymousRevealRequested: boolean("anonymous_reveal_requested").default(false),
     drinkingPreference: text("drinking_preference"),
     workoutFrequency: text("workout_frequency"),
     socialMediaUsage: text("social_media_usage"),
     sleepingHabits: text("sleeping_habits"),
-    
-    // New personality attributes
     personalityType: text("personality_type"),
     communicationStyle: text("communication_style"),
     loveLanguage: text("love_language"),
     zodiacSign: text("zodiac_sign"),
-    
-    // Profile visibility and privacy settings
     visibilityMode: text("visibility_mode").default("standard"),
     incognitoMode: boolean("incognito_mode").default(false),
     discoveryPaused: boolean("discovery_paused").default(false),
     readReceiptsEnabled: boolean("read_receipts_enabled").default(true),
     showActiveStatus: boolean("show_active_status").default(true),
-    
-    // Username for profile sharing
     username: text("username"),
-  },
-  (table) => ({
-    userIdIdx: index("profile_user_id_idx").on(table.userId),
-    isVisibleIdx: index("profile_is_visible_idx").on(table.isVisible),
-    genderIdx: index("profile_gender_idx").on(table.gender),
-    lastActiveIdx: index("profile_last_active_idx").on(table.lastActive),
-    completedIdx: index("profile_completed_idx").on(table.profileCompleted),
-    usernameIdx: index("profile_username_idx").on(table.username),
-  })
+  }
 );
+
+// Indexes for the profiles table (defined externally)
+export const profileUserIdIdx = index("profile_user_id_idx").on(sql`user_id`);
+export const profileIsVisibleIdx = index("profile_is_visible_idx").on(sql`is_visible`);
+export const profileGenderIdx = index("profile_gender_idx").on(sql`gender`);
+export const profileLastActiveIdx = index("profile_last_active_idx").on(sql`last_active`);
+export const profileCompletedIdx = index("profile_completed_idx").on(sql`profile_completed`);
+export const profileUsernameIdx = index("profile_username_idx").on(sql`username`);
+export const profileAnonymousIdx = index("profile_anonymous_idx").on(sql`anonymous`);
 
 // Swipes/Likes
 export const swipes = pgTable(
@@ -166,7 +161,6 @@ export const swipes = pgTable(
     swiperIdx: index("swipe_swiper_idx").on(table.swiperId),
     swipedIdx: index("swipe_swiped_idx").on(table.swipedId),
     createdAtIdx: index("swipe_created_at_idx").on(table.createdAt),
-    // Compound index for faster lookups
     swipeComboIdx: index("swipe_combo_idx").on(table.swiperId, table.swipedId),
   })
 );
@@ -291,7 +285,7 @@ export const profileViews = pgTable("profile_views", {
     .references(() => users.id),
   viewedAt: timestamp("viewed_at").defaultNow().notNull(),
   source: text("source").$type<"VIEW_MORE" | "PROFILE_CARD" | "SEARCH" | "MATCHES">().default("VIEW_MORE"),
-  viewDuration: integer("view_duration"), // Duration in seconds
+  viewDuration: integer("view_duration"), 
 }, (table) => ({
   viewerIdx: index("profile_views_viewer_idx").on(table.viewerId),
   viewedIdx: index("profile_views_viewed_idx").on(table.viewedId),

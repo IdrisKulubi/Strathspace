@@ -107,9 +107,17 @@ export type ProfileFormData = {
   readReceiptsEnabled?: boolean;
   showActiveStatus?: boolean;
   
+  // Anonymous mode settings
+  anonymous?: boolean;
+  anonymousAvatar?: string;
+  anonymousRevealRequested?: boolean;
+  
   // Username for profile sharing
   username?: string;
 };
 
-// Keeping original Profile type if needed elsewhere
-// export type OriginalProfileType = Profile;
+
+export const AVATARS = [
+  "heart", "ghost", "robot", "alien", "unicorn", 
+  "tardis", "book", "coffee", "star", "music"
+];

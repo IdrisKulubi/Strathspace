@@ -162,7 +162,7 @@ export async function getCacheStats() {
     const redis = await getRedisInstance();
     if (!redis) return null;
     
-    // @ts-ignore
+    //@ts-expect-error redis info returns a string but I will fix it later
     const info = await redis.info() as string;
     
     const memoryMatch = info.match(/used_memory:(\d+)/);

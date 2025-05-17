@@ -1,11 +1,10 @@
 import { getRedisInstance } from "@/lib/redis";
-import { CACHE_DURATION } from "../constants/cache";
 
 type RateLimitOptions = {
   limit?: number;        // Max requests in window
   window?: number;       // Time window in seconds
   identifier?: string;   // Additional identifier for more granular rate limiting
-  strictMode?: boolean;  // Whether to fail closed (true) or open (false) when Redis is unavailable
+  strictMode?: boolean;  
 };
 
 type RateLimitResult = {
@@ -15,10 +14,7 @@ type RateLimitResult = {
   retryAfter?: number;   // Suggested seconds to wait before retry if limited
 };
 
-/**
- * Implements a sliding window rate limiting algorithm
- * More precise than fixed window and prevents burst at window boundaries
- */
+
 export async function rateLimit(
   userId: string, 
   options: RateLimitOptions = {}
@@ -37,7 +33,6 @@ export async function rateLimit(
   try {
     const redis = await getRedisInstance();
     
-    // If Redis is unavailable, handle based on strict mode
     if (!redis) {
       console.warn("Redis unavailable for rate limiting");
       return {
@@ -47,8 +42,7 @@ export async function rateLimit(
       };
     }
     
-    // Remove old entries outside the current window and add the new request
-    // Using pipeline for better performance
+    
     const pipeline = redis.pipeline();
     
     // Remove entries older than our window
@@ -102,10 +96,7 @@ export async function rateLimit(
   }
 }
 
-/**
- * Higher-level rate limiting function with multiple tiers
- * Uses different limits based on user roles or plans
- */
+
 export async function tieredRateLimit(
   userId: string,
   tier: 'free' | 'premium' | 'admin' = 'free',

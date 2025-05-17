@@ -49,7 +49,10 @@ export async function GET() {
   } catch (error) {
     console.error("Error checking Redis status:", error);
     return NextResponse.json(
-      { error: "Failed to check Redis status", details: error.message },
+      { 
+        error: "Failed to check Redis status", 
+        details: error instanceof Error ? error.message : "Unknown error occurred" 
+      },
       { status: 500 }
     );
   }
