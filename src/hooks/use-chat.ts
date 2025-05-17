@@ -125,7 +125,7 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
     };
 
     initChat();
-  }, [matchId, handleNewMessage, handleTypingEvent]);
+  }, [matchId, handleNewMessage, handleTypingEvent,channel]);
 
   const handleSend = useCallback(
     async (content: string) => {
