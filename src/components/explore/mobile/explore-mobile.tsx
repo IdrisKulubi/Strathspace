@@ -245,8 +245,24 @@ export function ExploreMobile({
         <EmptyMobileView
           currentUser={currentUser}
           onShare={handleShare}
-        
-        
+          onUnlike={async (profileId) => {
+            const result = await undoLastSwipe(profileId);
+            if (result.success) {
+              setLikedProfiles((prev) =>
+                prev.filter((p) => p.userId !== profileId)
+              );
+              toast({
+                title: "Profile unliked",
+                description: "The profile has been removed from your likes",
+              });
+            } else {
+              toast({
+                title: "Error",
+                description: "Failed to unlike profile. Please try again later.",
+                variant: "destructive",
+              });
+            }
+          }}
         />
       )}
 
