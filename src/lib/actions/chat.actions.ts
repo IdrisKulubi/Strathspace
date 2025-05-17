@@ -1,7 +1,7 @@
 'use server'
 
 import  db  from "@/db/drizzle";
-import { messages } from "@/db/schema";
+import { matches, messages } from "@/db/schema";
 import { auth } from "@/auth";
 import { eq, and } from "drizzle-orm";
 import { pusher } from "@/lib/pusher/server";
@@ -60,7 +60,7 @@ export async function sendMessage(
       .returning();
 
     const matchDetails = await db.query.matches.findFirst({
-      where: eq(messages.matchId, matchId),
+      where: eq(matches.id, matchId),
       columns: { user1Id: true, user2Id: true },
     });
 
