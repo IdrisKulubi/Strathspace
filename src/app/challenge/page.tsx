@@ -148,7 +148,7 @@ function ConfettiButton({ children }: { children: React.ReactNode }) {
     if (!showConfetti) {
       setParticleStyles([]);
     }
-  }, [showConfetti]); 
+  }, [showConfetti, particleStyles]); 
   return (
     <div className="relative overflow-hidden">
       <div 
@@ -219,7 +219,7 @@ export default function ChallengePage() {
             Haha, Gotcha!
           </h1>
           <p className="text-lg sm:text-xl text-gray-700 dark:text-gray-300">
-            Okay, okay, there's NO TEA TO SPILL 😭🥴... <span className="font-semibold">BUT</span> you <span className="animate-pulse inline-block text-pink-500">*did*</span> just uncover something even better!
+            Okay, okay, there&apos;s NO TEA TO SPILL 😭🥴... <span className="font-semibold">BUT</span> you <span className="animate-pulse inline-block text-pink-500">*did*</span> just uncover something even better
           </p>
         </div>
 
@@ -291,7 +291,7 @@ export default function ChallengePage() {
             <h3 className="text-xl font-semibold text-pink-600 dark:text-pink-400">Try Anonymous Mode!</h3>
           </div>
           <p className="text-gray-700 dark:text-gray-300 max-w-md mx-auto">
-            Not ready to show your face? No worries! Join anonymously and still get a feel for the vibe. Your secret's safe with us. <span className="inline-block animate-wiggle">😉</span>
+            Not ready to show your face? No worries! Join anonymously and still get a feel for the vibe. Your secret&apos;apos;s safe with us. <span className="inline-block animate-wiggle">😉</span>
           </p>
         </div>
         
