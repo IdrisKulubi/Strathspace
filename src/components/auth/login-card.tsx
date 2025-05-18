@@ -91,7 +91,7 @@ export function LoginCard() {
             </p>
           </form>
 
-          {/* Spotify Sign in form */}
+          {/* Spotify Sign in form
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -110,7 +110,7 @@ export function LoginCard() {
               </svg>
               Continue with Spotify
             </Button>
-          </form>
+          </form> */}
 
           {/* Footer */}
           <div className="text-center text-sm text-muted-foreground">
