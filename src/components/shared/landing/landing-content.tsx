@@ -61,8 +61,7 @@ export function LandingContent({
             </span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-400">
-            Skip the lecture limbo 😴 Find your vibe tribe - whether it&apos;s study buddies, 
-            party partners, or that cutie from the coffee queue ☕👀
+            Level up your campus life. Connect with your crew, find your study squad, or maybe even your main. 😉
           </p>
           <div className="flex justify-center gap-2 text-pink-600 dark:text-pink-400">
             <span className="animate-pulse">🫶</span>
