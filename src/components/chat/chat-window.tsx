@@ -14,15 +14,17 @@ import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { useEffect, useRef } from "react";
 import { markMessagesAsRead } from "@/lib/actions/chat.actions";
 import { usePathname, useRouter } from "next/navigation";
+import { RevealRequestButton } from "@/components/anonymous/RevealRequestButton";
 
 
 interface ChatWindowProps {
   matchId: string;
   partner: Profile;
+  currentUserProfile: Profile | null;
   onClose?: () => void;
 }
 
-export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
+export const ChatWindow = ({ matchId, onClose, partner, currentUserProfile }: ChatWindowProps) => {
   const {
     messages,
     isTyping,
@@ -123,6 +125,19 @@ export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
           <div className="px-4 py-2 text-sm text-muted-foreground text-center border-b">
             You matched with {partnerName} on {matchDate}
           </div>
+          
+          {/* Reveal Request Button Logic */}
+          {currentUserProfile?.anonymous && partner?.anonymous && (
+            <div className="p-4 border-b text-center">
+              <p className="text-sm text-muted-foreground mb-2">
+                You are both in Anonymous Mode. Choose to reveal your profiles?
+              </p>
+              <RevealRequestButton 
+                matchId={matchId} 
+                hasRequested={currentUserProfile?.anonymousRevealRequested ?? false}
+              />
+            </div>
+          )}
           
           <ScrollArea 
             className="flex-1 p-4"

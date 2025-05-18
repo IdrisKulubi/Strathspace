@@ -1,9 +1,11 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, User as UserIcon, ShieldCheck } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ImageSlider from './controls/ImageSlider';
+import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
 
 interface ProfileDetailsModalProps {
   profile: {
@@ -16,10 +18,14 @@ interface ProfileDetailsModalProps {
     photos?: string[];
     profilePhoto?: string;
     lookingFor?: string;
+    anonymous?: boolean;
+    anonymousAvatar?: string;
+    anonymousRevealRequested?: boolean;
   };
   isOpen: boolean;
   onClose: () => void;
 }
+
 const overlayVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
@@ -31,6 +37,14 @@ const modalVariants = {
 };
 
 export function ProfileDetailsModal({ profile, isOpen, onClose }: ProfileDetailsModalProps) {
+  // Safely handle null profile case
+  if (!profile && isOpen) {
+    return null;
+  }
+  
+  // Check if profile is anonymous (with null safety)
+  const isAnonymous = profile?.anonymous ?? false;
+  const anonymousAvatar = isAnonymous ? profile?.anonymousAvatar : null;
 
   return (
     <AnimatePresence>
@@ -53,7 +67,14 @@ export function ProfileDetailsModal({ profile, isOpen, onClose }: ProfileDetails
             {/* Header - Updated with mobile-friendly padding */}
             <div className="p-3 md:p-4 border-b border-pink-200/20 flex items-center justify-between bg-gradient-to-r from-pink-500/10 to-purple-500/10 backdrop-blur-sm">
               <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-                {profile.firstName}&apos;s Profile
+                {isAnonymous ? (
+                  <span className="flex items-center gap-2">
+                    Anonymous Profile
+                    <Badge className="ml-2 bg-gray-500/10 text-gray-500 text-xs">Anonymous</Badge>
+                  </span>
+                ) : (
+                  `${profile.firstName}'s Profile`
+                )}
               </h2>
               <button
                 onClick={onClose}
@@ -67,7 +88,23 @@ export function ProfileDetailsModal({ profile, isOpen, onClose }: ProfileDetails
             {/* Scrollable Content - Updated padding and spacing */}
             <ScrollArea className="flex-1 overflow-y-auto">
               <div className="p-4 md:p-6 space-y-6 md:space-y-8">
-                {/* Image Slider - Adjusted for mobile */}
+                {/* Image Slider or Anonymous Avatar */}
+                {isAnonymous ? (
+                  <div className="relative aspect-[3/4] w-full max-w-sm mx-auto rounded-xl md:rounded-2xl overflow-hidden shadow-xl ring-2 ring-pink-500/20 bg-gradient-to-br from-gray-700 via-gray-800 to-black flex items-center justify-center">
+                    {anonymousAvatar ? (
+                      <Image
+                        src={`/avatars/${anonymousAvatar}.svg`}
+                        alt="Anonymous avatar"
+                        width={150}
+                        height={150}
+                        className="opacity-80"
+                        priority
+                      />
+                    ) : (
+                      <UserIcon className="w-32 h-32 text-white opacity-70" />
+                    )}
+                  </div>
+                ) : (
                 <div className="relative aspect-[3/4] w-full max-w-sm mx-auto rounded-xl md:rounded-2xl overflow-hidden shadow-xl ring-2 ring-pink-500/20">
                   <ImageSlider
                     slug={[
@@ -77,9 +114,10 @@ export function ProfileDetailsModal({ profile, isOpen, onClose }: ProfileDetails
                     className="h-full object-cover"
                   />
                 </div>
+                )}
 
-                {/* Looking For Section - Adjusted padding */}
-                {profile.lookingFor && (
+                {/* Looking For Section - Only show for non-anonymous profiles */}
+                {profile.lookingFor && !isAnonymous && (
                   <div className="relative p-4 md:p-6 rounded-xl md:rounded-2xl bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-200/20 shadow-inner">
                     <div className="absolute -top-3 left-4 px-3 py-0.5 bg-background rounded-full border border-pink-200/20">
                       <span className="text-sm font-medium bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
@@ -92,14 +130,34 @@ export function ProfileDetailsModal({ profile, isOpen, onClose }: ProfileDetails
                   </div>
                 )}
 
-                {/* Details Section - Updated grid for mobile */}
+                {/* Anonymous Message */}
+                {isAnonymous && (
+                  <div className="p-4 md:p-6 rounded-xl md:rounded-2xl bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-200/20 shadow-inner text-center">
+                    <ShieldCheck className="mx-auto h-8 w-8 text-pink-500 mb-2" />
+                    <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                      Anonymous Profile
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      This user has chosen to remain anonymous. Their identity will be revealed when both of you agree to reveal your profiles.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Use the &quot;Reveal Identity&quot; button in chat to request seeing this user&apos;s real profile.
+                    </p>
+                  </div>
+                )}
+
+                {/* Details Section - Only show for non-anonymous profiles */}
+                {!isAnonymous && (
                 <div className="space-y-4 md:space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                     <DetailItem label="Age" value={profile.age?.toString() || ''} />
                     <DetailItem label="Year" value={`Year ${profile.yearOfStudy}`} />
                     <DetailItem label="Course" value={profile.course || ''} span={2} />
                   </div>
+                  </div>
+                )}
 
+                {/* Interests - Show for both anonymous and non-anonymous */}
                   {profile.interests && profile.interests.length > 0 && (
                     <div className="space-y-3">
                       <h3 className="text-sm font-medium text-pink-400">Interests</h3>
@@ -116,6 +174,7 @@ export function ProfileDetailsModal({ profile, isOpen, onClose }: ProfileDetails
                     </div>
                   )}
 
+                {/* Bio - Show for both anonymous and non-anonymous */}
                   {profile.bio && (
                     <div className="space-y-2">
                       <h3 className="text-sm font-medium text-pink-400">Bio</h3>
@@ -124,7 +183,6 @@ export function ProfileDetailsModal({ profile, isOpen, onClose }: ProfileDetails
                       </p>
                     </div>
                   )}
-                </div>
               </div>
             </ScrollArea>
           </motion.div>

@@ -6,13 +6,14 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { Profile } from "@/db/schema";
 import { Card } from "@/components/ui/card";
 import ImageSlider from "../controls/ImageSlider";
-import { ChevronDown, Info, X, Heart, ChevronUp } from 'lucide-react';
+import { ChevronDown, Info, X, Heart, ChevronUp, User as UserIcon } from 'lucide-react';
 import { ProfileDetailsModal } from '../profile-details-modal';
 import { trackProfileView } from "@/lib/actions/stalker.actions";
 import { useAction } from "next-safe-action/hooks";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from '@/hooks/use-media-query';
+import Image from "next/image";
 
 const initInteractionTroubleshooter = () => {
   if (process.env.NODE_ENV !== 'production') {
@@ -178,6 +179,11 @@ export function SwipeableCard({
 
   if (!active) return null;
 
+  const isAnonymous = profile.anonymous;
+  const currentAnonymousAvatar = isAnonymous ? profile.anonymousAvatar : null;
+
+  const displayPhotos = isAnonymous ? [] : [profile.profilePhoto || "", ...(profile.photos || [])].filter(Boolean);
+
   return (
     <motion.div
       className={cn("relative h-full w-full select-none", customStyles.card)}
@@ -227,16 +233,34 @@ export function SwipeableCard({
 
       <Card className="relative w-full h-full overflow-hidden rounded-sm shadow-xl">
         <div className="absolute inset-0 z-0">
-          <ImageSlider 
-            slug={[profile.profilePhoto || "", ...(profile.photos || [])].filter(Boolean)}
-            className={customStyles.image || "h-full object-cover"}
-            onSlideChange={handleSlideChange}
-          />
+          {isAnonymous ? (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 via-gray-800 to-black flex-col p-4">
+              {currentAnonymousAvatar ? (
+                <Image
+                  src={`/avatars/${currentAnonymousAvatar}.svg`}
+                  alt={`${currentAnonymousAvatar} avatar`}
+                  width={128}
+                  height={128}
+                  className="opacity-80"
+                  priority
+                />
+              ) : (
+                <UserIcon className="w-32 h-32 text-white opacity-70" />
+              )}
+              <p className="mt-4 text-2xl font-bold text-white opacity-90">This user is Anonymous</p>
+            </div>
+          ) : (
+            <ImageSlider 
+              slug={displayPhotos}
+              className={customStyles.image || "h-full object-cover"}
+              onSlideChange={handleSlideChange}
+            />
+          )}
         </div>
         
-        {profile.photos && profile.photos.length > 0 && (
+        {!isAnonymous && displayPhotos.length > 0 && (
           <div className="absolute top-3 left-0 right-0 z-30 flex justify-center gap-1">
-            {[profile.profilePhoto, ...(profile.photos || [])].filter(Boolean).map((_, i) => (
+            {displayPhotos.map((_, i) => (
               <div key={i} className={`h-1 ${i === activeImageIndex ? 'bg-pink-500 w-8' : 'bg-white/50 w-6'} rounded-sm transition-all duration-300`} />
             ))}
           </div>
@@ -257,11 +281,25 @@ export function SwipeableCard({
         
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent text-white z-10" style={{ pointerEvents: 'auto' }}>
           <div className="p-6 pb-3">
-            <div className="flex justify-between items-start mb-1">
-              <h3 className="text-2xl font-bold tracking-tight">{profile.firstName}, <span className="text-2xl">{profile.age || 18}</span></h3>
-              {/* TODO: Add verified badge */}
-            </div>
-            <p className="text-base text-white/80">{profile.course}</p>
+           
+
+            {isAnonymous && (
+              <div className="my-3 p-3 bg-black/20 rounded-lg backdrop-blur-sm">
+                <p className="text-sm text-white/80">
+                  This user is currently in Anonymous Mode. Some details are hidden. If you match, you can both choose to reveal your profiles.
+                </p>
+              </div>
+            )}
+
+            {(profile.interests && profile.interests.length > 0 && !isAnonymous) && (
+              <div className={cn("flex flex-wrap gap-2 mt-3", customStyles.interests)}>
+                {profile.interests.map((interest, idx) => (
+                  <Badge key={idx} variant="outline" className="bg-purple-500/20 border-purple-400/30 text-white/90 text-xs py-0.5 px-2 rounded-full">
+                    {interest}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
           
           <div className="px-6 pb-1 flex flex-wrap gap-2 items-center">

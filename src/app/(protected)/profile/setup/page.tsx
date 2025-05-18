@@ -71,8 +71,8 @@ function SetupForm() {
       username: undefined,
     },
   });
-
   const handleDetailsInputChange = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (field: keyof Omit<ProfileFormData, "profilePhoto" | "photos" | "bio" | "interests" | "instagram" | "spotify" | "snapchat">, value: any) => {
       form.setValue(field as keyof ProfileFormData, value, { shouldValidate: true, shouldDirty: true });
     },

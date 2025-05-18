@@ -16,7 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { EmptyMobileView } from "../cards/empty-mobile";
 import { LikesModal } from "../modals/likes-modal";
-import { ProfilePreviewModal } from "../modals/profile-preview-modal";
+import { ProfileDetailsModal } from "../profile-details-modal";
 import { useInterval } from "@/hooks/use-interval";
 import { handleLike } from "@/lib/actions/like.actions";
 import { MatchesModal } from "../modals/matches-modal";
@@ -49,6 +49,22 @@ import { MobileNavbar } from "./mobile-navbar";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
 
+// Add a type definition for ProfileDetailsType
+interface ProfileDetailsType {
+  firstName?: string;
+  age?: number;  
+  course?: string;
+  yearOfStudy?: number;
+  bio?: string;
+  interests?: string[];
+  photos?: string[];
+  profilePhoto?: string;
+  lookingFor?: string;
+  anonymous?: boolean;
+  anonymousAvatar?: string;
+  anonymousRevealRequested?: boolean;
+}
+
 interface ExploreMobileV2Props {
   initialProfiles: Profile[];
   currentUserProfile: Profile;
@@ -67,6 +83,7 @@ const LikesModalServer = dynamic(
 export function ExploreMobileV2({
   initialProfiles,
   currentUser,
+  currentUserProfile,
   markAsRead,
   likedProfiles: initialLikedProfiles,
   likedByProfiles: initialLikedByProfiles,
@@ -181,13 +198,23 @@ export function ExploreMobileV2({
       }
 
       if (likesResult.profiles) {
-        const newLikes = likesResult.profiles.filter(
+        // First filter out profiles that are already matches
+        const filteredLikes = likesResult.profiles.filter(
           (profile: Profile) =>
             !matchesResult.matches?.some(
               (match) => match.userId === profile.userId
             )
         );
-        setLikes(newLikes);
+        
+        // Deduplicate likes by userId to prevent React key conflicts
+        const uniqueLikes = filteredLikes.reduce((acc: Profile[], current: Profile) => {
+          if (!acc.some(profile => profile.userId === current.userId)) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+        
+        setLikes(uniqueLikes);
         setIsLikesLoading(false);
         setHasLoadedLikes(true);
       }
@@ -375,6 +402,26 @@ export function ExploreMobileV2({
     setShowChatList(false);
   };
 
+  // Add convertToProfileDetailsType function
+  const convertToProfileDetailsType = (profile: Profile | null): ProfileDetailsType | null => {
+    if (!profile) return null;
+    
+    return {
+      firstName: profile.firstName,
+      age: profile.age !== null ? profile.age : undefined,
+      course: profile.course || undefined,
+      yearOfStudy: profile.yearOfStudy !== null ? profile.yearOfStudy : undefined,
+      bio: profile.bio || undefined,
+      interests: profile.interests || undefined,
+      photos: profile.photos || undefined,
+      profilePhoto: profile.profilePhoto || undefined,
+      lookingFor: profile.lookingFor || undefined,
+      anonymous: profile.anonymous || undefined,
+      anonymousAvatar: profile.anonymousAvatar || undefined,
+      anonymousRevealRequested: profile.anonymousRevealRequested || undefined
+    };
+  };
+
   return (
     <div className="relative h-full">
         <MobileNavbar />
@@ -398,6 +445,7 @@ export function ExploreMobileV2({
       {selectedChatId && (
         <div className="fixed inset-0 z-50 bg-background animate-slide-in">
           <ChatWindow
+            currentUserProfile={currentUserProfile}
             matchId={selectedChatId}
             onClose={() => setSelectedChatId(null)}
             partner={matches.find((match) => match.matchId === selectedChatId) as Profile}
@@ -425,18 +473,22 @@ export function ExploreMobileV2({
                     </div>
                     
                     {/* Preload the next profiles (hidden but loaded in DOM) */}
-                    {visibleProfiles.slice(1).map((profile, idx) => (
-                      <div 
-                        key={`preload-${profile.userId}-${idx}`} 
-                        className={idx < 2 ? "absolute inset-0 opacity-0 pointer-events-none" : "hidden"}
-                      >
-                        <SwipeableCard
-                          profile={profile as Profile & { photos: string[] }}
-                          onSwipe={() => {}}
-                          active={false}
-                        />
-                      </div>
-                    ))}
+                    {visibleProfiles.slice(1).map((profile, idx) => {
+                      // Ensure each key is truly unique by combining userId with index
+                      const uniqueKey = `preload-${profile.userId}-${idx}-${Date.now()}`;
+                      return (
+                        <div 
+                          key={uniqueKey}
+                          className={idx < 2 ? "absolute inset-0 opacity-0 pointer-events-none" : "hidden"}
+                        >
+                          <SwipeableCard
+                            profile={profile as Profile & { photos: string[] }}
+                            onSwipe={() => {}}
+                            active={false}
+                          />
+                        </div>
+                      );
+                    })}
                   </>
                 )}
               </AnimatePresence>
@@ -587,10 +639,10 @@ export function ExploreMobileV2({
           )}
         </Suspense>
 
-        <ProfilePreviewModal
+        <ProfileDetailsModal
           isOpen={!!previewProfile}
           onClose={() => setPreviewProfile(null)}
-          profile={previewProfile}
+          profile={convertToProfileDetailsType(previewProfile) || {}}
         />
       </div>
     </div>

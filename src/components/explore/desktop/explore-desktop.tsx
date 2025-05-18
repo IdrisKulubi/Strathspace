@@ -48,6 +48,7 @@ import { FeedbackModal } from "@/components/shared/feedback-modal";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { ProfileDetailsModal } from "../profile-details-modal";
+import { UserIcon } from "lucide-react";
 
 interface ExploreDesktopProps {
   initialProfiles: Profile[];
@@ -75,6 +76,9 @@ interface ProfileDetailsType {
   photos?: string[];
   profilePhoto?: string;
   lookingFor?: string;
+  anonymous: boolean;
+  anonymousAvatar?: string;
+  anonymousRevealRequested: boolean;
 }
 
 // Dynamically import LikesModalServer with client-side rendering (no SSR)
@@ -431,6 +435,9 @@ export function ExploreDesktop({
       photos: profile.photos || undefined,
       profilePhoto: profile.profilePhoto || undefined,
       lookingFor: profile.lookingFor || undefined,
+      anonymous: profile.anonymous || false,
+      anonymousAvatar: profile.anonymousAvatar || undefined,
+      anonymousRevealRequested: profile.anonymousRevealRequested || false
     };
   };
 
@@ -700,9 +707,7 @@ export function ExploreDesktop({
                         handleRevert();
                       }}
                       onSuperLike={() => {
-                        if (profiles[currentIndex]) {
-                          handleViewProfile(profiles[currentIndex]);
-                        }
+                       
                         toast({
                           title: "bestie wait ⭐️✨",
                           description:
@@ -745,71 +750,117 @@ export function ExploreDesktop({
                   </div>
                 ) : matches.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {matches.map((match) => (
-                      <motion.div
-                        key={match.userId}
-                        initial={{ scale: 0.95, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                        transition={{ duration: 0.3 }}
-                        layout // Add layout animation for smooth transitions when grid changes
-                      >
-                        <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/40 bg-white/50 dark:bg-black/20 backdrop-blur-sm group">
-                          <div className="aspect-[3/4] relative overflow-hidden">
-                            <Image 
-                              src={match.profilePhoto || '/default-avatar.png'} 
-                              alt={match.firstName} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                              width={100}
-                              height={100}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 opacity-80 group-hover:opacity-100 transition-opacity" />
-                            
-                            <div className="absolute top-2 right-2 z-10  opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              <Button 
-                                size="icon" 
-                                variant="secondary"
-                                className="h-8 w-8 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/40 text-white"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleViewProfile(match);
-                                }}
-                              >
-                                <Info className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            
-                            <div className="absolute bottom-3 left-3 text-white z-10">
-                              <h3 className="font-bold text-lg">{match.firstName}, {match.age}</h3>
-                              <p className="text-sm opacity-90">{match.course}</p>
-                            </div>
-                            
-                            <div className="absolute inset-x-0 bottom-0 h-16 flex items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-                              <div className="w-full py-2 px-3 bg-gradient-to-t from-black/80 via-black/70 to-transparent">
-                                <div className="flex justify-between">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="px-3 bg-white/10 border-white/20 text-white backdrop-blur-sm hover:bg-white/20"
-                                    onClick={() => handleViewProfile(match)}
-                                  >
-                                    Profile
-                                  </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    className="px-3 bg-pink-500/90 border-pink-500/50 text-white hover:bg-pink-600 backdrop-blur-sm"
-                                    onClick={() => handleSelectChat(match.matchId as string)}
-                                  >
-                                    Message
-                                  </Button>
+                    {matches.map((match) => {
+                      // Check if profile is anonymous
+                      const isAnonymous = match.anonymous;
+                      const anonymousAvatar = isAnonymous ? match.anonymousAvatar : null;
+                      
+                      return (
+                        <motion.div
+                          key={match.userId}
+                          initial={{ scale: 0.95, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                          transition={{ duration: 0.3 }}
+                          layout
+                        >
+                          <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/40 bg-white/50 dark:bg-black/20 backdrop-blur-sm group">
+                            <div className="aspect-[3/4] relative overflow-hidden">
+                              {isAnonymous ? (
+                                // Anonymous profile display
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 via-gray-800 to-black">
+                                  {anonymousAvatar ? (
+                                    <Image
+                                      src={`/avatars/${anonymousAvatar}.svg`}
+                                      alt="Anonymous avatar"
+                                      width={120}
+                                      height={120}
+                                      className="opacity-80"
+                                      priority
+                                    />
+                                  ) : (
+                                    <UserIcon className="w-20 h-20 text-white opacity-70" />
+                                  )}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 opacity-80 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              ) : (
+                                // Regular profile display
+                                <>
+                                  <Image 
+                                    src={match.profilePhoto || '/default-avatar.png'} 
+                                    alt={match.firstName} 
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                    width={100}
+                                    height={100}
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 opacity-80 group-hover:opacity-100 transition-opacity" />
+                                </>
+                              )}
+                              
+                              <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <Button 
+                                  size="icon" 
+                                  variant="secondary"
+                                  className="h-8 w-8 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/40 text-white"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewProfile(match);
+                                  }}
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              
+                              <div className="absolute bottom-3 left-3 text-white z-10">
+                                {isAnonymous ? (
+                                  <h3 className="font-bold text-lg">Anonymous User</h3>
+                                ) : (
+                                  <>
+                                    <h3 className="font-bold text-lg">{match.firstName}, {match.age}</h3>
+                                    <p className="text-sm opacity-90">{match.course}</p>
+                                  </>
+                                )}
+                              </div>
+                              
+                              <div className="absolute inset-x-0 bottom-0 h-16 flex items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                                <div className="w-full py-2 px-3 bg-gradient-to-t from-black/80 via-black/70 to-transparent">
+                                  <div className="flex justify-between">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="px-3 bg-white/10 border-white/20 text-white backdrop-blur-sm hover:bg-white/20"
+                                      onClick={() => handleViewProfile(match)}
+                                    >
+                                      Profile
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      className="px-3 bg-pink-500/90 border-pink-500/50 text-white hover:bg-pink-600 backdrop-blur-sm"
+                                      onClick={() => handleSelectChat(match.matchId as string)}
+                                    >
+                                      Message
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
+                              
+                              {/* Anonymous Status Badge */}
+                              {isAnonymous && (
+                                <div className="absolute top-3 left-3 z-20">
+                                  <Badge 
+                                    variant="outline" 
+                                    className="bg-black/50 text-white border-white/20 backdrop-blur-sm"
+                                  >
+                                    Anonymous
+                                  </Badge>
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    ))}
+                          </Card>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-20 bg-pink-50/30 dark:bg-pink-950/10 rounded-xl border border-pink-200/30 dark:border-pink-900/20">
@@ -853,42 +904,96 @@ export function ExploreDesktop({
               <ScrollArea className="h-[calc(100vh-10rem)] pr-4">
                 {likes.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {likes.map((like) => (
-                      <motion.div
-                        key={like.userId}
-                        initial={{ scale: 0.95, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/40 bg-white/50 dark:bg-black/20 backdrop-blur-sm">
-                          <div className="aspect-[3/4] relative overflow-hidden group">
-                            <Image 
-                              src={like.profilePhoto || '/default-avatar.png'} 
-                              alt={like.firstName} 
-                              className="w-full h-full object-cover"
-                              width={100}
-                              height={100}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70 flex items-center justify-center">
-                              <div className="text-center p-4">
-                                <Heart className="h-12 w-12 text-pink-500 mx-auto mb-3 animate-pulse" />
-                                <p className="text-lg font-semibold text-white">{like.firstName}, {like.age}</p>
-                                <p className="text-sm text-white/80 mt-1 mb-4">{like.course}</p>
-                                <Button 
-                                  variant="default" 
-                                  size="sm" 
-                                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-                                  onClick={() => handleLikeBack(like.userId)}
-                                >
-                                  Like Back
-                                </Button>
+                    {likes.map((like) => {
+                      // Check if profile is anonymous
+                      const isAnonymous = like.anonymous;
+                      const anonymousAvatar = isAnonymous ? like.anonymousAvatar : null;
+                      
+                      return (
+                        <motion.div
+                          key={like.userId}
+                          initial={{ scale: 0.95, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/40 bg-white/50 dark:bg-black/20 backdrop-blur-sm">
+                            <div className="aspect-[3/4] relative overflow-hidden group">
+                              {isAnonymous ? (
+                                // Anonymous profile
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 via-gray-800 to-black">
+                                  {anonymousAvatar ? (
+                                    <Image
+                                      src={`/avatars/${anonymousAvatar}.svg`}
+                                      alt="Anonymous avatar"
+                                      width={120}
+                                      height={120}
+                                      className="opacity-80"
+                                      priority
+                                    />
+                                  ) : (
+                                    <UserIcon className="w-20 h-20 text-white opacity-70" />
+                                  )}
+                                </div>
+                              ) : (
+                                // Regular profile photo
+                                <Image 
+                                  src={like.profilePhoto || '/default-avatar.png'} 
+                                  alt={like.firstName} 
+                                  className="w-full h-full object-cover"
+                                  width={100}
+                                  height={100}
+                                />
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70 flex items-center justify-center">
+                                <div className="text-center p-4">
+                                  <Heart className="h-12 w-12 text-pink-500 mx-auto mb-3 animate-pulse" />
+                                  {isAnonymous ? (
+                                    <>
+                                      <p className="text-lg font-semibold text-white flex items-center justify-center gap-2">
+                                        Anonymous User
+                                        <Badge 
+                                          variant="outline" 
+                                          className="bg-black/50 text-white border-white/20 backdrop-blur-sm"
+                                        >
+                                          Anonymous
+                                        </Badge>
+                                      </p>
+                                      <p className="text-sm text-white/80 mt-1 mb-4">Identity hidden</p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <p className="text-lg font-semibold text-white">{like.firstName}, {like.age}</p>
+                                      <p className="text-sm text-white/80 mt-1 mb-4">{like.course}</p>
+                                    </>
+                                  )}
+                                  <Button 
+                                    variant="default" 
+                                    size="sm" 
+                                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                                    onClick={() => handleLikeBack(like.userId)}
+                                  >
+                                    Like Back
+                                  </Button>
+                                </div>
                               </div>
+                              
+                              {/* Anonymous Status Badge - Top corner */}
+                              {isAnonymous && (
+                                <div className="absolute top-3 left-3 z-20">
+                                  <Badge 
+                                    variant="outline" 
+                                    className="bg-black/50 text-white border-white/20 backdrop-blur-sm"
+                                  >
+                                    Anonymous
+                                  </Badge>
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    ))}
+                          </Card>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-20 bg-amber-50/30 dark:bg-amber-950/10 rounded-xl border border-amber-200/30 dark:border-amber-900/20">
@@ -924,6 +1029,7 @@ export function ExploreDesktop({
                   matchId={selectedChatId}
                   onClose={() => setSelectedChatId(null)}
                   partner={matches.find((match) => match.matchId === selectedChatId) as ChatPartner}
+                  currentUserProfile={currentUserProfile}
                 />
               ) : (
                 <div className="w-full h-full">
