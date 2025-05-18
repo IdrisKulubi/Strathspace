@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Gift, Share2, UserCheck, Ghost, Sparkles } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { ShareChallenge } from "@/components/challenge/ShareChallenge";
 
 const laughEmojis = ["😂", "🤣", "😆", "😜", "😝", "😹", "🥳", "😎" ];
 
@@ -179,21 +180,22 @@ function ConfettiButton({ children }: { children: React.ReactNode }) {
 }
 
 export default function ChallengePage() {
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  
   // Refs for scroll-based animations
   const anonymousSectionRef = useRef<HTMLDivElement>(null);
   const prizeSectionRef = useRef<HTMLDivElement>(null);
   
-  // Use intersection observers to detect when sections enter viewport
   const isAnonymousSectionVisible = useIntersectionObserver(anonymousSectionRef);
   const isPrizeSectionVisible = useIntersectionObserver(prizeSectionRef);
 
-  // TODO: Fetch real prize details, referral links etc. later
   const prizeDetails = {
-    grandPrize: "5000 cash",
+    grandPrize: "10000 cash",
     merchWinners: "10 x StrathSpace hoodies or stickers",
   };
 
-  const referralLink = "strathspace.com/join?ref=youruniqueid"; // Placeholder
+  const referralLink = "https://strathspace.com"; 
+  const baseShareText = "🎉 Hey! Found this awesome campus challenge on StrathSpace. Join the fun, win prizes, and find your vibe! Check it out:";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 dark:from-gray-900 dark:via-pink-900/20 dark:to-purple-900/30 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center p-4 sm:p-8 overflow-hidden relative isolate">
@@ -236,7 +238,7 @@ export default function ChallengePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <ConfettiButton>
             <Link href="/login" passHref>
               <Button size="lg" className="w-full bg-pink-600 hover:bg-pink-700 dark:bg-pink-500 dark:hover:bg-pink-600 text-white text-lg py-3 rounded-xl shadow-lg transform hover:scale-110 transition-all duration-200 group">
@@ -249,12 +251,26 @@ export default function ChallengePage() {
           <Button 
             size="lg" 
             variant="outline" 
+            onClick={() => setShowShareOptions(!showShareOptions)}
             className="w-full text-lg py-3 rounded-xl border-pink-500 text-pink-500 hover:bg-pink-500/10 hover:text-pink-600 dark:border-pink-400 dark:text-pink-400 dark:hover:bg-pink-400/10 dark:hover:text-pink-300 shadow-lg transform hover:scale-110 transition-all duration-200 relative overflow-hidden group"
+            aria-expanded={showShareOptions}
+            aria-controls="share-options"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-pink-500/0 via-pink-500/30 to-pink-500/0 dark:from-pink-400/0 dark:via-pink-400/20 dark:to-pink-400/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-            <Share2 className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform" /> Share for Entries
+            <Share2 className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform" /> 
+            {showShareOptions ? 'Close Share' : 'Share for Entries'}
           </Button>
         </div>
+
+        {showShareOptions && (
+          <div id="share-options" className="my-6">
+            <ShareChallenge 
+              shareUrl={referralLink} 
+              baseText={baseShareText} 
+              onClose={() => setShowShareOptions(false)} 
+            />
+          </div>
+        )}
 
         <div 
           ref={anonymousSectionRef}
