@@ -88,11 +88,16 @@ export default {
           from: { transform: 'translateY(100%)' },
           to: { transform: 'translateY(0)' },
         },
+        wiggle: {
+          '0%, 100%': { transform: 'rotate(-3deg)' },
+          '50%': { transform: 'rotate(3deg)' },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         'modal-slide-up': 'modalSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+        wiggle: 'wiggle 0.5s ease-in-out infinite',
       },
       fontFamily: {
         graffiti: ["Permanent Marker", "cursive"],
