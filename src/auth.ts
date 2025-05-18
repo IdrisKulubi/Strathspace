@@ -1,5 +1,6 @@
 import NextAuth, { DefaultSession } from "next-auth";
 import Google from "next-auth/providers/google";
+import Spotify from "next-auth/providers/spotify";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
 import db from "@/db/drizzle";
@@ -35,6 +36,10 @@ export const {
         },
       },
     }),
+    Spotify({
+      clientId: process.env.SPOTIFY_CLIENT_ID!,
+      clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
+    }),
   ],
   adapter: DrizzleAdapter(db),
   session: {
@@ -45,10 +50,6 @@ export const {
     error: "/error",
   },
   callbacks: {
-    async signIn({ account }) {
-      if (account?.provider !== "google") return false;
-      return true; // Allow sign in
-    },
     async jwt({ token, account }) {
       if (account) {
         token.provider = account.provider;
