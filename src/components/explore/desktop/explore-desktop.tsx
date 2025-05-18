@@ -176,13 +176,21 @@ export function ExploreDesktop({
               (match) => match.userId === profile.userId
             )
         );
+
+        // Deduplicate filteredLikes by userId
+        const uniqueFilteredLikes = filteredLikes.reduce((acc, current) => {
+          if (!acc.some(item => item.userId === current.userId)) {
+            acc.push(current);
+          }
+          return acc;
+        }, [] as Profile[]);
         
         // Only update if there's a difference
         const currentLikesKey = likes.map(l => l.userId).sort().join(',');
-        const newLikesKey = filteredLikes.map(l => l.userId).sort().join(',');
+        const newLikesKey = uniqueFilteredLikes.map(l => l.userId).sort().join(',');
         
         if (currentLikesKey !== newLikesKey) {
-          setLikes(filteredLikes);
+          setLikes(uniqueFilteredLikes);
         }
         setIsLikesLoading(false);
       }

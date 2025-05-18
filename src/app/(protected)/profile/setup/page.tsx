@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,8 +40,44 @@ function SetupForm() {
       photos: [],
       interests: [],
       bio: "",
+      firstName: "",
+      lastName: "",
+      lookingFor: undefined,
+      course: "",
+      yearOfStudy: 0,
+      gender: undefined,
+      age: 0,
+      phoneNumber: "",
+      instagram: "",
+      spotify: "",
+      snapchat: "",
+      profilePhoto: "",
+      drinkingPreference: undefined,
+      workoutFrequency: undefined,
+      socialMediaUsage: undefined,
+      sleepingHabits: undefined,
+      personalityType: "",
+      communicationStyle: "",
+      loveLanguage: "",
+      zodiacSign: "",
+      visibilityMode: "standard",
+      incognitoMode: false,
+      discoveryPaused: false,
+      readReceiptsEnabled: true,
+      showActiveStatus: true,
+      anonymous: false,
+      anonymousAvatar: "",
+      anonymousRevealRequested: false,
+      username: undefined,
     },
   });
+
+  const handleDetailsInputChange = useCallback(
+    (field: keyof Omit<ProfileFormData, "profilePhoto" | "photos" | "bio" | "interests" | "instagram" | "spotify" | "snapchat">, value: any) => {
+      form.setValue(field as keyof ProfileFormData, value, { shouldValidate: true, shouldDirty: true });
+    },
+    [form]
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -316,7 +352,7 @@ function SetupForm() {
                   age: form.watch("age") || 0,
                   phoneNumber: form.watch("phoneNumber") || "",
                 }}
-                onChange={(field, value) => form.setValue(field as keyof ProfileFormData, value)}
+                onChange={handleDetailsInputChange}
                 errors={{
                   firstName: form.formState.errors.firstName?.message,
                   lastName: form.formState.errors.lastName?.message,

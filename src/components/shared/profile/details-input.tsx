@@ -77,13 +77,6 @@ export function DetailsInput({
   const [isValid, setIsValid] = useState(false);
   const [formattedNumber, setFormattedNumber] = useState("");
 
-  // Initialize phone number format if there's an initial value
-  useEffect(() => {
-    if (values.phoneNumber !== phoneInput) {
-      setPhoneInput(values.phoneNumber ?? "");
-    }
-  }, [values.phoneNumber, phoneInput]);
-
   // Validate and format phone number
   useEffect(() => {
     try {
@@ -91,7 +84,7 @@ export function DetailsInput({
         setIsValid(false);
         setFormattedNumber("");
         // Ensure we update the form value when clearing the input
-        if (values.phoneNumber) {
+        if (values.phoneNumber && values.phoneNumber !== "") { // Only call onChange if it's actually changing
           onChange("phoneNumber", "");
         }
         return;
@@ -102,18 +95,26 @@ export function DetailsInput({
       
       setIsValid(valid);
       if (valid) {
-        const formatted = phoneNumber.formatInternational();
-        setFormattedNumber(formatted);
-        // Only update the form value if the number is valid
-        if (phoneNumber.format("E.164") !== values.phoneNumber) {
-          onChange("phoneNumber", phoneNumber.format("E.164"));
+        const formattedE164 = phoneNumber.format("E.164");
+        setFormattedNumber(phoneNumber.formatInternational());
+        // Only update the form value if the number is valid and different
+        if (formattedE164 !== values.phoneNumber) {
+          onChange("phoneNumber", formattedE164);
         }
       } else {
         setFormattedNumber("");
+        // If the input becomes invalid (but not empty), clear it in the parent form if it was previously set.
+        if (values.phoneNumber && values.phoneNumber !== "") { // Only call onChange if it's actually changing
+          onChange("phoneNumber", "");
+        }
       }
     } catch (error) {
       setIsValid(false);
       setFormattedNumber("");
+      // If an error occurs and the parent form still holds a phone number, clear it.
+      if (values.phoneNumber && values.phoneNumber !== "") { // Only call onChange if it's actually changing
+        onChange("phoneNumber", "");
+      }
     }
   }, [phoneInput, selectedCountry, onChange, values.phoneNumber]);
 
@@ -124,19 +125,7 @@ export function DetailsInput({
 
   const handleCountryChange = (country: CountryCode) => {
     setSelectedCountry(country);
-    // Don't clear the input when changing country, just revalidate with new country code
-    if (phoneInput) {
-      try {
-        const phoneNumber = parsePhoneNumberWithError(phoneInput, country);
-        if (phoneNumber.isValid()) {
-          onChange("phoneNumber", phoneNumber.format("E.164"));
-        }
-      } catch (error) {
-        // Invalid number for new country, clear the input
-        setPhoneInput("");
-        onChange("phoneNumber", "");
-      }
-    }
+    // The main useEffect will now handle re-validation due to selectedCountry change.
   };
 
   return (

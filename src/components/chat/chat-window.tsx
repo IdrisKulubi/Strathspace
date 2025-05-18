@@ -38,7 +38,6 @@ export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
   const { data: session } = useSession();
   const { markAsRead } = useUnreadMessages(session?.user.id ?? "");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const hasInitialized = useRef(false);
 
   // Safely handle potentially undefined partner
   const partnerName = partner?.firstName || "this person";
@@ -55,34 +54,54 @@ export const ChatWindow = ({ matchId, onClose, partner }: ChatWindowProps) => {
     }
   };
 
-  // Consolidated useEffect that handles marking messages as read and scrolling
+  // Effect for marking messages as read (initialization)
   useEffect(() => {
-    // Handle message reading
-    const handleInitialTasks = async () => {
-      if (hasInitialized.current || !session?.user?.id) return;
-      
+    let isMounted = true;
+
+    const performInitialization = async () => {
+      if (!session?.user?.id || !matchId) {
+        return;
+      }
+
       try {
-        // Mark messages as read client-side
-        markAsRead(matchId);
-        
-        // Mark messages as read server-side
+        // Client-side update first for responsiveness
+        if (isMounted) {
+          markAsRead(matchId);
+        }
+        // Then server-side
         await markMessagesAsRead(matchId, session.user.id);
-        
-        // Set initialization flag
-        hasInitialized.current = true;
       } catch (error) {
-        console.error('Error marking messages as read:', error);
+        if (isMounted) {
+          console.error('Error marking messages as read:', error);
+        }
       }
     };
 
-    handleInitialTasks();
-    
-    // Scroll to bottom when messages change
+    // Defer the execution slightly to avoid issues during initial render cycles
+    const timerId = setTimeout(() => {
+      if (isMounted) {
+        performInitialization();
+      }
+    }, 0);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timerId);
+    };
+  }, [matchId, session, markAsRead]); // Dependencies: run when chat context changes
+
+  // Effect for scrolling
+  useEffect(() => {
     if (scrollAreaRef.current && messages.length > 0) {
       const scrollArea = scrollAreaRef.current;
-      scrollArea.scrollTop = scrollArea.scrollHeight;
+      // Use requestAnimationFrame for smoother scroll updates
+      requestAnimationFrame(() => {
+        if (scrollAreaRef.current) { // Check ref again inside rAF
+            scrollArea.scrollTop = scrollArea.scrollHeight;
+        }
+      });
     }
-  }, [matchId, session, messages.length, markAsRead]);
+  }, [messages]); // Dependency: run only when messages array (or its length) changes
 
   // Prepare message lists for rendering
   const regularMessages = messages.slice(0, Math.max(0, messages.length - 5));
