@@ -7,12 +7,16 @@ import { StalkersList } from "@/components/profile/stalkers-list";
 import { ProfileCompletion } from "@/components/profile/profile-completion";
 import { ProfilePreview } from "@/components/profile/profile-preview";
 import { ProfileAnalyticsView } from "@/components/profile/profile-analytics";
-import { Sparkles, User, Heart, Eye, EyeOff, ChartBar} from "lucide-react";
+import { Sparkles, User, Heart, Eye, EyeOff, ChartBar, ShieldCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProfileFormData } from "@/lib/constants";
 import { AnonymousModeAlert } from "@/components/anonymous/AnonymousModeAlert";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Info } from "lucide-react";
 
 interface ProfileClientPageProps {
   profile: ProfileFormData;
@@ -25,7 +29,7 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
   const [formValues, setFormValues] = useState<ProfileFormData>(profile);
   const [showPreview, setShowPreview] = useState(true);
   const [showAnonymousAlert, setShowAnonymousAlert] = useState(!profile.anonymous);
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isAnonymous, setIsAnonymous] = useState(profile.anonymous || false);
   const [attemptNavigateToPrivacy, setAttemptNavigateToPrivacy] = useState(0);
 
   useEffect(() => {
@@ -44,8 +48,6 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
       }
     }, 100);
   };
-
- 
 
   useEffect(() => {
     if (attemptNavigateToPrivacy === 0) return;
@@ -107,6 +109,17 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
     }
   };
 
+  const handleAnonymousToggle = (checked: boolean) => {
+    setIsAnonymous(checked);
+    setFormValues(prev => ({
+      ...prev,
+      anonymous: checked
+    }));
+    if (checked && showAnonymousAlert) {
+      setShowAnonymousAlert(false);
+    }
+  };
+
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -123,10 +136,49 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
       <div className="min-h-screen bg-gradient-to-b from-pink-50/30 to-white dark:from-pink-950/30 dark:to-background">
         <div className="container max-w-7xl pt-16 pb-20">
           {showAnonymousAlert && (
-            <AnonymousModeAlert 
-              onDismiss={() => setShowAnonymousAlert(false)}
-            />
+            <Card className="mb-6 border-2 border-purple-300 dark:border-purple-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/50 dark:to-indigo-950/50 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/50">
+                    <ShieldCheck className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-300 flex items-center gap-2">
+                      New Feature: Anonymous Mode
+                      <span className="inline-block px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full">
+                        NEW
+                      </span>
+                    </h3>
+                    <p className="mt-2 text-sm text-purple-700 dark:text-purple-400">
+                      Keep your identity private while exploring connections. Your photos will be hidden and you'll only match with other anonymous users.
+                    </p>
+                    <div className="mt-4 flex items-center gap-4">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="anonymous-mode"
+                          checked={isAnonymous}
+                          onCheckedChange={handleAnonymousToggle}
+                          className="data-[state=checked]:bg-purple-600"
+                        />
+                        <Label htmlFor="anonymous-mode" className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                          Enable Anonymous Mode
+                        </Label>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAnonymousAlert(false)}
+                        className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
+
           <div className="sticky top-0 z-20 backdrop-blur-lg bg-white/90 dark:bg-background/90 pb-4 pt-3 border-b border-pink-100 dark:border-pink-900 shadow-md px-4 sm:px-6 -mx-4 sm:-mx-6 md:mx-0 rounded-b-xl">
             <h1 className="text-2xl font-bold tracking-tight text-center mb-4 text-gradient bg-gradient-to-r from-pink-500 to-pink-700 dark:from-pink-400 dark:to-pink-600 bg-clip-text text-transparent">
               StrathSpace

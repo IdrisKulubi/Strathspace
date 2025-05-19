@@ -281,23 +281,41 @@ export function SwipeableCard({
         
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent text-white z-10" style={{ pointerEvents: 'auto' }}>
           <div className="p-6 pb-3">
-           
+            {/* Name, Age, Course, Year */}
+            <div className="mb-3">
+              {isAnonymous ? (
+                <div>
+                  <span className="text-2xl font-bold text-white">Anonymous User</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-white drop-shadow-sm">
+                      {profile.firstName}
+                      {profile.age ? `, ${profile.age}` : ""}
+                    </span>
+                  </div>
+               
+                </>
+              )}
+            </div>
 
-            {isAnonymous && (
-              <div className="my-3 p-3 bg-black/20 rounded-lg backdrop-blur-sm">
-                <p className="text-sm text-white/80">
-                  This user is currently in Anonymous Mode. Some details are hidden. If you match, you can both choose to reveal your profiles.
-                </p>
-              </div>
-            )}
-
-            {(profile.interests && profile.interests.length > 0 && !isAnonymous) && (
+            {/* Interests badges (if not anonymous) */}
+             {(profile.interests && profile.interests.length > 0 && !isAnonymous) && (
               <div className={cn("flex flex-wrap gap-2 mt-3", customStyles.interests)}>
                 {profile.interests.map((interest, idx) => (
                   <Badge key={idx} variant="outline" className="bg-purple-500/20 border-purple-400/30 text-white/90 text-xs py-0.5 px-2 rounded-full">
                     {interest}
                   </Badge>
                 ))}
+              </div>
+            )}
+
+            {isAnonymous && (
+              <div className="my-3 p-3 bg-black/20 rounded-lg backdrop-blur-sm">
+                <p className="text-sm text-white/80">
+                  This user is currently in Anonymous Mode. Some details are hidden. If you match, you can both choose to reveal your profiles.
+                </p>
               </div>
             )}
           </div>

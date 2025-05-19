@@ -20,10 +20,14 @@ import { deleteUploadThingFile } from "@/lib/actions/upload.actions";
 import { ProfileFormData } from "@/lib/constants";
 
 import { useSession } from "next-auth/react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { ShieldCheck, EyeOff } from "lucide-react";
 
 function SetupForm() {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const { data: session } = useSession();
@@ -271,146 +275,192 @@ function SetupForm() {
     };
   }, [form]);
 
+  const handleAnonymousToggle = (checked: boolean) => {
+    setIsAnonymous(checked);
+    form.setValue("anonymous", checked);
+    if (checked) {
+      toast({
+        title: "Anonymous Mode Enabled",
+        description: "Your photos will be hidden and you'll only match with other anonymous users.",
+      });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white dark:from-pink-950 dark:to-background p-6 pt-16">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-2xl mx-auto space-y-8"
-      >
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
-            {steps[step].title}
-          </h1>
-          <p className="text-muted-foreground">{steps[step].description}</p>
-        </div>
-
-        <div className="flex gap-2 mb-8">
-          {steps.map((s, i) => (
-            <motion.div
-              key={s.id}
-              className={`h-2 flex-1 rounded-full ${
-                i <= step ? "bg-pink-500" : "bg-pink-100 dark:bg-pink-900"
-              }`}
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-            />
-          ))}
-        </div>
-
+    <div className="min-h-screen bg-gradient-to-b from-pink-50/30 to-white dark:from-pink-950/30 dark:to-background">
+      <div className="container max-w-2xl py-16">
         <form onSubmit={handleSubmit} className="space-y-8">
-          {step === 0 && (
-            <div className="space-y-4">
-              <ImageUpload
-                value={form.watch("photos")}
-                onChange={(urls) => form.setValue("photos", urls)}
-                maxFiles={6}
-              />
-              {form.formState.errors.photos && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.photos.message}
-                </p>
-              )}
-            </div>
-          )}
-
-          {step === 1 && (
-            <div className="space-y-4">
-              <BioInput
-                value={form.watch("bio") || ""}
-                onChange={(value) => form.setValue("bio", value)}
-              />
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-4">
-              <InterestSelector
-                value={form.watch("interests")}
-                onChange={(interests) => form.setValue("interests", interests)}
-              />
-              {form.formState.errors.interests && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.interests.message}
-                </p>
-              )}
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-4">
-              <DetailsInput
-                control={form.control}
-                values={{
-                  firstName: form.watch("firstName") || "",
-                  lastName: form.watch("lastName") || "",
-                  lookingFor: form.watch("lookingFor") || "",
-                  course: form.watch("course") || "",
-                  yearOfStudy: form.watch("yearOfStudy") || 0,
-                  gender: form.watch("gender") || "",
-                  age: form.watch("age") || 0,
-                  phoneNumber: form.watch("phoneNumber") || "",
-                }}
-                onChange={handleDetailsInputChange}
-                errors={{
-                  firstName: form.formState.errors.firstName?.message,
-                  lastName: form.formState.errors.lastName?.message,
-                  lookingFor: form.formState.errors.lookingFor?.message,
-                  course: form.formState.errors.course?.message,
-                  yearOfStudy: form.formState.errors.yearOfStudy?.message,
-                  gender: form.formState.errors.gender?.message,
-                  age: form.formState.errors.age?.message,
-                  
-                  phoneNumber: form.formState.errors.phoneNumber?.message,
-                }}
-              >
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>First Name</Label>
-                    <Input
-                      {...form.register("firstName")}
-                      placeholder="Your first name"
-                      className="bg-background"
-                    />
-                    {form.formState.errors.firstName && (
-                      <p className="text-red-500 text-sm">
-                        {form.formState.errors.firstName.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Last Name</Label>
-                    <Input
-                      {...form.register("lastName")}
-                      placeholder="Your last name"
-                      className="bg-background"
-                    />
-                    {form.formState.errors.lastName && (
-                      <p className="text-red-500 text-sm">
-                        {form.formState.errors.lastName.message}
-                      </p>
-                    )}
-                  </div>
+          {/* Anonymous Mode Card */}
+          <Card className="border-2 border-purple-300 dark:border-purple-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/50 dark:to-indigo-950/50 shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/50">
+                  <ShieldCheck className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                 </div>
-              </DetailsInput>
-            </div>
-          )}
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-300 flex items-center gap-2">
+                    New Feature: Anonymous Mode
+                    <span className="inline-block px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full">
+                      NEW
+                    </span>
+                  </h3>
+                  <p className="mt-2 text-sm text-purple-700 dark:text-purple-400">
+                    Want to keep your identity private? You can enable Anonymous Mode anytime from your profile settings after creating your profile. Your photos will be hidden and you'll only match with other anonymous users when Anonymous Mode is on.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          {step === 4 && (
-            <div className="space-y-4">
-              <SocialInput
-                values={{
-                  instagram: form.watch("instagram"),
-                  spotify: form.watch("spotify"),
-                  snapchat: form.watch("snapchat"),
-                }}
-                onChange={(platform, value) => form.setValue(platform, value)}
+          {/* Progress Steps */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold tracking-tight text-gradient bg-gradient-to-r from-pink-500 to-pink-700 dark:from-pink-400 dark:to-pink-600 bg-clip-text text-transparent">
+                {steps[step].title}
+              </h2>
+              <div className="text-sm text-muted-foreground">
+                Step {step + 1} of {steps.length}
+              </div>
+            </div>
+            
+            <div className="h-2 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-pink-500 to-pink-600"
+                initial={{ width: 0 }}
+                animate={{ width: `${((step + 1) / steps.length) * 100}%` }}
+                transition={{ duration: 0.3 }}
               />
             </div>
-          )}
+          </div>
 
-          <div className="flex justify-between">
+          {/* Step Content */}
+          <div className="space-y-6">
+            {step === 0 && (
+              <div className="space-y-4">
+                <div className="bg-white dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <ImageUpload
+                    value={form.watch("photos")}
+                    onChange={(photos) => form.setValue("photos", photos)}
+                    onRemove={async (url) => {
+                      const photos = form.watch("photos").filter((p) => p !== url);
+                      form.setValue("photos", photos);
+                      await deleteUploadThingFile(url);
+                    }}
+                    onProfilePhotoSelect={(url) => form.setValue("profilePhoto", url)}
+                    maxFiles={6}
+                  />
+                  {isAnonymous && (
+                    <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-100 dark:border-purple-900/50">
+                      <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                        <EyeOff className="w-4 h-4" />
+                        <p className="text-sm">
+                          Your photos will be hidden in Anonymous Mode. You can still upload them now and they'll be revealed when you disable Anonymous Mode.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className="space-y-4">
+                <BioInput
+                  value={form.watch("bio") || ""}
+                  onChange={(value) => form.setValue("bio", value)}
+                />
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-4">
+                <InterestSelector
+                  value={form.watch("interests")}
+                  onChange={(interests) => form.setValue("interests", interests)}
+                />
+                {form.formState.errors.interests && (
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.interests.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-4">
+                <DetailsInput
+                  control={form.control}
+                  values={{
+                    firstName: form.watch("firstName") || "",
+                    lastName: form.watch("lastName") || "",
+                    lookingFor: form.watch("lookingFor") || "",
+                    course: form.watch("course") || "",
+                    yearOfStudy: form.watch("yearOfStudy") || 0,
+                    gender: form.watch("gender") || "",
+                    age: form.watch("age") || 0,
+                    phoneNumber: form.watch("phoneNumber") || "",
+                  }}
+                  onChange={handleDetailsInputChange}
+                  errors={{
+                    firstName: form.formState.errors.firstName?.message,
+                    lastName: form.formState.errors.lastName?.message,
+                    lookingFor: form.formState.errors.lookingFor?.message,
+                    course: form.formState.errors.course?.message,
+                    yearOfStudy: form.formState.errors.yearOfStudy?.message,
+                    gender: form.formState.errors.gender?.message,
+                    age: form.formState.errors.age?.message,
+                    
+                    phoneNumber: form.formState.errors.phoneNumber?.message,
+                  }}
+                >
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>First Name</Label>
+                      <Input
+                        {...form.register("firstName")}
+                        placeholder="Your first name"
+                        className="bg-background"
+                      />
+                      {form.formState.errors.firstName && (
+                        <p className="text-red-500 text-sm">
+                          {form.formState.errors.firstName.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Last Name</Label>
+                      <Input
+                        {...form.register("lastName")}
+                        placeholder="Your last name"
+                        className="bg-background"
+                      />
+                      {form.formState.errors.lastName && (
+                        <p className="text-red-500 text-sm">
+                          {form.formState.errors.lastName.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </DetailsInput>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-4">
+                <SocialInput
+                  values={{
+                    instagram: form.watch("instagram"),
+                    spotify: form.watch("spotify"),
+                    snapchat: form.watch("snapchat"),
+                  }}
+                  onChange={(platform, value) => form.setValue(platform, value)}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between pt-4">
             {step > 0 && (
               <Button
                 type="button"
@@ -465,7 +515,7 @@ function SetupForm() {
             )}
           </div>
         </form>
-      </motion.div>
+      </div>
     </div>
   );
 }
