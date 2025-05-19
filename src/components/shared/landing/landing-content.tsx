@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, ArrowRight, Shield, Sparkles, Lock } from "lucide-react";
+import { Heart, ArrowRight, Shield, Sparkles, Lock, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -70,6 +70,8 @@ export function LandingContent({
           </div>
         </motion.div>
 
+       
+
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -98,6 +100,31 @@ export function LandingContent({
               How it Works
             </Button>
           </Link>
+        </motion.div>
+         {/* Anonymous Mode Trust Section */}
+         <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mx-auto w-full max-w-md md:max-w-lg rounded-2xl bg-gradient-to-br from-purple-50/90 to-pink-50/80 dark:from-purple-900/60 dark:to-pink-900/40 border-2 border-purple-200 dark:border-purple-700 shadow-lg p-5 md:p-7 flex flex-col items-center mb-2"
+        >
+          <div className="flex items-center justify-center mb-2">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
+              className="rounded-full bg-purple-100 dark:bg-purple-800/60 p-3 shadow-md"
+            >
+              <EyeOff className="h-8 w-8 text-purple-600 dark:text-purple-300 animate-pulse" />
+            </motion.div>
+          </div>
+          <h2 className="text-lg md:text-xl font-bold text-purple-800 dark:text-purple-200 mb-1">Anonymous Mode</h2>
+          <p className="text-sm md:text-base text-purple-700 dark:text-purple-300 mb-2">
+            Want to stay private? With Anonymous Mode, you can hide your photos and only match with other anonymous users. Your privacy, your pace.
+          </p>
+          <span className="inline-block text-xs text-purple-500 dark:text-purple-300 bg-purple-100 dark:bg-purple-800/40 rounded-full px-3 py-1 font-medium mb-1 animate-fade-in">
+            Enable it anytime in your profile settings
+          </span>
         </motion.div>
 
         <motion.div
