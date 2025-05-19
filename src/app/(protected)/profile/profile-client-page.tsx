@@ -12,11 +12,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProfileFormData } from "@/lib/constants";
-import { AnonymousModeAlert } from "@/components/anonymous/AnonymousModeAlert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Info } from "lucide-react";
 
 interface ProfileClientPageProps {
   profile: ProfileFormData;
@@ -30,6 +28,7 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
   const [showPreview, setShowPreview] = useState(true);
   const [showAnonymousAlert, setShowAnonymousAlert] = useState(!profile.anonymous);
   const [isAnonymous, setIsAnonymous] = useState(profile.anonymous || false);
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [attemptNavigateToPrivacy, setAttemptNavigateToPrivacy] = useState(0);
 
   useEffect(() => {
@@ -150,7 +149,7 @@ export function ProfileClientPage({ profile, initialActiveSection = null }: Prof
                       </span>
                     </h3>
                     <p className="mt-2 text-sm text-purple-700 dark:text-purple-400">
-                      Keep your identity private while exploring connections. Your photos will be hidden and you'll only match with other anonymous users.
+                      Keep your identity private while exploring connections. Your photos will be hidden and you&apos;ll only match with other anonymous users.
                     </p>
                     <div className="mt-4 flex items-center gap-4">
                       <div className="flex items-center space-x-2">

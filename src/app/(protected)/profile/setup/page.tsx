@@ -21,12 +21,12 @@ import { ProfileFormData } from "@/lib/constants";
 
 import { useSession } from "next-auth/react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { ShieldCheck, EyeOff } from "lucide-react";
+import { EyeOff, ShieldCheck } from "lucide-react";
 
 function SetupForm() {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isAnonymous, setIsAnonymous] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -275,16 +275,7 @@ function SetupForm() {
     };
   }, [form]);
 
-  const handleAnonymousToggle = (checked: boolean) => {
-    setIsAnonymous(checked);
-    form.setValue("anonymous", checked);
-    if (checked) {
-      toast({
-        title: "Anonymous Mode Enabled",
-        description: "Your photos will be hidden and you'll only match with other anonymous users.",
-      });
-    }
-  };
+ 
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50/30 to-white dark:from-pink-950/30 dark:to-background">
@@ -305,7 +296,7 @@ function SetupForm() {
                     </span>
                   </h3>
                   <p className="mt-2 text-sm text-purple-700 dark:text-purple-400">
-                    Want to keep your identity private? You can enable Anonymous Mode anytime from your profile settings after creating your profile. Your photos will be hidden and you'll only match with other anonymous users when Anonymous Mode is on.
+                    Want to keep your identity private? You can enable Anonymous Mode anytime from your profile settings after creating your profile. Your photos will be hidden and you&apos;ll only match with other anonymous users when Anonymous Mode is on.
                   </p>
                 </div>
               </div>
@@ -354,7 +345,7 @@ function SetupForm() {
                       <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
                         <EyeOff className="w-4 h-4" />
                         <p className="text-sm">
-                          Your photos will be hidden in Anonymous Mode. You can still upload them now and they'll be revealed when you disable Anonymous Mode.
+                          Your photos will be hidden in Anonymous Mode. You can still upload them now and they&apos;ll be revealed when you disable Anonymous Mode.
                         </p>
                       </div>
                     </div>
