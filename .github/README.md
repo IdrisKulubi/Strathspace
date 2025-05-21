@@ -29,7 +29,7 @@ To use these workflows, you need to set up the following secrets in your GitHub 
 
 - `VERCEL_TOKEN`: An API token from Vercel
 - `VERCEL_ORG_ID`: Your Vercel organization ID
-- `VERCEL_PROJECT_ID`: Your Vercel project ID
+- `VERCEL_PROJECT_ID`: Your Vercel project ID get it from the project settings 
 
 ## How It Works
 
