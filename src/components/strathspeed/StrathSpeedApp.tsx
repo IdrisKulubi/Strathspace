@@ -141,12 +141,13 @@ export function StrathSpeedApp({
     if (queueState.status === 'waiting' || queueState.status === 'matched') {
       return (
         <QueueScreen 
-          position={queueState.position}
-          status={queueState.status}
-          error={queueState.error}
-          onLeaveQueue={() => {
-            useStrathSpeedStore.getState().leaveQueue();
+          queueStatus={queueState.status}
+          queueData={{
+            position: queueState.position,
+            queueSize: 1,
+            estimatedWaitTime: 0
           }}
+          error={queueState.error}
         />
       );
     }

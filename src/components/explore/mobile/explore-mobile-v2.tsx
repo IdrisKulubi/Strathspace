@@ -48,6 +48,7 @@ import { Badge } from "@/components/ui/badge";
 import { MobileNavbar } from "./mobile-navbar";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
+import { StrathSpeedFloatingButton } from "@/components/strathspeed/ui/StrathSpeedFloatingButton";
 
 // Add a type definition for ProfileDetailsType
 interface ProfileDetailsType {
@@ -514,6 +515,9 @@ export function ExploreMobileV2({
                 currentProfileId={profiles[currentIndex]?.userId}
               />
             </div>
+
+            {/* StrathSpeed Floating Button */}
+            <StrathSpeedFloatingButton className="bottom-20 right-4" />
 
             {/* Bottom Navigation - evenly spaced icons */}
             <div className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t border-border/50">

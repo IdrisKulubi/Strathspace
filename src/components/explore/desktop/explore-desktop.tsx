@@ -49,6 +49,7 @@ import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { ProfileDetailsModal } from "../profile-details-modal";
 import { UserIcon } from "lucide-react";
+import { StrathSpeedFloatingButton } from "@/components/strathspeed/ui/StrathSpeedFloatingButton";
 
 interface ExploreDesktopProps {
   initialProfiles: Profile[];
@@ -1044,6 +1045,9 @@ export function ExploreDesktop({
             </div>
           </TabsContent>
         </Tabs>
+        
+        {/* StrathSpeed Floating Button */}
+        <StrathSpeedFloatingButton className="bottom-8 right-8" />
       </div>
       
       {/* Modals */}
