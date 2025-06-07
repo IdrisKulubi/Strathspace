@@ -1,7 +1,7 @@
 import { pusher } from '@/lib/pusher/server';
 import MatchingEngine, { QueueUser } from './matching-engine';
 import { redis } from '@/lib/redis';
-import { db } from '@/db';
+import db from '@/db/drizzle';
 import { speedSessions, sessionOutcomes, users, profiles } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
@@ -300,7 +300,6 @@ export class StrathSpeedEventService {
         .set({ 
           status: 'completed',
           endedAt: new Date(),
-          isMatch: true,
         })
         .where(eq(speedSessions.id, session.id));
     }

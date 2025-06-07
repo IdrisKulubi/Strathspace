@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/auth';
 import db from '@/db/drizzle';
 import { speedDatingProfiles, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -20,7 +19,7 @@ const joinQueueSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Get user session
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -56,17 +55,19 @@ export async function POST(request: NextRequest) {
       await db.insert(speedDatingProfiles).values({
         userId,
         isActive: true,
+        anonymousMode: preferences.anonymousMode,
+        preferences: {
+          ageRange: preferences.ageRange,
+          genderPreference: preferences.genderPreference,
+          interests: preferences.interests || [],
+        },
         speedPoints: 0,
         totalSessions: 0,
         vibesReceived: 0,
         vibesSent: 0,
         currentStreak: 0,
         longestStreak: 0,
-        anonymousModeDefault: preferences.anonymousMode,
-        ageRangeMin: preferences.ageRange?.[0],
-        ageRangeMax: preferences.ageRange?.[1],
-        genderPreference: preferences.genderPreference,
-        interests: preferences.interests || [],
+        badges: [],
       });
 
       // Fetch the newly created profile
@@ -77,12 +78,14 @@ export async function POST(request: NextRequest) {
       // Update existing profile with new preferences
       await db.update(speedDatingProfiles)
         .set({
-          anonymousModeDefault: preferences.anonymousMode,
-          ageRangeMin: preferences.ageRange?.[0],
-          ageRangeMax: preferences.ageRange?.[1],
-          genderPreference: preferences.genderPreference,
-          interests: preferences.interests || speedProfile.interests,
-          lastActiveAt: new Date(),
+          anonymousMode: preferences.anonymousMode,
+          preferences: {
+            ...speedProfile.preferences,
+            ageRange: preferences.ageRange,
+            genderPreference: preferences.genderPreference,
+            interests: preferences.interests || speedProfile.preferences?.interests || [],
+          },
+          updatedAt: new Date(),
         })
         .where(eq(speedDatingProfiles.userId, userId));
     }
@@ -140,7 +143,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Get user session
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },

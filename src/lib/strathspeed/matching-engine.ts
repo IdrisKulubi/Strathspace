@@ -1,5 +1,5 @@
 import { redis } from '@/lib/redis';
-import { db } from '@/db';
+import db from '@/db/drizzle';
 import { speedDatingProfiles, users, speedSessions, icebreakerPrompts } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import DailyVideoService from '@/lib/video/daily-service';
