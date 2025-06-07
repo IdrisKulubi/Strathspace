@@ -1,9 +1,5 @@
-"use server";
-
 import { Redis } from "@upstash/redis";
 
-// Import for circuit breaker
-import { setTimeout } from 'timers/promises';
 
 if (!process.env.UPSTASH_REDIS_REST_URL) {
   throw new Error("UPSTASH_REDIS_REST_URL is not defined");
@@ -75,7 +71,7 @@ export async function redisHealthCheck() {
     // Set a test key with a 5s timeout
     const pingResult = await Promise.race([
       instance.set("health:ping", "pong", { ex: 5 }),
-      setTimeout(5000, null)
+      new Promise(resolve => setTimeout(() => resolve(null), 5000))
     ]);
     
     return pingResult !== null;

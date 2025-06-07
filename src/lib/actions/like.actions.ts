@@ -6,7 +6,8 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import db from "@/db/drizzle";
 import { recordSwipe } from "./explore.actions";
-import { CACHE_KEYS, invalidateCachedData } from "@/lib/constants/cache";
+import { CACHE_KEYS } from "@/lib/constants/cache";
+import { invalidateCachedData } from "@/lib/utils/cache";
 
 /**
  * Handle liking a profile (swiping right)

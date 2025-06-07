@@ -1,5 +1,3 @@
-"use server";
-
 import { getRedisInstance } from "@/lib/redis";
 import { compress, decompress } from "lz-string";
 

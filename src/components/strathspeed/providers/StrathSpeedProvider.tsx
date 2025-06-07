@@ -115,7 +115,7 @@ export function StrathSpeedProvider({ userId, children }: StrathSpeedProviderPro
   if (isLoading) {
     return (
       <LoadingScreen 
-        title="Getting you ready to connect! ✨"
+        title="Getting you ready to connect ✨"
         subtitle="Setting up your speed dating experience..."
       />
     );

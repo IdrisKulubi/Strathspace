@@ -21,7 +21,7 @@ export function MobileNavbar() {
          />
         <span className="text-xl font-bold text-[rgb(255,88,230)] tracking-tight select-none">strathspace</span>
       </div>
-      
+     
       {/* StrathSpeed Quick Access */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
