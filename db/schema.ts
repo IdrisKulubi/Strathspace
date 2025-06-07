@@ -12,7 +12,6 @@ import {
   uniqueIndex
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
-import { User } from "next-auth";
 
 // First define all tables
 export const users = pgTable(
@@ -352,9 +351,225 @@ export type Profile = typeof profiles.$inferSelect & {
   matchId?: string;
 };
 
+// StrathSpeed - Live Video Speed Dating Tables
+export const speedDatingProfiles = pgTable(
+  "speed_dating_profiles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    isActive: boolean("is_active").default(false),
+    anonymousMode: boolean("anonymous_mode").default(false),
+    preferences: json("preferences").$type<{
+      ageRange?: [number, number];
+      genderPreference?: string;
+      interests?: string[];
+    }>(),
+    totalSessions: integer("total_sessions").default(0),
+    speedPoints: integer("speed_points").default(0),
+    vibesReceived: integer("vibes_received").default(0),
+    vibesSent: integer("vibes_sent").default(0),
+    currentStreak: integer("current_streak").default(0),
+    longestStreak: integer("longest_streak").default(0),
+    badges: json("badges").$type<string[]>().default([]),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("speed_profile_user_id_idx").on(table.userId),
+    isActiveIdx: index("speed_profile_active_idx").on(table.isActive),
+  })
+);
+
+export const speedSessions = pgTable(
+  "speed_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    user1Id: text("user1_id")
+      .notNull()
+      .references(() => users.id),
+    user2Id: text("user2_id")
+      .notNull()
+      .references(() => users.id),
+    roomId: text("room_id").notNull().unique(),
+    dailyRoomUrl: text("daily_room_url"),
+    status: text("status").$type<"waiting" | "active" | "completed" | "abandoned" | "timeout">().default("waiting"),
+    icebreakerId: uuid("icebreaker_id").references(() => icebreakerPrompts.id),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    endedAt: timestamp("ended_at"),
+    durationSeconds: integer("duration_seconds"),
+    connectionQuality: text("connection_quality").$type<"excellent" | "good" | "fair" | "poor">(),
+    user1Anonymous: boolean("user1_anonymous").default(false),
+    user2Anonymous: boolean("user2_anonymous").default(false),
+  },
+  (table) => ({
+    user1Idx: index("speed_session_user1_idx").on(table.user1Id),
+    user2Idx: index("speed_session_user2_idx").on(table.user2Id),
+    statusIdx: index("speed_session_status_idx").on(table.status),
+    startedAtIdx: index("speed_session_started_idx").on(table.startedAt),
+    roomIdIdx: uniqueIndex("speed_session_room_idx").on(table.roomId),
+  })
+);
+
+export const sessionOutcomes = pgTable(
+  "session_outcomes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => speedSessions.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    action: text("action").$type<"vibe" | "skip" | "report" | "timeout">().notNull(),
+    reportReason: text("report_reason").$type<"inappropriate_content" | "harassment" | "spam" | "nudity" | "other">(),
+    reportDescription: text("report_description"),
+    pointsEarned: integer("points_earned").default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    sessionIdx: index("session_outcome_session_idx").on(table.sessionId),
+    userIdx: index("session_outcome_user_idx").on(table.userId),
+    actionIdx: index("session_outcome_action_idx").on(table.action),
+  })
+);
+
+export const icebreakerPrompts = pgTable(
+  "icebreaker_prompts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    promptText: text("prompt_text").notNull(),
+    category: text("category").$type<"fun" | "deep" | "creative" | "random" | "campus">().default("fun"),
+    isActive: boolean("is_active").default(true),
+    usageCount: integer("usage_count").default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    categoryIdx: index("icebreaker_category_idx").on(table.category),
+    isActiveIdx: index("icebreaker_active_idx").on(table.isActive),
+  })
+);
+
+export const speedReports = pgTable(
+  "speed_reports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => speedSessions.id),
+    reporterId: text("reporter_id")
+      .notNull()
+      .references(() => users.id),
+    reportedUserId: text("reported_user_id")
+      .notNull()
+      .references(() => users.id),
+    reportType: text("report_type").$type<"inappropriate_content" | "harassment" | "spam" | "nudity" | "fake_profile" | "other">().notNull(),
+    description: text("description"),
+    status: text("status").$type<"pending" | "reviewed" | "resolved" | "dismissed">().default("pending"),
+    moderatorId: text("moderator_id").references(() => users.id),
+    moderatorNotes: text("moderator_notes"),
+    actionTaken: text("action_taken").$type<"warning" | "temp_ban" | "permanent_ban" | "no_action">(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (table) => ({
+    sessionIdx: index("speed_report_session_idx").on(table.sessionId),
+    reporterIdx: index("speed_report_reporter_idx").on(table.reporterId),
+    reportedIdx: index("speed_report_reported_idx").on(table.reportedUserId),
+    statusIdx: index("speed_report_status_idx").on(table.status),
+  })
+);
+
+export const speedBlocks = pgTable(
+  "speed_blocks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    blockerId: text("blocker_id")
+      .notNull()
+      .references(() => users.id),
+    blockedId: text("blocked_id")
+      .notNull()
+      .references(() => users.id),
+    reason: text("reason").$type<"inappropriate_behavior" | "harassment" | "not_interested" | "other">(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    blockerIdx: index("speed_block_blocker_idx").on(table.blockerId),
+    blockedIdx: index("speed_block_blocked_idx").on(table.blockedId),
+    comboIdx: uniqueIndex("speed_block_combo_idx").on(table.blockerId, table.blockedId),
+  })
+);
+
+// StrathSpeed Relations
+export const speedDatingProfilesRelations = relations(speedDatingProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [speedDatingProfiles.userId],
+    references: [users.id],
+  }),
+}));
+
+export const speedSessionsRelations = relations(speedSessions, ({ one, many }) => ({
+  user1: one(users, {
+    fields: [speedSessions.user1Id],
+    references: [users.id],
+    relationName: "speedSessionUser1",
+  }),
+  user2: one(users, {
+    fields: [speedSessions.user2Id],
+    references: [users.id],
+    relationName: "speedSessionUser2",
+  }),
+  icebreaker: one(icebreakerPrompts, {
+    fields: [speedSessions.icebreakerId],
+    references: [icebreakerPrompts.id],
+  }),
+  outcomes: many(sessionOutcomes),
+  reports: many(speedReports),
+}));
+
+export const sessionOutcomesRelations = relations(sessionOutcomes, ({ one }) => ({
+  session: one(speedSessions, {
+    fields: [sessionOutcomes.sessionId],
+    references: [speedSessions.id],
+  }),
+  user: one(users, {
+    fields: [sessionOutcomes.userId],
+    references: [users.id],
+  }),
+}));
+
+export const speedReportsRelations = relations(speedReports, ({ one }) => ({
+  session: one(speedSessions, {
+    fields: [speedReports.sessionId],
+    references: [speedSessions.id],
+  }),
+  reporter: one(users, {
+    fields: [speedReports.reporterId],
+    references: [users.id],
+    relationName: "speedReportReporter",
+  }),
+  reportedUser: one(users, {
+    fields: [speedReports.reportedUserId],
+    references: [users.id],
+    relationName: "speedReportReported",
+  }),
+  moderator: one(users, {
+    fields: [speedReports.moderatorId],
+    references: [users.id],
+    relationName: "speedReportModerator",
+  }),
+}));
+
+// Export types
+export type SpeedDatingProfile = typeof speedDatingProfiles.$inferSelect;
+export type SpeedSession = typeof speedSessions.$inferSelect;
+export type SessionOutcome = typeof sessionOutcomes.$inferSelect;
+export type IcebreakerPrompt = typeof icebreakerPrompts.$inferSelect;
+export type SpeedReport = typeof speedReports.$inferSelect;
+
 // Export the Message type if needed
 export type Message = typeof messages.$inferSelect;
-
 
 export type ProfileView = typeof profileViews.$inferSelect;
 

@@ -14,7 +14,7 @@ if (!process.env.UPSTASH_REDIS_REST_TOKEN) {
 }
 
 // Configure Redis with retry options
-const redis = new Redis({
+export const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
   automaticDeserialization: false, // We handle this manually for better control
