@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useStrathSpeedStore, useQueueState, useSessionState } from '@/lib/stores/strathspeed-store';
 import type { SpeedDatingProfile } from '@/db/schema';
 
@@ -33,14 +33,10 @@ export function StrathSpeedApp({
 
   const queueState = useQueueState();
   const sessionState = useSessionState();
-  const { 
-    profile, 
-    showSessionResult, 
-    setProfile, 
-    reset,
-    isLoading: storeLoading,
-    error: storeError 
-  } = useStrathSpeedStore();
+  const profile = useStrathSpeedStore((state) => state.profile);
+  const showSessionResult = useStrathSpeedStore((state) => state.showSessionResult);
+  const storeLoading = useStrathSpeedStore((state) => state.isLoading);
+  const storeError = useStrathSpeedStore((state) => state.error);
 
   // Initialize the app
   useEffect(() => {
@@ -48,6 +44,7 @@ export function StrathSpeedApp({
       try {
         // Set initial profile if available
         if (initialProfile) {
+          const { setProfile } = useStrathSpeedStore.getState();
           setProfile(initialProfile);
         }
         
@@ -59,7 +56,7 @@ export function StrathSpeedApp({
     };
 
     initializeApp();
-  }, [initialProfile, setProfile]);
+  }, [initialProfile]);
 
   // Handle store errors
   useEffect(() => {
@@ -67,6 +64,29 @@ export function StrathSpeedApp({
       setError(storeError);
     }
   }, [storeError]);
+
+  const handleTryAgain = useCallback(() => {
+    setError(null);
+    const { reset } = useStrathSpeedStore.getState();
+    reset();
+    window.location.reload();
+  }, []);
+
+  const handleSessionResultContinue = useCallback(() => {
+    const { setShowSessionResult, resetSession } = useStrathSpeedStore.getState();
+    setShowSessionResult(false);
+    resetSession();
+  }, []);
+
+  const handleVideoSessionEnd = useCallback(() => {
+    const { resetSession } = useStrathSpeedStore.getState();
+    resetSession();
+  }, []);
+
+  const handleStartMatching = useCallback(() => {
+    const { joinQueue } = useStrathSpeedStore.getState();
+    joinQueue();
+  }, []);
 
   // Error state
   if (error) {
@@ -78,11 +98,7 @@ export function StrathSpeedApp({
             <h3 className="font-semibold mb-2">Something went wrong</h3>
             <p className="text-sm text-muted-foreground mb-4">{error}</p>
             <Button 
-              onClick={() => {
-                setError(null);
-                reset();
-                window.location.reload();
-              }}
+              onClick={handleTryAgain}
               variant="outline"
             >
               Try Again
@@ -117,10 +133,7 @@ export function StrathSpeedApp({
       return (
         <SessionResult 
           session={sessionState.session}
-          onContinue={() => {
-            useStrathSpeedStore.getState().setShowSessionResult(false);
-            useStrathSpeedStore.getState().resetSession();
-          }}
+          onContinue={handleSessionResultContinue}
         />
       );
     }
@@ -130,9 +143,7 @@ export function StrathSpeedApp({
       return (
         <VideoSession 
           matchData={sessionState.matchData}
-          onSessionEnd={() => {
-            useStrathSpeedStore.getState().resetSession();
-          }}
+          onSessionEnd={handleVideoSessionEnd}
         />
       );
     }
@@ -158,9 +169,7 @@ export function StrathSpeedApp({
         userId={userId}
         userName={userName}
         profile={profile}
-        onStartMatching={() => {
-          useStrathSpeedStore.getState().joinQueue();
-        }}
+        onStartMatching={handleStartMatching}
       />
     );
   };

@@ -2,9 +2,9 @@ import { redis } from '@/lib/redis';
 import db from '@/db/drizzle';
 import { speedDatingProfiles, users, speedSessions, icebreakerPrompts } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import DailyVideoService from '@/lib/video/daily-service';
 import { pusher } from '@/lib/pusher/server';
 import { nanoid } from 'nanoid';
+import { createDailyRoom, generateDailyToken } from '@/lib/actions/strathspeed.actions';
 
 export interface QueueUser {
   userId: string;
@@ -305,16 +305,16 @@ export class StrathSpeedMatchingEngine {
       const sessionId = nanoid();
       
       // Create Daily.co room
-      const dailyRoom = await DailyVideoService.createRoom(sessionId);
+      const dailyRoom = await createDailyRoom(sessionId);
       
       // Generate tokens for both users
       const [user1Token, user2Token] = await Promise.all([
-        DailyVideoService.generateToken(
+        generateDailyToken(
           dailyRoom.name,
           user1Id,
           user1.preferences.anonymousMode ? undefined : user1.userInfo.name
         ),
-        DailyVideoService.generateToken(
+        generateDailyToken(
           dailyRoom.name,
           user2Id,
           user2.preferences.anonymousMode ? undefined : user2.userInfo.name

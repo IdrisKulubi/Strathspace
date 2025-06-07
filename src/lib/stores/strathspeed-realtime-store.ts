@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { useMemo } from 'react';
 import type { SpeedSession, IcebreakerPrompt, SpeedDatingProfile } from '../../db/schema';
 import { getStrathSpeedClientEventService, type StrathSpeedEventHandlers } from '@/lib/strathspeed/client-event-service';
 
@@ -200,65 +201,54 @@ export const useStrathSpeedRealtimeStore = create<StrathSpeedRealtimeState>()(
         get().startSessionTimer();
       },
 
+      onSessionStarted: (data) => {
+        set({
+          sessionStatus: 'active',
+          currentSession: data.session,
+        });
+
+        get().addNotification({
+          type: 'info',
+          message: 'Session started! Have fun!',
+        });
+      },
+
       onSessionEnded: (data) => {
+        get().stopSessionTimer();
+        
         set({
           sessionStatus: 'ended',
+          lastActionResult: data.result,
           showSessionResult: true,
         });
 
-        get().stopSessionTimer();
-        
         get().addNotification({
           type: 'info',
           message: 'Session ended',
         });
       },
 
-      onQueueLeft: (data) => {
+      onConnectionError: (error) => {
         set({
-          queueStatus: 'idle',
-          queueData: null,
-          queueError: null,
-        });
-
-        if (data.reason === 'timeout') {
-          get().addNotification({
-            type: 'warning',
-            message: 'Removed from queue due to inactivity',
-          });
-        }
-      },
-
-      onActionResult: (data) => {
-        set({
-          lastActionResult: data,
-          showSessionResult: true,
-        });
-
-        if (data.isMatch) {
-          get().addNotification({
-            type: 'success',
-            message: '🎉 It\'s a match! You both vibed!',
-          });
-        }
-      },
-
-      onMatchConfirmed: (data) => {
-        get().addNotification({
-          type: 'success',
-          message: '🎉 It\'s a match! You both vibed!',
-        });
-      },
-
-      onError: (data) => {
-        set({
-          error: data.message,
-          isLoading: false,
+          connectionError: error.message,
+          isConnected: false,
         });
 
         get().addNotification({
           type: 'error',
-          message: data.message,
+          message: `Connection error: ${error.message}`,
+        });
+      },
+
+      onReconnected: () => {
+        set({
+          connectionError: null,
+          isConnected: true,
+        });
+
+        get().addNotification({
+          type: 'success',
+          message: 'Reconnected successfully',
         });
       },
     };
@@ -285,50 +275,33 @@ export const useStrathSpeedRealtimeStore = create<StrathSpeedRealtimeState>()(
       showSessionResult: false,
       notifications: [],
 
-      // Real-time connection management
+      // Real-time connection
       initializeRealtime: (userId, profile) => {
-        if (typeof window === 'undefined') return;
+        if (eventService) {
+          eventService.disconnect();
+        }
 
-        eventService = getStrathSpeedClientEventService();
-        eventService.connect(userId, eventHandlers);
+        eventService = getStrathSpeedClientEventService(userId, eventHandlers);
+        eventService.connect();
 
         set({
           userId,
           profile,
-          isConnected: eventService.isConnected(),
+          isConnected: true,
           connectionError: null,
         });
-
-        // Monitor connection state
-        const checkConnection = () => {
-          if (eventService) {
-            set({ isConnected: eventService.isConnected() });
-          }
-        };
-
-        const connectionInterval = setInterval(checkConnection, 5000);
-        
-        // Store cleanup function
-        (window as any).__strathspeed_cleanup = () => {
-          clearInterval(connectionInterval);
-          eventService?.disconnect();
-        };
       },
 
       disconnectRealtime: () => {
-        eventService?.disconnect();
-        eventService = null;
-        
+        if (eventService) {
+          eventService.disconnect();
+          eventService = null;
+        }
+
         set({
           isConnected: false,
-          userId: null,
+          connectionError: null,
         });
-
-        // Call cleanup function if it exists
-        if (typeof window !== 'undefined' && (window as any).__strathspeed_cleanup) {
-          (window as any).__strathspeed_cleanup();
-          delete (window as any).__strathspeed_cleanup;
-        }
       },
 
       // Profile actions
@@ -340,9 +313,9 @@ export const useStrathSpeedRealtimeStore = create<StrathSpeedRealtimeState>()(
       setQueueError: (queueError) => set({ queueError }),
 
       joinQueue: async (preferences) => {
-        const { profile, userId } = get();
-        if (!profile || !userId) {
-          set({ queueError: 'Profile not loaded' });
+        const { userId } = get();
+        if (!userId || !eventService) {
+          set({ queueError: 'Not connected to real-time service' });
           return;
         }
 
@@ -353,14 +326,8 @@ export const useStrathSpeedRealtimeStore = create<StrathSpeedRealtimeState>()(
         });
 
         try {
-          if (!eventService) {
-            throw new Error('Real-time service not initialized');
-          }
-
           await eventService.joinQueue(preferences);
-          
-          // The response will come via WebSocket events
-          // so we don't set state here directly
+          // Response will come via WebSocket events
         } catch (error) {
           set({ 
             queueStatus: 'error', 
@@ -371,20 +338,23 @@ export const useStrathSpeedRealtimeStore = create<StrathSpeedRealtimeState>()(
       },
 
       leaveQueue: async () => {
+        if (!eventService) return;
+
         set({ isLoading: true });
 
         try {
-          if (eventService) {
-            await eventService.leaveQueue();
-          }
-          
-          // The response will come via WebSocket events
-        } catch (error) {
-          console.error('Error leaving queue:', error);
-          // Reset anyway since user wants to leave
+          await eventService.leaveQueue();
           set({ 
             queueStatus: 'idle', 
-            queueData: null,
+            queueData: null, 
+            queueError: null,
+            isLoading: false 
+          });
+        } catch (error) {
+          console.error('Error leaving queue:', error);
+          set({ 
+            queueStatus: 'idle', 
+            queueData: null, 
             isLoading: false 
           });
         }
@@ -400,15 +370,11 @@ export const useStrathSpeedRealtimeStore = create<StrathSpeedRealtimeState>()(
 
       sendSessionAction: async (action, reportReason) => {
         const { matchData } = get();
-        if (!matchData) return;
+        if (!matchData || !eventService) return;
 
         set({ isLoading: true });
 
         try {
-          if (!eventService) {
-            throw new Error('Real-time service not initialized');
-          }
-
           await eventService.sendSessionAction(action, matchData.sessionId, reportReason);
           
           // The response will come via WebSocket events
@@ -553,30 +519,51 @@ export const useStrathSpeedRealtimeStore = create<StrathSpeedRealtimeState>()(
   })
 );
 
-// Selector hooks for optimized re-renders
-export const useRealtimeConnection = () => useStrathSpeedRealtimeStore((state) => ({
-  isConnected: state.isConnected,
-  connectionError: state.connectionError,
-  userId: state.userId,
-}));
+// Fixed hooks to prevent infinite render loops by avoiding object creation
+export const useIsConnected = () => useStrathSpeedRealtimeStore((state) => state.isConnected);
+export const useConnectionError = () => useStrathSpeedRealtimeStore((state) => state.connectionError);
+export const useUserId = () => useStrathSpeedRealtimeStore((state) => state.userId);
 
-export const useQueueState = () => useStrathSpeedRealtimeStore((state) => ({
-  status: state.queueStatus,
-  data: state.queueData,
-  error: state.queueError,
-  isLoading: state.isLoading,
-}));
+export const useRealtimeConnection = () => {
+  const isConnected = useIsConnected();
+  const connectionError = useConnectionError();
+  const userId = useUserId();
+  return { isConnected, connectionError, userId };
+};
 
-export const useSessionState = () => useStrathSpeedRealtimeStore((state) => ({
-  status: state.sessionStatus,
-  session: state.currentSession,
-  timer: state.sessionTimer,
-  icebreaker: state.icebreaker,
-  matchData: state.matchData,
-  lastActionResult: state.lastActionResult,
-  showIcebreaker: state.showIcebreaker,
-  showSessionResult: state.showSessionResult,
-}));
+export const useQueueStatus = () => useStrathSpeedRealtimeStore((state) => state.queueStatus);
+export const useQueueData = () => useStrathSpeedRealtimeStore((state) => state.queueData);
+export const useQueueError = () => useStrathSpeedRealtimeStore((state) => state.queueError);
+export const useIsLoading = () => useStrathSpeedRealtimeStore((state) => state.isLoading);
+
+export const useQueueState = () => {
+  const status = useQueueStatus();
+  const data = useQueueData();
+  const error = useQueueError();
+  const isLoading = useIsLoading();
+  return { status, data, error, isLoading };
+};
+
+export const useRealtimeSessionStatus = () => useStrathSpeedRealtimeStore((state) => state.sessionStatus);
+export const useCurrentSession = () => useStrathSpeedRealtimeStore((state) => state.currentSession);
+export const useSessionTimer = () => useStrathSpeedRealtimeStore((state) => state.sessionTimer);
+export const useIcebreaker = () => useStrathSpeedRealtimeStore((state) => state.icebreaker);
+export const useMatchData = () => useStrathSpeedRealtimeStore((state) => state.matchData);
+export const useLastActionResult = () => useStrathSpeedRealtimeStore((state) => state.lastActionResult);
+export const useShowIcebreaker = () => useStrathSpeedRealtimeStore((state) => state.showIcebreaker);
+export const useShowSessionResult = () => useStrathSpeedRealtimeStore((state) => state.showSessionResult);
+
+export const useSessionState = () => {
+  const status = useRealtimeSessionStatus();
+  const session = useCurrentSession();
+  const timer = useSessionTimer();
+  const icebreaker = useIcebreaker();
+  const matchData = useMatchData();
+  const lastActionResult = useLastActionResult();
+  const showIcebreaker = useShowIcebreaker();
+  const showSessionResult = useShowSessionResult();
+  return { status, session, timer, icebreaker, matchData, lastActionResult, showIcebreaker, showSessionResult };
+};
 
 export const useVideoState = () => useStrathSpeedRealtimeStore((state) => state.video);
 

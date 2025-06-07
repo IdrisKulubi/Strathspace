@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { SpeedSession, IcebreakerPrompt, SpeedDatingProfile } from '../../db/schema';
 import { getStrathSpeedClientEventService, type StrathSpeedEventHandlers } from '@/lib/strathspeed/client-event-service';
+import { useMemo } from 'react';
 
 export type QueueStatus = 'idle' | 'joining' | 'waiting' | 'matched' | 'error';
 export type SessionStatus = 'idle' | 'connecting' | 'active' | 'ending' | 'ended';
@@ -108,23 +109,27 @@ const initialVideoState: VideoState = {
   participantCount: 0,
 };
 
+const initialState = {
+  profile: null,
+  queueStatus: 'idle' as QueueStatus,
+  queuePosition: 0,
+  queueError: null,
+  currentSession: null,
+  sessionStatus: 'idle' as SessionStatus,
+  sessionTimer: 90,
+  icebreaker: null,
+  matchData: null,
+  video: initialVideoState,
+  isLoading: false,
+  error: null,
+  showIcebreaker: true,
+  showSessionResult: false,
+};
+
 export const useStrathSpeedStore = create<StrathSpeedState>()(
   subscribeWithSelector((set, get) => ({
     // Initial state
-    profile: null,
-    queueStatus: 'idle',
-    queuePosition: 0,
-    queueError: null,
-    currentSession: null,
-    sessionStatus: 'idle',
-    sessionTimer: 90, // 90 seconds default
-    icebreaker: null,
-    matchData: null,
-    video: initialVideoState,
-    isLoading: false,
-    error: null,
-    showIcebreaker: true,
-    showSessionResult: false,
+    ...initialState,
 
     // Profile actions
     setProfile: (profile) => set({ profile }),
@@ -298,48 +303,58 @@ export const useStrathSpeedStore = create<StrathSpeedState>()(
     }),
 
     reset: () => set({
-      profile: null,
-      queueStatus: 'idle',
-      queuePosition: 0,
-      queueError: null,
-      currentSession: null,
-      sessionStatus: 'idle',
-      sessionTimer: 90,
-      icebreaker: null,
-      matchData: null,
-      video: initialVideoState,
-      isLoading: false,
-      error: null,
-      showIcebreaker: true,
-      showSessionResult: false,
+      ...initialState,
     }),
   }))
 );
 
-// Selectors for optimized re-renders
-export const useQueueState = () => useStrathSpeedStore((state) => ({
-  status: state.queueStatus,
-  position: state.queuePosition,
-  error: state.queueError,
-  isLoading: state.isLoading,
-}));
+// Fixed hooks to prevent infinite render loops by avoiding object creation
+export const useQueueStatus = () => useStrathSpeedStore((state) => state.queueStatus);
+export const useQueuePosition = () => useStrathSpeedStore((state) => state.queuePosition);
+export const useQueueError = () => useStrathSpeedStore((state) => state.queueError);
+export const useIsLoading = () => useStrathSpeedStore((state) => state.isLoading);
 
-export const useSessionState = () => useStrathSpeedStore((state) => ({
-  session: state.currentSession,
-  status: state.sessionStatus,
-  timer: state.sessionTimer,
-  icebreaker: state.icebreaker,
-  matchData: state.matchData,
-}));
+export const useQueueState = () => {
+  const status = useQueueStatus();
+  const position = useQueuePosition();
+  const error = useQueueError();
+  const isLoading = useIsLoading();
+  return useMemo(() => ({ status, position, error, isLoading }), [status, position, error, isLoading]);
+};
+
+export const useCurrentSession = () => useStrathSpeedStore((state) => state.currentSession);
+export const useSessionStatus = () => useStrathSpeedStore((state) => state.sessionStatus);
+export const useSessionTimer = () => useStrathSpeedStore((state) => state.sessionTimer);
+export const useIcebreaker = () => useStrathSpeedStore((state) => state.icebreaker);
+export const useMatchData = () => useStrathSpeedStore((state) => state.matchData);
+
+export const useSessionState = () => {
+  const session = useCurrentSession();
+  const status = useSessionStatus();
+  const timer = useSessionTimer();
+  const icebreaker = useIcebreaker();
+  const matchData = useMatchData();
+  return useMemo(() => ({ session, status, timer, icebreaker, matchData }), [session, status, timer, icebreaker, matchData]);
+};
 
 export const useVideoState = () => useStrathSpeedStore((state) => state.video);
 
-export const useStrathSpeedActions = () => useStrathSpeedStore((state) => ({
-  joinQueue: state.joinQueue,
-  leaveQueue: state.leaveQueue,
-  sendSessionAction: state.sendSessionAction,
-  toggleVideo: state.toggleVideo,
-  toggleAudio: state.toggleAudio,
-  resetSession: state.resetSession,
-  reset: state.reset,
-})); 
+export const useStrathSpeedActions = () => {
+  const joinQueue = useStrathSpeedStore((state) => state.joinQueue);
+  const leaveQueue = useStrathSpeedStore((state) => state.leaveQueue);
+  const sendSessionAction = useStrathSpeedStore((state) => state.sendSessionAction);
+  const toggleVideo = useStrathSpeedStore((state) => state.toggleVideo);
+  const toggleAudio = useStrathSpeedStore((state) => state.toggleAudio);
+  const resetSession = useStrathSpeedStore((state) => state.resetSession);
+  const reset = useStrathSpeedStore((state) => state.reset);
+  
+  return useMemo(() => ({
+    joinQueue,
+    leaveQueue,
+    sendSessionAction,
+    toggleVideo,
+    toggleAudio,
+    resetSession,
+    reset,
+  }), [joinQueue, leaveQueue, sendSessionAction, toggleVideo, toggleAudio, resetSession, reset]);
+}; 
