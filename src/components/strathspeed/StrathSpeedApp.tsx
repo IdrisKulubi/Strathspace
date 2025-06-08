@@ -42,10 +42,35 @@ export function StrathSpeedApp({
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Set initial profile if available
         if (initialProfile) {
+          // User has an existing speed dating profile
           const { setProfile } = useStrathSpeedStore.getState();
           setProfile(initialProfile);
+        } else {
+          // Create a default profile from user data
+          const defaultProfile = {
+            id: `temp-${userId}`, // Temporary ID
+            userId,
+            isActive: true,
+            anonymousMode: false,
+            preferences: {
+              ageRange: [18, 25] as [number, number],
+              genderPreference: 'any',
+              interests: [],
+            },
+            totalSessions: 0,
+            speedPoints: 0,
+            vibesReceived: 0,
+            vibesSent: 0,
+            currentStreak: 0,
+            longestStreak: 0,
+            badges: [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } as const;
+          
+          const { setProfile } = useStrathSpeedStore.getState();
+          setProfile(defaultProfile as any);
         }
         
         setIsInitialized(true);
@@ -56,7 +81,7 @@ export function StrathSpeedApp({
     };
 
     initializeApp();
-  }, [initialProfile]);
+  }, [initialProfile, userId]);
 
   // Handle store errors
   useEffect(() => {

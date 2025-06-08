@@ -84,7 +84,7 @@ export class StrathSpeedMatchingEngine {
 
       // Add to queue with timestamp as score (FIFO)
       const timestamp = Date.now();
-      await redis.zadd(REDIS_KEYS.ACTIVE_QUEUE, timestamp, userId);
+      await redis.zadd(REDIS_KEYS.ACTIVE_QUEUE, { score: timestamp, member: userId });
 
       // Store user data
       await redis.setex(
@@ -400,8 +400,8 @@ export class StrathSpeedMatchingEngine {
       // Re-add users to queue if match creation failed
       const timestamp = Date.now();
       await Promise.all([
-        redis.zadd(REDIS_KEYS.ACTIVE_QUEUE, timestamp, user1Id),
-        redis.zadd(REDIS_KEYS.ACTIVE_QUEUE, timestamp + 1, user2Id),
+        redis.zadd(REDIS_KEYS.ACTIVE_QUEUE, { score: timestamp, member: user1Id }),
+        redis.zadd(REDIS_KEYS.ACTIVE_QUEUE, { score: timestamp + 1, member: user2Id }),
       ]);
       
       throw error;

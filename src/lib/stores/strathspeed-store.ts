@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import type { SpeedSession, IcebreakerPrompt, SpeedDatingProfile } from '../../db/schema';
-import { getStrathSpeedClientEventService, type StrathSpeedEventHandlers } from '@/lib/strathspeed/client-event-service';
 import { useMemo } from 'react';
+import { IcebreakerPrompt, SpeedDatingProfile, SpeedSession } from '@/db/schema';
 
 export type QueueStatus = 'idle' | 'joining' | 'waiting' | 'matched' | 'error';
 export type SessionStatus = 'idle' | 'connecting' | 'active' | 'ending' | 'ended';
@@ -141,6 +140,7 @@ export const useStrathSpeedStore = create<StrathSpeedState>()(
     
     joinQueue: async () => {
       const { profile } = get();
+      
       if (!profile) {
         set({ queueError: 'Profile not loaded' });
         return;
