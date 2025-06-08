@@ -124,8 +124,8 @@ export class StrathSpeedEventService {
         joinedAt: Date.now(),
         preferences,
         userInfo: {
-          name: userWithProfile.profile?.displayName || userWithProfile.email,
-          profilePhoto: userWithProfile.profile?.profilePhoto,
+          name: userWithProfile.profile?.firstName   || userWithProfile.email,
+          profilePhoto: userWithProfile.profile?.profilePhoto || '',
         },
       };
 
@@ -214,13 +214,15 @@ export class StrathSpeedEventService {
       const partnerId = isUser1 ? session.user2Id : session.user1Id;
 
       // Create session outcome record
-      const outcomeId = nanoid();
+      const validReportReasons = ["inappropriate_content", "harassment", "spam", "nudity", "other"] as const;
+      const isValidReportReason = (reason: string | undefined): reason is typeof validReportReasons[number] => 
+        !!reason && validReportReasons.includes(reason as any);
+
       await db.insert(sessionOutcomes).values({
-        id: outcomeId,
         sessionId,
         userId,
         action,
-        reportReason: action === 'report' ? reportReason : undefined,
+        reportReason: action === 'report' && isValidReportReason(reportReason) ? reportReason : null,
       });
 
       let result: SessionActionResult = {
@@ -232,13 +234,13 @@ export class StrathSpeedEventService {
       // Handle different actions
       switch (action) {
         case 'vibe':
-          result = await this.handleVibeAction(session, userId, partnerId, outcomeId);
+          result = await this.handleVibeAction(session, userId, partnerId);
           break;
         case 'skip':
-          result = await this.handleSkipAction(session, userId, partnerId, outcomeId);
+          result = await this.handleSkipAction(session, userId, partnerId);
           break;
         case 'report':
-          result = await this.handleReportAction(session, userId, partnerId, outcomeId, reportReason);
+          result = await this.handleReportAction(session, userId, partnerId, reportReason);
           break;
       }
 
@@ -268,8 +270,7 @@ export class StrathSpeedEventService {
   private async handleVibeAction(
     session: any,
     userId: string,
-    partnerId: string,
-    outcomeId: string
+    partnerId: string
   ): Promise<SessionActionResult> {
     // Check if partner also vibed
     const partnerVibe = await db.query.sessionOutcomes.findFirst({
@@ -313,8 +314,7 @@ export class StrathSpeedEventService {
   private async handleSkipAction(
     session: any,
     userId: string,
-    partnerId: string,
-    outcomeId: string
+    partnerId: string
   ): Promise<SessionActionResult> {
     return {
       success: true,
@@ -332,7 +332,6 @@ export class StrathSpeedEventService {
     session: any,
     userId: string,
     partnerId: string,
-    outcomeId: string,
     reportReason?: string
   ): Promise<SessionActionResult> {
     // Additional reporting logic would go here
@@ -490,7 +489,7 @@ export class StrathSpeedEventService {
       for (const userId of queueData) {
         const lastHeartbeat = await redis.get(`strathspeed:heartbeat:${userId}`);
         
-        if (!lastHeartbeat || (now - parseInt(lastHeartbeat)) > inactiveThreshold) {
+        if (!lastHeartbeat || (now - parseInt(lastHeartbeat as string)) > inactiveThreshold) {
           // Remove inactive user
           await MatchingEngine.removeFromQueue(userId as string);
           

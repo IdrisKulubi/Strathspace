@@ -479,22 +479,31 @@ export class StrathSpeedMatchingEngine {
     try {
       const now = Date.now();
       const maxWaitTime = 10 * 60 * 1000; // 10 minutes
-
-      // Remove users who have been waiting too long
       const expiredThreshold = now - maxWaitTime;
-      const expiredUsers = await redis.zrangebyscore(
-        REDIS_KEYS.ACTIVE_QUEUE,
-        '-inf',
-        expiredThreshold
-      );
+
+      // Get all queue entries with scores
+      const queueData = await redis.zrange(REDIS_KEYS.ACTIVE_QUEUE, 0, -1, {
+        withScores: true,
+      });
+
+      if (queueData.length === 0) {
+        return;
+      }
+
+      // Find expired users (scores are timestamps)
+      const expiredUsers: string[] = [];
+      for (let i = 0; i < queueData.length; i += 2) {
+        const userId = queueData[i] as string;
+        const timestamp = queueData[i + 1] as number;
+        
+        if (timestamp <= expiredThreshold) {
+          expiredUsers.push(userId);
+        }
+      }
 
       if (expiredUsers.length > 0) {
-        // Remove expired users
-        await redis.zremrangebyscore(
-          REDIS_KEYS.ACTIVE_QUEUE,
-          '-inf',
-          expiredThreshold
-        );
+        // Remove expired users from queue
+        await redis.zrem(REDIS_KEYS.ACTIVE_QUEUE, ...expiredUsers);
 
         // Clean up their data
         const deletePromises = expiredUsers.map(userId => [
