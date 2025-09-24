@@ -3,9 +3,9 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { Profile } from "@/db/schema";
-import { SwipeableCard } from "../cards/swipeable-card";
-import { AnimatePresence } from "framer-motion";
-import { Heart, User2, Star, MessageCircle } from "lucide-react";
+import { SimpleSwipeableCard } from "../cards/simple-swipeable-card";
+import { AnimatePresence, motion } from "framer-motion";
+import { Heart, User2, Star, MessageCircle, RotateCcw, X, Sparkles, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   recordSwipe,
@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut } from "lucide-react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
 import { SwipeControls } from "../controls/swipe-controls";
@@ -453,83 +452,138 @@ export function ExploreMobileV2({
         </div>
       )}
 
-      <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-background pt-12">
+      <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-gradient-to-b from-pink-50 to-white dark:from-gray-900 dark:to-gray-950 pt-12">
         {profiles.length > 0 ? (
           <>
-            {/* Make card edge-to-edge on mobile */}
-            <div className="relative w-full max-w-full mx-0" style={{ height: 'calc(100vh - 56px - 50px - 56px)' }}>
-              <AnimatePresence>
-                {profiles[currentIndex] && (
-                  <>
-                    <div className="w-full h-full relative" style={{ touchAction: 'manipulation' }}>
-                      <SwipeableCard
-                        key={profiles[currentIndex].userId}
-                        profile={
-                          profiles[currentIndex] as Profile & { photos?: string[] }
-                        }
-                        onSwipe={handleSwipe}
-                        active={true}
+            {/* Card Container - Better spacing and alignment */}
+            <div className="relative w-full h-[calc(100vh-16rem)] max-w-sm mx-auto px-4">
+              <AnimatePresence mode="popLayout">
+                {visibleProfiles.map((profile, index) => {
+                  const isActive = index === 0;
+                  const zIndex = visibleProfiles.length - index;
+                  const scale = 1 - index * 0.03;
+                  const yOffset = index * 6;
+
+                  return (
+                    <motion.div
+                      key={profile.userId}
+                      className="absolute inset-0"
+                      style={{ 
+                        zIndex,
+                        scale,
+                        y: yOffset
+                      }}
+                      initial={{ scale: 0.8, opacity: 0, y: 50 }}
+                      animate={{ 
+                        scale, 
+                        opacity: isActive ? 1 : 0.8, 
+                        y: yOffset 
+                      }}
+                      exit={{ 
+                        scale: 0.8, 
+                        opacity: 0, 
+                        y: -50,
+                        transition: { duration: 0.2 }
+                      }}
+                      transition={{ 
+                        type: "spring", 
+                        stiffness: 300, 
+                        damping: 30 
+                      }}
+                    >
+                      <SimpleSwipeableCard
+                        profile={profile as Profile & { photos?: string[] }}
+                        onSwipe={isActive ? handleSwipe : () => {}}
+                        active={isActive}
                       />
-                    </div>
-                    
-                    {/* Preload the next profiles (hidden but loaded in DOM) */}
-                    {visibleProfiles.slice(1).map((profile, idx) => {
-                      // Ensure each key is truly unique by combining userId with index
-                      const uniqueKey = `preload-${profile.userId}-${idx}-${Date.now()}`;
-                      return (
-                        <div 
-                          key={uniqueKey}
-                          className={idx < 2 ? "absolute inset-0 opacity-0 pointer-events-none" : "hidden"}
-                        >
-                          <SwipeableCard
-                            profile={profile as Profile & { photos: string[] }}
-                            onSwipe={() => {}}
-                            active={false}
-                          />
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
 
-            {/* Swipe Controls - Fixed at bottom - SMALLER FOR MOBILE */}
-            <div className="fixed bottom-12 left-0 right-0 px-4 pb-4 z-50 flex justify-center">
-              <SwipeControls
-                onSwipeLeft={() => handleSwipe("left")}
-                onSwipeRight={() => handleSwipe("right")}
-                onUndo={handleRevert}
-                onSuperLike={() => {
-                  toast({
-                    title: "bestie wait ⭐️✨",
-                    description:
-                      "super likes coming soon & they're gonna be lit fr fr 🔥",
-                    className:
-                      "bg-gradient-to-r from-yellow-500 to-amber-500 text-white border-none",
-                  });
-                }}
-                disabled={isAnimating || currentIndex < 0}
-                className="mx-auto max-w-lg scale-90 sm:scale-100"
-                currentProfileId={profiles[currentIndex]?.userId}
-              />
+            {/* Modern Swipe Controls - Better positioned and styled */}
+            <div className="fixed bottom-20 left-0 right-0 px-6 z-50">
+              <div className="flex items-center justify-center gap-4 max-w-sm mx-auto">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 rounded-full border-2 border-blue-300 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 transition-all duration-200 shadow-lg"
+                  onClick={handleRevert}
+                  disabled={swipedProfiles.length === 0 || isAnimating}
+                >
+                  <RotateCcw className="h-5 w-5 text-blue-500" />
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-14 w-14 rounded-full border-2 border-red-300 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-all duration-200 hover:scale-110 shadow-lg"
+                  onClick={() => handleSwipe("left")}
+                  disabled={isAnimating || currentIndex < 0}
+                >
+                  <X className="h-6 w-6 text-red-500" strokeWidth={2.5} />
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-16 w-16 rounded-full border-2 border-pink-300 hover:border-pink-500 hover:bg-pink-50 dark:hover:bg-pink-950 transition-all duration-200 hover:scale-110 shadow-xl bg-white dark:bg-gray-800"
+                  onClick={() => handleSwipe("right")}
+                  disabled={isAnimating || currentIndex < 0}
+                >
+                  <Heart className="h-7 w-7 text-pink-500 fill-pink-500" strokeWidth={2} />
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-14 w-14 rounded-full border-2 border-yellow-300 hover:border-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-950 transition-all duration-200 hover:scale-110 shadow-lg"
+                  onClick={() => {
+                    toast({
+                      title: "⭐ Super Like Coming Soon!",
+                      description: "This feature will be available soon",
+                      className: "bg-gradient-to-r from-yellow-500 to-amber-500 text-white border-none",
+                    });
+                  }}
+                  disabled={isAnimating}
+                >
+                  <Sparkles className="h-6 w-6 text-yellow-500 fill-yellow-500" strokeWidth={2} />
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 rounded-full border-2 border-gray-300 dark:border-gray-600 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950 transition-all duration-200 shadow-lg"
+                  onClick={() => {
+                    toast({
+                      title: "⚙️ Settings",
+                      description: "Settings panel coming soon",
+                      className: "bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-none",
+                    });
+                  }}
+                >
+                  <Settings className="h-5 w-5 text-purple-500" />
+                </Button>
+              </div>
             </div>
 
-            {/* Bottom Navigation - evenly spaced icons */}
-            <div className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t border-border/50">
-              <div className="flex justify-between items-center h-16 px-6 max-w-md mx-auto">
+            {/* Bottom Navigation - Modern design with better spacing */}
+            <div className="fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-t border-gray-200 dark:border-gray-700">
+              <div className="flex justify-around items-center h-20 px-4 max-w-md mx-auto">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowMatches(true)}
-                  className="relative"
+                  className="relative flex flex-col items-center gap-1 h-16 w-16 rounded-xl hover:bg-pink-50 dark:hover:bg-pink-950/20"
                 >
                   <Heart className="h-6 w-6 text-pink-500" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Matches</span>
                   {!hasLoadedMatches ? (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-pink-500/30 animate-pulse" />
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-pink-500/30 animate-pulse" />
                   ) : (
                     matches.length > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-pink-500 text-white">
+                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full flex items-center justify-center text-xs bg-pink-500 text-white font-medium">
                         {matches.length}
                       </span>
                     )
@@ -541,11 +595,12 @@ export function ExploreMobileV2({
                   size="icon"
                   onClick={() => setShowChatList(true)}
                   onMouseEnter={handleChatHover}
-                  className="relative"
+                  className="relative flex flex-col items-center gap-1 h-16 w-16 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20"
                 >
                   <MessageCircle className="h-6 w-6 text-blue-500" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Chat</span>
                   {unreadMessages.unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-blue-500 animate-pulse" />
                   )}
                 </Button>
 
@@ -554,35 +609,36 @@ export function ExploreMobileV2({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="relative hover:bg-accent/50 transition-colors duration-200"
+                      className="relative flex flex-col items-center gap-1 h-16 w-16 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
-                      <Avatar className="h-8 w-8 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-200">
+                      <Avatar className="h-6 w-6 ring-2 ring-gray-200 dark:ring-gray-700">
                         <AvatarImage
                           src={currentUser?.image || undefined}
                           alt={currentUser?.name || "User"}
                           className="object-cover"
                         />
-                        <AvatarFallback className="bg-gradient-to-br from-pink-500 to-purple-500 text-white">
+                        <AvatarFallback className="bg-gradient-to-br from-pink-500 to-purple-500 text-white text-xs">
                           {currentUser?.name?.[0]?.toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Profile</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    className="w-56 p-2 backdrop-blur-lg bg-white/90 dark:bg-gray-950/90 border border-border/50 shadow-lg shadow-primary/5"
+                    className="w-48 p-2 backdrop-blur-lg bg-white/95 dark:bg-gray-900/95 border border-gray-200 dark:border-gray-700 shadow-xl rounded-xl"
                   >
                     <DropdownMenuItem asChild>
                       <Link
                         href="/profile"
-                        className="flex items-center px-3 py-2 rounded-md hover:bg-accent/80 transition-colors duration-200"
+                        className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
                       >
-                        <User2 className="mr-2 h-4 w-4 text-primary" />
-                        <span>Profile</span>
+                        <User2 className="mr-2 h-4 w-4 text-gray-600 dark:text-gray-400" />
+                        <span>Edit Profile</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="flex items-center px-3 py-2 rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors duration-200 mt-1"
+                      className="flex items-center px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors duration-200 mt-1"
                       onClick={() => signOut()}
                     >
                       <LogOut className="mr-2 h-4 w-4" />
@@ -591,20 +647,19 @@ export function ExploreMobileV2({
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <FeedbackModal />
-
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowLikes(true)}
-                  className="relative"
+                  className="relative flex flex-col items-center gap-1 h-16 w-16 rounded-xl hover:bg-yellow-50 dark:hover:bg-yellow-950/20"
                 >
                   <Star className="h-6 w-6 text-yellow-500" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Likes</span>
                   {!hasLoadedLikes ? (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-yellow-500/30 animate-pulse" />
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-500/30 animate-pulse" />
                   ) : (
                     likes.length > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-yellow-500 text-white">
+                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full flex items-center justify-center text-xs bg-yellow-500 text-white font-medium">
                         {likes.length}
                       </span>
                     )

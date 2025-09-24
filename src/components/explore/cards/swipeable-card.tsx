@@ -1,22 +1,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useTransform,
+  animate,
+  AnimatePresence,
+} from "framer-motion";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Profile } from "@/db/schema";
 import { Card } from "@/components/ui/card";
 import ImageSlider from "../controls/ImageSlider";
-import { ChevronDown, Info, X, Heart, ChevronUp, User as UserIcon } from 'lucide-react';
-import { ProfileDetailsModal } from '../profile-details-modal';
+import {
+  ChevronDown,
+  Info,
+  X,
+  Heart,
+  ChevronUp,
+  User as UserIcon,
+} from "lucide-react";
+import { ProfileDetailsModal } from "../profile-details-modal";
 import { trackProfileView } from "@/lib/actions/stalker.actions";
 import { useAction } from "next-safe-action/hooks";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { useMediaQuery } from '@/hooks/use-media-query';
+
 import Image from "next/image";
 
 const initInteractionTroubleshooter = () => {
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== "production") {
   }
   return () => {};
 };
@@ -67,52 +80,73 @@ export function SwipeableCard({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isDragging, setIsDragging] = useState(false);
   const [hasSwiped, setHasSwiped] = useState(false);
-  
-  const qualities = useMemo(() => [
-    profile.course && `Studies ${profile.course}`,
-    profile.yearOfStudy && `Year ${profile.yearOfStudy}`,
-    profile.gender,
-    profile.lookingFor && `Looking for ${profile.lookingFor}`,
-  ].filter(Boolean) as string[], [profile.course, profile.yearOfStudy, profile.gender, profile.lookingFor]);
 
-  const lifestyleAndPersonalityFields = useMemo(() => [
-    { key: 'drinkingPreference', label: "Drinks", icon: "🍷" },
-    { key: 'workoutFrequency', label: "Workout", icon: "🏋️" },
-    { key: 'socialMediaUsage', label: "Social Media", icon: "📱" },
-    { key: 'sleepingHabits', label: "Sleeps", icon: "😴" },
-    { key: 'personalityType', label: "Personality", icon: "🧠" },
-    { key: 'communicationStyle', label: "Communicates", icon: "💬" },
-    { key: 'loveLanguage', label: "Love Language", icon: "❤️" },
-    { key: 'zodiacSign', label: "Zodiac", icon: "✨" },
-  ], []);
+  const qualities = useMemo(
+    () =>
+      [
+        profile.course && `Studies ${profile.course}`,
+        profile.yearOfStudy && `Year ${profile.yearOfStudy}`,
+        profile.gender,
+        profile.lookingFor && `Looking for ${profile.lookingFor}`,
+      ].filter(Boolean) as string[],
+    [profile.course, profile.yearOfStudy, profile.gender, profile.lookingFor]
+  );
+
+  const lifestyleAndPersonalityFields = useMemo(
+    () => [
+      { key: "drinkingPreference", label: "Drinks", icon: "🍷" },
+      { key: "workoutFrequency", label: "Workout", icon: "🏋️" },
+      { key: "socialMediaUsage", label: "Social Media", icon: "📱" },
+      { key: "sleepingHabits", label: "Sleeps", icon: "😴" },
+      { key: "personalityType", label: "Personality", icon: "🧠" },
+      { key: "communicationStyle", label: "Communicates", icon: "💬" },
+      { key: "loveLanguage", label: "Love Language", icon: "❤️" },
+      { key: "zodiacSign", label: "Zodiac", icon: "✨" },
+    ],
+    []
+  );
 
   const lifestyleAndPersonalityInfo = useMemo(() => {
     return lifestyleAndPersonalityFields
-      .map(field => ({
+      .map((field) => ({
         ...field,
         value: profile[field.key as keyof Profile] as string | undefined | null,
       }))
-      .filter(info => info.value && info.value.trim() !== "");
+      .filter((info) => info.value && info.value.trim() !== "");
   }, [profile, lifestyleAndPersonalityFields]);
 
   const remainingQualities = useMemo(() => qualities.slice(2), [qualities]);
-  const hasBio = useMemo(() => profile.bio && profile.bio.trim() !== "", [profile.bio]);
-  const hasInterests = useMemo(() => profile.interests && profile.interests.length > 0, [profile.interests]);
+  const hasBio = useMemo(
+    () => profile.bio && profile.bio.trim() !== "",
+    [profile.bio]
+  );
+  const hasInterests = useMemo(
+    () => profile.interests && profile.interests.length > 0,
+    [profile.interests]
+  );
 
   const itemsHiddenCount = useMemo(() => {
-      let count = 0;
-      if (hasBio) count++;
-      if (hasInterests) count++;
-      count += remainingQualities.length;
-      count += lifestyleAndPersonalityInfo.length;
-      return count;
+    let count = 0;
+    if (hasBio) count++;
+    if (hasInterests) count++;
+    count += remainingQualities.length;
+    count += lifestyleAndPersonalityInfo.length;
+    return count;
   }, [hasBio, hasInterests, remainingQualities, lifestyleAndPersonalityInfo]);
 
-  const viewMoreBadgeText = showExtraInfo ? "Hide Details" :
-                           (itemsHiddenCount > 0 ? `View ${itemsHiddenCount} More` : "View Details");
+  const viewMoreBadgeText = showExtraInfo
+    ? "Hide Details"
+    : itemsHiddenCount > 0
+    ? `View ${itemsHiddenCount} More`
+    : "View Details";
 
-  const showViewMoreBadge = itemsHiddenCount > 0 || 
-                            (showExtraInfo && (hasBio || hasInterests || remainingQualities.length > 0 || lifestyleAndPersonalityInfo.length > 0));
+  const showViewMoreBadge =
+    itemsHiddenCount > 0 ||
+    (showExtraInfo &&
+      (hasBio ||
+        hasInterests ||
+        remainingQualities.length > 0 ||
+        lifestyleAndPersonalityInfo.length > 0));
 
   const handleSlideChange = useCallback((index: number) => {
     setActiveImageIndex(index);
@@ -131,7 +165,10 @@ export function SwipeableCard({
     }
   }, [active, profile.userId]);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent, info: { offset: { x: number }, velocity: { x: number } }) => {
+  const handleDragEnd = (
+    event: MouseEvent | TouchEvent,
+    info: { offset: { x: number }; velocity: { x: number } }
+  ) => {
     if (!active) return;
     const swipePower = Math.abs(info.offset.x) * info.velocity.x;
     const threshold = 120;
@@ -175,14 +212,14 @@ export function SwipeableCard({
     setShowExtraInfo(!showExtraInfo);
   };
 
-  const isMobile = useMediaQuery('(max-width: 768px)');
-
   if (!active) return null;
 
   const isAnonymous = profile.anonymous;
   const currentAnonymousAvatar = isAnonymous ? profile.anonymousAvatar : null;
 
-  const displayPhotos = isAnonymous ? [] : [profile.profilePhoto || "", ...(profile.photos || [])].filter(Boolean);
+  const displayPhotos = isAnonymous
+    ? []
+    : [profile.profilePhoto || "", ...(profile.photos || [])].filter(Boolean);
 
   return (
     <motion.div
@@ -203,9 +240,9 @@ export function SwipeableCard({
         style={{
           opacity: leftTextOpacity,
           scale: leftTextOpacity,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <div className="flex flex-col items-center">
@@ -219,9 +256,9 @@ export function SwipeableCard({
         style={{
           opacity: rightTextOpacity,
           scale: rightTextOpacity,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <div className="flex flex-col items-center">
@@ -231,205 +268,255 @@ export function SwipeableCard({
         </div>
       </motion.div>
 
-      <Card className="relative w-full h-full overflow-hidden rounded-sm shadow-xl">
-        <div className="absolute inset-0 z-0">
+      <Card className="relative w-full h-full overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl border-0 bg-white dark:bg-gray-900">
+        {/* Image Section - Takes up most of the card */}
+        <div className="relative h-[75%] overflow-hidden">
           {isAnonymous ? (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 via-gray-800 to-black flex-col p-4">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 flex-col p-6">
               {currentAnonymousAvatar ? (
                 <Image
                   src={`/avatars/${currentAnonymousAvatar}.svg`}
                   alt={`${currentAnonymousAvatar} avatar`}
-                  width={128}
-                  height={128}
-                  className="opacity-80"
+                  width={120}
+                  height={120}
+                  className="opacity-90 mb-4"
                   priority
                 />
               ) : (
-                <UserIcon className="w-32 h-32 text-white opacity-70" />
+                <UserIcon className="w-24 h-24 text-white/80 mb-4" />
               )}
-              <p className="mt-4 text-2xl font-bold text-white opacity-90">This user is Anonymous</p>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Anonymous User
+              </h3>
+              <p className="text-white/80 text-sm text-center px-4">
+                This person prefers to stay mysterious for now
+              </p>
             </div>
           ) : (
-            <ImageSlider 
+            <ImageSlider
               slug={displayPhotos}
               className={customStyles.image || "h-full object-cover"}
               onSlideChange={handleSlideChange}
             />
           )}
-        </div>
-        
-        {!isAnonymous && displayPhotos.length > 0 && (
-          <div className="absolute top-3 left-0 right-0 z-30 flex justify-center gap-1">
-            {displayPhotos.map((_, i) => (
-              <div key={i} className={`h-1 ${i === activeImageIndex ? 'bg-pink-500 w-8' : 'bg-white/50 w-6'} rounded-sm transition-all duration-300`} />
-            ))}
-          </div>
-        )}
-        
-        <div className="absolute top-4 right-4 z-30 cursor-pointer" style={{ pointerEvents: 'auto' }}>
+
+          {/* Gradient overlay for better text readability */}
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+
+          {/* Image indicators */}
+          {!isAnonymous && displayPhotos.length > 1 && (
+            <div className="absolute top-4 left-4 right-4 flex gap-1 z-30">
+              {displayPhotos.map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-1 rounded-full transition-all duration-300",
+                    i === activeImageIndex
+                      ? "bg-white flex-1"
+                      : "bg-white/40 w-8"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Info button */}
           <button
             onClick={toggleExtraInfo}
             className={cn(
-              "p-2 rounded-full backdrop-blur-sm transition-all duration-200",
-              showExtraInfo ? "bg-pink-500/70 hover:bg-pink-500/90 text-white ring-2 ring-pink-300/30" : "bg-black/30 hover:bg-black/50 text-white"
+              "absolute top-4 right-4 z-30 p-2 rounded-full backdrop-blur-sm transition-all duration-200",
+              showExtraInfo
+                ? "bg-pink-500/80 hover:bg-pink-500 text-white ring-2 ring-pink-300/30"
+                : "bg-black/30 hover:bg-black/50 text-white"
             )}
-            aria-label="View more profile information" type="button"
+            aria-label="View more profile information"
+            type="button"
           >
             <Info className={cn("h-5 w-5", showExtraInfo && "animate-pulse")} />
           </button>
         </div>
-        
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent text-white z-10" style={{ pointerEvents: 'auto' }}>
-          <div className="p-6 pb-3">
-            {/* Name, Age, Course, Year */}
-            <div className="mb-3">
-              {isAnonymous ? (
-                <div>
-                  <span className="text-2xl font-bold text-white">Anonymous User</span>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-white drop-shadow-sm">
-                      {profile.firstName}
-                      {profile.age ? `, ${profile.age}` : ""}
-                    </span>
-                  </div>
-               
-                </>
-              )}
-            </div>
 
-            {/* Interests badges (if not anonymous) */}
-             {(profile.interests && profile.interests.length > 0 && !isAnonymous) && (
-              <div className={cn("flex flex-wrap gap-2 mt-3", customStyles.interests)}>
-                {profile.interests.map((interest, idx) => (
-                  <Badge key={idx} variant="outline" className="bg-purple-500/20 border-purple-400/30 text-white/90 text-xs py-0.5 px-2 rounded-full">
+        {/* Content Section - Bottom 25% */}
+        <div className="relative h-[25%] bg-white dark:bg-gray-900 p-4 md:p-6">
+          {/* Name and Age */}
+          <div className="mb-3">
+            {isAnonymous ? (
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+                Anonymous User
+              </h2>
+            ) : (
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+                {profile.firstName}
+                {profile.age && (
+                  <span className="text-lg md:text-xl font-normal text-gray-600 dark:text-gray-400 ml-2">
+                    {profile.age}
+                  </span>
+                )}
+              </h2>
+            )}
+          </div>
+
+          {/* Quick info badges */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {!isAnonymous &&
+              qualities.slice(0, 2).map((quality, index) => (
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full"
+                >
+                  {quality}
+                </Badge>
+              ))}
+          </div>
+
+          {/* Interests preview */}
+          {!isAnonymous &&
+            profile.interests &&
+            profile.interests.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {profile.interests.slice(0, 3).map((interest, idx) => (
+                  <Badge
+                    key={idx}
+                    variant="outline"
+                    className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-800 text-xs rounded-full"
+                  >
                     {interest}
                   </Badge>
                 ))}
+                {profile.interests.length > 3 && (
+                  <Badge
+                    variant="outline"
+                    className="border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-xs rounded-full"
+                  >
+                    +{profile.interests.length - 3}
+                  </Badge>
+                )}
               </div>
             )}
 
-            {isAnonymous && (
-              <div className="my-3 p-3 bg-black/20 rounded-lg backdrop-blur-sm">
-                <p className="text-sm text-white/80">
-                  This user is currently in Anonymous Mode. Some details are hidden. If you match, you can both choose to reveal your profiles.
-                </p>
-              </div>
-            )}
-          </div>
-          
-          <div className="px-6 pb-1 flex flex-wrap gap-2 items-center">
-            {qualities.slice(0, 2).map((quality, index) => (
-              <Badge key={index} variant="outline" className="bg-gray-500 hover:bg-white/20  border-white/20 text-white text-xs py-1 rounded-full">
-                {quality}
-              </Badge>
-            ))}
-            
-            {showViewMoreBadge && (
-              isMobile ? (
-                <button
-                  aria-label={viewMoreBadgeText}
-                  onClick={toggleExtraInfo}
-                  className={cn(
-                    'absolute right-0 -translate-x-1/2 z-30',
-                    'rounded-full bg-pink-500/90 hover:bg-pink-600 text-white shadow-lg',
-                    'transition-all duration-200',
-                    showExtraInfo ? 'bg-pink-700' : '',
-                    'top-[calc(100%-8.5rem)] md:hidden',
-                    'w-10 h-10 flex items-center justify-center',
-                  )}
-                  style={{
-                    marginBottom: '-1.5rem',
-                  }}
-                >
-                  <ChevronUp className={cn('h-6 w-6 transition-transform', showExtraInfo && 'rotate-180')} />
-                </button>
-              ) : (
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    "bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs py-1 px-2.5 cursor-pointer flex items-center gap-1 rounded-full",
-                    showExtraInfo && "bg-white/20"
-                  )}
-                  onClick={toggleExtraInfo}
-                >
-                  {viewMoreBadgeText}
-                  <ChevronDown className={cn("h-3 w-3 transition-transform duration-200 ml-0.5", showExtraInfo && "rotate-180")} />
-                </Badge>
-              )
-            )}
-          </div>
-          
-          <AnimatePresence>
-            {showExtraInfo && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <div className="px-6 pt-3 pb-2 space-y-3">
-                  {hasBio && (
-                    <div>
-                      <h4 className="text-[13px] font-semibold text-white/70 mb-0.5">About</h4>
-                      <p className="text-sm text-white/80 leading-relaxed line-clamp-3">{profile.bio}</p>
-                    </div>
-                  )}
-                  
-                  {hasInterests && (
-                    <div className="pt-1.5">
-                      <h4 className="text-[13px] font-semibold text-white/70 mb-1">Interests</h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {profile.interests!.map((interest, idx) => (
-                          <Badge key={idx} variant="outline" className="bg-purple-500/20 border-purple-400/30 text-white/90 text-xs py-0.5 px-2 rounded-full">
-                            {interest}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          {/* Anonymous mode info */}
+          {isAnonymous && (
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-3 border border-purple-200 dark:border-purple-800">
+              <p className="text-xs text-purple-700 dark:text-purple-300 text-center">
+                🎭 This user is in stealth mode. Match to unlock their identity!
+              </p>
+            </div>
+          )}
 
-                  {remainingQualities.length > 0 && (
-                    <div className="pt-1.5">
-                      <h4 className="text-[13px] font-semibold text-white/70 mb-1">Also...</h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {remainingQualities.map((quality, index) => (
-                          <Badge key={`rem-qual-${index}`} variant="outline" className="bg-gray-600/50 border-white/10 text-white/80 text-xs py-0.5 px-2 rounded-full">
-                            {quality}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {lifestyleAndPersonalityInfo.length > 0 && (
-                    <div className="pt-2">
-                      <h4 className="text-[13px] font-semibold text-white/70 mb-2 pt-2 border-t border-white/10">
-                        More About Them
-                      </h4>
-                      <div className="grid grid-cols-2 gap-x-2.5 gap-y-2">
-                        {lifestyleAndPersonalityInfo.map((info, idx) => (
-                          <div key={idx} className="flex items-start bg-white/5 p-1.5 rounded-lg">
-                            <span className="mr-1.5 text-sm opacity-80">{info.icon}</span>
-                            <div>
-                              <span className="block text-[11px] text-white/60 uppercase tracking-wider">{info.label}</span>
-                              <span className="block text-xs text-white/90 font-medium">{info.value as string}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <div className="h-4"></div>
+          {/* View more button */}
+          {showViewMoreBadge && (
+            <button
+              onClick={toggleExtraInfo}
+              className="absolute bottom-2 right-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-1"
+            >
+              {showExtraInfo ? "Show Less" : "Show More"}
+              <ChevronDown
+                className={cn(
+                  "h-3 w-3 transition-transform",
+                  showExtraInfo && "rotate-180"
+                )}
+              />
+            </button>
+          )}
         </div>
+
+        {/* Expanded Details Section */}
+        <AnimatePresence>
+          {showExtraInfo && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 overflow-hidden"
+            >
+              <div className="p-4 space-y-3 max-h-48 overflow-y-auto">
+                {hasBio && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                      About
+                    </h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                      {profile.bio}
+                    </p>
+                  </div>
+                )}
+
+                {hasInterests && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                      All Interests
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.interests!.map((interest, idx) => (
+                        <Badge
+                          key={idx}
+                          variant="outline"
+                          className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-800 text-xs rounded-full"
+                        >
+                          {interest}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {remainingQualities.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                      More Details
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {remainingQualities.map((quality, index) => (
+                        <Badge
+                          key={`rem-qual-${index}`}
+                          variant="secondary"
+                          className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full"
+                        >
+                          {quality}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {lifestyleAndPersonalityInfo.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                      Lifestyle
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {lifestyleAndPersonalityInfo.map((info, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm">{info.icon}</span>
+                            <span className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                              {info.label}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-900 dark:text-white font-medium">
+                            {info.value as string}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Card>
-      
-      <ProfileDetailsModal profile={profile as any} isOpen={showDetails} onClose={() => setShowDetails(false)} />
+
+      <ProfileDetailsModal
+        profile={profile as any}
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+      />
     </motion.div>
   );
 }
