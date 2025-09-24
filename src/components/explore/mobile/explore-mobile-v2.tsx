@@ -20,6 +20,7 @@ import { ProfileDetailsModal } from "../profile-details-modal";
 import { useInterval } from "@/hooks/use-interval";
 import { handleLike } from "@/lib/actions/like.actions";
 import { MatchesModal } from "../modals/matches-modal";
+import { MatchesModalWithMessaging } from "../modals/matches-modal-with-messaging";
 import { FeedbackModal } from "@/components/shared/feedback-modal";
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ChatWindow } from "@/components/chat/chat-window";
+import { MatchToMessageNav } from "@/components/messaging/match-to-message-nav";
 import { getStalkers } from "@/lib/actions/stalker.actions";
 import { Badge } from "@/components/ui/badge";
 import { MobileNavbar } from "./mobile-navbar";
@@ -676,10 +678,9 @@ export function ExploreMobileV2({
         )}
 
         {/* Modals */}
-        <MatchesModal
+        <MatchesModalWithMessaging
           isOpen={showMatches}
           onClose={() => setShowMatches(false)}
-          matches={matches}
           currentUser={currentUser}
         />
 

@@ -60,11 +60,27 @@ export function MessageListContainer({ matchId, className }: MessageListContaine
   }, [matchId]);
 
   /**
-   * Load more (older) messages
+   * Load more (older) messages with scroll position maintenance
    */
   const handleLoadMore = useCallback(async () => {
     if (!hasMore || !nextCursor) return;
+    
+    // Store current scroll position
+    const scrollElement = document.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+    const previousScrollHeight = scrollElement?.scrollHeight || 0;
+    
     await fetchMessages(nextCursor, true);
+    
+    // Maintain scroll position after loading older messages
+    setTimeout(() => {
+      if (scrollElement && previousScrollHeight > 0) {
+        const newScrollHeight = scrollElement.scrollHeight;
+        const heightDifference = newScrollHeight - previousScrollHeight;
+        if (heightDifference > 0) {
+          scrollElement.scrollTop += heightDifference;
+        }
+      }
+    }, 100); // Delay to ensure DOM updates
   }, [fetchMessages, hasMore, nextCursor]);
 
   /**

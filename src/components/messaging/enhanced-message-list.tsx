@@ -93,18 +93,34 @@ export function EnhancedMessageList({
     setShowScrollToBottom(!nearBottom && allMessages.length > 0);
   };
 
-  // Enhanced load more with error handling
+  // Enhanced load more with error handling and scroll position maintenance
   const handleLoadMore = async () => {
     if (!onLoadMore || isLoadingMore || !hasMore) return;
     
     setIsLoadingMore(true);
     try {
+      // Store current scroll position for maintaining position after load
+      const scrollElement = scrollAreaRef.current;
+      const previousScrollHeight = scrollElement?.scrollHeight || 0;
+      
       await errorActions.executeWithRetry(
         async () => {
           await onLoadMore();
         },
         'Load more messages'
       );
+      
+      // Maintain scroll position after loading older messages
+      setTimeout(() => {
+        if (scrollElement && previousScrollHeight > 0) {
+          const newScrollHeight = scrollElement.scrollHeight;
+          const heightDifference = newScrollHeight - previousScrollHeight;
+          if (heightDifference > 0) {
+            scrollElement.scrollTop += heightDifference;
+          }
+        }
+      }, 50); // Small delay to ensure DOM updates
+      
     } catch (error) {
       console.error('Failed to load more messages:', error);
     } finally {

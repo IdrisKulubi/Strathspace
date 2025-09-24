@@ -12,6 +12,11 @@ export { MessageInputContainer } from "./message-input-container";
 export { MessagingContainer } from "./messaging-container";
 export { MessagingErrorBoundary, MessagingErrorFallback } from "./messaging-error-boundary";
 
+// Enhanced components with infinite scroll and pagination
+export { InfiniteMessageList } from "./infinite-message-list";
+export { VirtualMessageList } from "./virtual-message-list";
+export { EnhancedMessageList } from "./enhanced-message-list";
+
 // Re-export types for convenience
 export type {
   Message,

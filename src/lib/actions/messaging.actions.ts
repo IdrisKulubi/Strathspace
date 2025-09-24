@@ -100,6 +100,47 @@ export async function validateUserAccess(matchId: string, userId: string): Promi
   }
 }
 
+/**
+ * Enhanced validation that also returns match details
+ */
+export async function validateUserMatchAccess(matchId: string, userId: string): Promise<{
+  hasAccess: boolean;
+  match?: {
+    id: string;
+    user1Id: string;
+    user2Id: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+}> {
+  try {
+    const match = await db.query.matches.findFirst({
+      where: and(
+        eq(matches.id, matchId),
+        or(
+          eq(matches.user1Id, userId),
+          eq(matches.user2Id, userId)
+        )
+      ),
+      columns: {
+        id: true,
+        user1Id: true,
+        user2Id: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+    
+    return {
+      hasAccess: !!match,
+      match: match || undefined
+    };
+  } catch (error) {
+    console.error("Error validating user match access:", error);
+    return { hasAccess: false };
+  }
+}
+
 // Enhanced server actions with proper error handling and validation
 
 /**
