@@ -1,9 +1,10 @@
 'use server'
 
+import { randomUUID } from "crypto";
 import db from "@/db/drizzle";
 import { matches, messages, users } from "@/db/schema";
 import { auth } from "@/auth";
-import { eq, and, or, desc, asc, lt, gt } from "drizzle-orm";
+import { eq, and, or, desc, asc, lt, gt, not } from "drizzle-orm";
 import { z } from "zod";
 import { ActionResult } from "@/lib/types";
 import { revalidatePath } from "next/cache";
@@ -61,7 +62,7 @@ export interface PaginatedMessages {
 
 // Validation schemas
 const sendMessageSchema = z.object({
-  matchId: z.string().uuid("Invalid match ID"),
+  matchId: z.string().min(1, "Match ID is required"),
   content: z.string()
     .trim()
     .min(1, "Message cannot be empty")
@@ -150,8 +151,13 @@ export async function sendMessage(
   formData: FormData
 ): Promise<ActionResult<MessageWithSender>> {
   return withErrorHandling(async () => {
+    console.log('🔧 SendMessage server action called');
+    
     const session = await auth();
+    console.log('🔧 Session check:', { hasSession: !!session, userId: session?.user?.id });
+    
     if (!session?.user?.id) {
+      console.log('❌ No session or user ID');
       throw createMessagingError(
         MessagingErrorType.AUTH_ERROR,
         "Authentication required",
@@ -164,6 +170,12 @@ export async function sendMessage(
       matchId: formData.get('matchId') as string,
       content: formData.get('content') as string,
     };
+    
+    console.log('🔧 Raw form data:', { 
+      matchId: rawData.matchId, 
+      contentLength: rawData.content?.length,
+      formDataKeys: Array.from(formData.keys())
+    });
 
     let validatedData;
     try {
@@ -192,21 +204,33 @@ export async function sendMessage(
     // Insert message into database
     let newMessage;
     try {
+      console.log('🔧 Inserting message into database:', {
+        matchId: validatedData.matchId,
+        senderId: session.user.id,
+        contentLength: validatedData.content.length
+      });
+      
+      // Generate a UUID for the message ID
+      const messageId = randomUUID();
+      
       [newMessage] = await db
         .insert(messages)
         .values({
+          id: messageId,
           matchId: validatedData.matchId,
           senderId: session.user.id,
           content: validatedData.content,
-          status: 'sent',
-          createdAt: new Date(),
-          updatedAt: new Date()
+          status: 'sent'
+          // Let createdAt and updatedAt use their default values
         })
         .returning();
+        
+      console.log('🔧 Message inserted successfully:', { id: newMessage.id });
     } catch (error) {
+      console.error('🔧 Database insert error:', error);
       throw createMessagingError(
         MessagingErrorType.DATABASE_ERROR,
-        "Failed to save message to database",
+        `Failed to save message to database: ${error instanceof Error ? error.message : 'Unknown error'}`,
         ERROR_CODES.MESSAGE_SEND_FAILED
       );
     }
@@ -237,13 +261,15 @@ export async function sendMessage(
 
     // Update match timestamp
     try {
+      console.log('🔧 Updating match timestamp...');
       await db
         .update(matches)
         .set({ 
-          lastMessageAt: new Date(),
-          updatedAt: new Date()
+          lastMessageAt: new Date()
+          // Let updatedAt use its default value
         })
         .where(eq(matches.id, validatedData.matchId));
+      console.log('🔧 Match timestamp updated successfully');
     } catch (error) {
       // Non-critical error - message was sent successfully
       console.warn("Failed to update match timestamp:", error);
@@ -450,7 +476,7 @@ export async function getConversations(): Promise<ActionResult<ConversationPrevi
           eq(messages.matchId, matchId),
           eq(messages.status, 'sent'), // Unread messages have 'sent' status
           // Only count messages not sent by current user
-          (messages, { not, eq }) => not(eq(messages.senderId, session.user.id))
+          not(eq(messages.senderId, session.user.id))
         ),
         columns: { id: true }
       });
@@ -633,14 +659,14 @@ export async function markConversationAsRead(
     await db
       .update(messages)
       .set({ 
-        status: 'read',
-        updatedAt: new Date()
+        status: 'read'
+        // Let updatedAt use its default value
       })
       .where(
         and(
           eq(messages.matchId, matchId),
           eq(messages.status, 'sent'), // Only update unread messages
-          (messages, { not, eq }) => not(eq(messages.senderId, session.user.id))
+          not(eq(messages.senderId, session.user.id)) // Don't mark own messages as read
         )
       );
 

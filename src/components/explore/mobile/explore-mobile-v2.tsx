@@ -595,7 +595,7 @@ export function ExploreMobileV2({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setShowChatList(true)}
+                  onClick={() => window.location.href = '/matches'}
                   onMouseEnter={handleChatHover}
                   className="relative flex flex-col items-center gap-1 h-16 w-16 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20"
                 >

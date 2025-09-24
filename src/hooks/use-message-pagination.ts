@@ -146,6 +146,7 @@ export function useMessagePagination({
   // Refs for scroll position management
   const previousScrollHeightRef = useRef<number>(0);
   const shouldMaintainPositionRef = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   /**
    * Load messages with pagination
@@ -169,11 +170,9 @@ export function useMessagePagination({
       const { messages: newMessages, hasMore: moreAvailable, nextCursor: newCursor, totalCount: total } = data;
 
       // Store previous scroll height for position maintenance
-      if (isLoadingMoreMessages && maintainScrollPosition) {
+      if (isLoadingMoreMessages && maintainScrollPosition && scrollRef.current) {
         shouldMaintainPositionRef.current = true;
-        if (infiniteScrollHook.scrollRef.current) {
-          previousScrollHeightRef.current = infiniteScrollHook.scrollRef.current.scrollHeight;
-        }
+        previousScrollHeightRef.current = scrollRef.current.scrollHeight;
       }
 
       if (isLoadingMoreMessages) {
@@ -265,8 +264,8 @@ export function useMessagePagination({
 
   // Maintain scroll position after loading older messages
   useEffect(() => {
-    if (shouldMaintainPositionRef.current && infiniteScrollHook.scrollRef.current) {
-      const scrollElement = infiniteScrollHook.scrollRef.current;
+    if (shouldMaintainPositionRef.current && scrollRef.current) {
+      const scrollElement = scrollRef.current;
       const currentScrollHeight = scrollElement.scrollHeight;
       const heightDifference = currentScrollHeight - previousScrollHeightRef.current;
       
@@ -279,28 +278,86 @@ export function useMessagePagination({
     }
   }, [messages.length]);
 
-  // Initial load when matchId changes
+  // Initial load when matchId changes - use a ref to avoid dependency loop
+  const currentMatchIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (matchId && enabled) {
+    if (matchId && enabled && currentMatchIdRef.current !== matchId) {
+      currentMatchIdRef.current = matchId;
       setMessages([]);
       setNextCursor(undefined);
-      fetchMessages();
+      fetchMessages().catch(console.error);
     }
-  }, [matchId, enabled, fetchMessages]);
+  }, [matchId, enabled]);
 
   // Auto-scroll to bottom for new messages (not when loading more)
+  const previousMessageCountRef = useRef(0);
   useEffect(() => {
-    if (!isLoading && !isLoadingMore && messages.length > 0) {
-      const scrollInfo = infiniteScrollHook.getScrollInfo();
+    if (!isLoading && !isLoadingMore && messages.length > 0 && scrollRef.current) {
+      const scrollElement = scrollRef.current;
+      const { scrollTop, scrollHeight, clientHeight } = scrollElement;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
       
-      // Only auto-scroll if user is near the bottom (within 200px)
-      if (scrollInfo.distanceFromBottom < 200) {
+      // Only auto-scroll if user is near the bottom (within 200px) and we have new messages
+      if (distanceFromBottom < 200 && messages.length > previousMessageCountRef.current) {
         setTimeout(() => {
-          infiniteScrollHook.scrollToBottom('smooth');
+          scrollElement.scrollTo({
+            top: scrollElement.scrollHeight,
+            behavior: 'smooth'
+          });
         }, 100);
       }
+      
+      previousMessageCountRef.current = messages.length;
     }
-  }, [messages.length, isLoading, isLoadingMore, infiniteScrollHook]);
+  }, [messages.length, isLoading, isLoadingMore]);
+
+  // Create scroll utilities that use our scroll ref
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior
+      });
+    }
+  }, []);
+
+  const scrollToTop = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    scrollRef.current?.scrollTo({
+      top: 0,
+      behavior
+    });
+  }, []);
+
+  const getScrollInfo = useCallback(() => {
+    const element = scrollRef.current;
+    if (!element) {
+      return {
+        scrollTop: 0,
+        scrollHeight: 0,
+        clientHeight: 0,
+        isAtBottom: false,
+        isAtTop: true,
+        distanceFromBottom: 0,
+        distanceFromTop: 0
+      };
+    }
+
+    const { scrollTop, scrollHeight, clientHeight } = element;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const distanceFromTop = scrollTop;
+    const isAtBottom = distanceFromBottom <= loadMoreThreshold;
+    const isAtTop = scrollTop <= loadMoreThreshold;
+
+    return {
+      scrollTop,
+      scrollHeight,
+      clientHeight,
+      isAtBottom,
+      isAtTop,
+      distanceFromBottom,
+      distanceFromTop
+    };
+  }, [loadMoreThreshold]);
 
   return {
     messages,
@@ -315,12 +372,12 @@ export function useMessagePagination({
     updateMessage,
     removeMessage,
     infiniteScroll: {
-      scrollRef: infiniteScrollHook.scrollRef,
+      scrollRef,
       loadMoreRef: infiniteScrollHook.loadMoreRef,
       isInfiniteScrollActive: infiniteScrollHook.isInfiniteScrollActive,
-      scrollToBottom: infiniteScrollHook.scrollToBottom,
-      scrollToTop: infiniteScrollHook.scrollToTop,
-      getScrollInfo: infiniteScrollHook.getScrollInfo
+      scrollToBottom,
+      scrollToTop,
+      getScrollInfo
     }
   };
 }

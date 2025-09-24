@@ -520,9 +520,9 @@ export function ExploreDesktop({
             </Button>
             
             <Button 
-              variant={activeTab === "messages" ? "default" : "ghost"} 
+              variant="ghost"
               className="w-full justify-start relative font-medium" 
-              onClick={() => setActiveTab("messages")}
+              onClick={() => window.location.href = '/matches'}
               onMouseEnter={handleChatHover}
               size="lg"
             >

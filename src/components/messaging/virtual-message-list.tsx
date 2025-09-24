@@ -410,8 +410,9 @@ export function VirtualMessageList({
         itemSize={getItemSize}
         onScroll={handleScroll}
         className="scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
-        children={renderItem}
-      />
+      >
+        {renderItem}
+      </List>
 
       {/* Scroll to bottom button */}
       {showScrollToBottom && (

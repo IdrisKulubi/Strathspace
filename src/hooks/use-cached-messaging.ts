@@ -206,6 +206,9 @@ export function useCachedMessaging(options: UseCachedMessagingOptions = {}) {
     setState(prev => ({ ...prev, isSending: true }));
 
     try {
+      // Check current online status first
+      const currentlyOnline = navigator.onLine;
+
       // Create optimistic message
       const optimisticMessage = messageCache.addOptimisticMessage(conversationId, {
         content,
@@ -225,13 +228,15 @@ export function useCachedMessaging(options: UseCachedMessagingOptions = {}) {
         messages: [...prev.messages, optimisticMessage]
       }));
 
-      if (state.isOnline) {
+      if (currentlyOnline) {
         // Try to send immediately if online
         const formData = new FormData();
         formData.append('matchId', conversationId);
         formData.append('content', content);
 
+        console.log('🔄 Attempting to send message via server action...');
         const result = await sendMessage(formData);
+        console.log('📡 Server response:', { success: result.success, hasData: !!result.data, error: result.error });
 
         if (result.success && result.data) {
           // Replace optimistic message with real message
@@ -290,7 +295,23 @@ export function useCachedMessaging(options: UseCachedMessagingOptions = {}) {
     } catch (error) {
       console.error('Failed to send message:', error);
       
-      setState(prev => ({ ...prev, isSending: false }));
+      // Update optimistic message status in cache
+      messageCache.updateOptimisticMessage(
+        conversationId,
+        optimisticMessage.localId!,
+        { status: 'failed' }
+      );
+      
+      // Update the optimistic message to show failed status
+      setState(prev => ({
+        ...prev,
+        messages: prev.messages.map(msg =>
+          msg.localId === optimisticMessage.localId
+            ? { ...msg, status: 'failed' }
+            : msg
+        ),
+        isSending: false
+      }));
       
       toast({
         title: 'Failed to send message',
@@ -300,7 +321,7 @@ export function useCachedMessaging(options: UseCachedMessagingOptions = {}) {
 
       return false;
     }
-  }, [user, state.isOnline, toast]);
+  }, [user, toast]);
 
   // Process queued messages
   const processMessageQueue = useCallback(async () => {
