@@ -30,18 +30,73 @@ export function MessageBubble({ message, currentUserId, onRetry }: MessageBubble
   // Determine message status styling and icons
   const getStatusIcon = () => {
     if (message.isOptimistic || message.status === "sending") {
-      return <span className="text-xs opacity-60">⏳</span>;
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-xs opacity-60 cursor-help">⏳</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Sending...</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
     }
     
     switch (message.status) {
       case "sent":
-        return <span className="text-xs opacity-60">✓</span>;
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs opacity-60 cursor-help">✓</span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Sent</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
       case "delivered":
-        return <span className="text-xs opacity-60">✓✓</span>;
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs opacity-60 cursor-help">✓✓</span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Delivered</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
       case "read":
-        return <span className="text-xs text-blue-400">✓✓</span>;
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs text-blue-400 cursor-help">✓✓</span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Read</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
       case "failed":
-        return <AlertCircle className="h-3 w-3 text-red-400" />;
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertCircle className="h-3 w-3 text-red-400 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Failed to send</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
       default:
         return null;
     }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { getMessages } from '@/lib/messaging';
+import { getMessages, markMessagesAsDelivered, markConversationAsRead } from '@/lib/actions/messaging.actions';
 import { retryWithBackoff, DEFAULT_RETRY_CONFIG, type RetryConfig } from '@/lib/messaging';
 import type { MessageWithSender, PaginatedMessages } from '@/lib/messaging';
 
@@ -38,6 +38,24 @@ interface UsePeriodicMessageFetchOptions {
    * @default 50
    */
   limit?: number;
+
+  /**
+   * Whether to automatically mark messages as delivered when fetched
+   * @default true
+   */
+  autoMarkDelivered?: boolean;
+
+  /**
+   * Whether to automatically mark messages as read when conversation is active
+   * @default false
+   */
+  autoMarkRead?: boolean;
+
+  /**
+   * Whether the conversation is currently visible/active (for read receipts)
+   * @default false
+   */
+  isConversationActive?: boolean;
 }
 
 interface UsePeriodicMessageFetchReturn {
@@ -111,7 +129,10 @@ export function usePeriodicMessageFetch(
     typingTimeout = 3000,
     retryConfig = {},
     enabled = true,
-    limit = 50
+    limit = 50,
+    autoMarkDelivered = true,
+    autoMarkRead = false,
+    isConversationActive = false
   } = options;
 
   // State management
@@ -175,6 +196,26 @@ export function usePeriodicMessageFetch(
 
       const { messages: newMessages, hasMore: moreAvailable, totalCount: total } = result;
 
+      // Handle status synchronization
+      if (autoMarkDelivered && newMessages.length > 0) {
+        try {
+          await markMessagesAsDelivered(matchId);
+        } catch (deliveryError) {
+          console.warn('Failed to mark messages as delivered:', deliveryError);
+          // Don't fail the entire fetch for delivery status updates
+        }
+      }
+
+      // Handle read receipts if conversation is active
+      if (autoMarkRead && isConversationActive && newMessages.length > 0) {
+        try {
+          await markConversationAsRead(matchId);
+        } catch (readError) {
+          console.warn('Failed to mark messages as read:', readError);
+          // Don't fail the entire fetch for read status updates
+        }
+      }
+
       // Filter out messages we already have (based on timestamp)
       let messagesToAdd = newMessages;
       if (latestMessageTimeRef.current && !isManualRefetch) {
@@ -222,7 +263,7 @@ export function usePeriodicMessageFetch(
         setIsFetching(false);
       }
     }
-  }, [matchId, enabled, pauseOnTyping, isUserTyping, isFetching, limit]);
+  }, [matchId, enabled, pauseOnTyping, isUserTyping, isFetching, limit, autoMarkDelivered, autoMarkRead, isConversationActive]);
 
   /**
    * Set user typing status with automatic timeout

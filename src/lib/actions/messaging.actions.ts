@@ -488,6 +488,26 @@ export async function updateMessageStatus(
       };
     }
 
+    // Don't allow users to update status of their own messages
+    if (message.senderId === session.user.id) {
+      return {
+        success: false,
+        error: "Cannot update status of your own messages"
+      };
+    }
+
+    // Only allow status progression (sent -> delivered -> read)
+    const currentStatus = message.status as 'sent' | 'delivered' | 'read';
+    const statusOrder = { 'sent': 0, 'delivered': 1, 'read': 2 };
+    
+    if (statusOrder[validatedData.status] <= statusOrder[currentStatus]) {
+      // Status is not progressing, but this is not an error - just return success
+      return {
+        success: true,
+        data: { success: true }
+      };
+    }
+
     // Update message status
     await db
       .update(messages)
@@ -575,6 +595,162 @@ export async function markConversationAsRead(
     return {
       success: false,
       error: "Failed to mark messages as read. Please try again."
+    };
+  }
+}
+
+/**
+ * Batch update message statuses for multiple messages
+ * Used during periodic fetches to sync status updates efficiently
+ */
+export async function batchUpdateMessageStatuses(
+  updates: Array<{ messageId: string; status: 'delivered' | 'read' }>
+): Promise<ActionResult<{ updatedCount: number }>> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return {
+        success: false,
+        error: "Authentication required"
+      };
+    }
+
+    if (updates.length === 0) {
+      return {
+        success: true,
+        data: { updatedCount: 0 }
+      };
+    }
+
+    let updatedCount = 0;
+
+    // Process updates in batches to avoid overwhelming the database
+    const batchSize = 10;
+    for (let i = 0; i < updates.length; i += batchSize) {
+      const batch = updates.slice(i, i + batchSize);
+      
+      for (const update of batch) {
+        try {
+          // Validate each update
+          const validatedData = updateMessageStatusSchema.parse(update);
+          
+          // Get the message to verify access and current status
+          const message = await db.query.messages.findFirst({
+            where: eq(messages.id, validatedData.messageId),
+            columns: {
+              id: true,
+              matchId: true,
+              senderId: true,
+              status: true
+            }
+          });
+
+          if (!message) {
+            continue; // Skip if message not found
+          }
+
+          // Verify user has access to this message's match
+          const hasAccess = await validateUserAccess(message.matchId, session.user.id);
+          if (!hasAccess) {
+            continue; // Skip if no access
+          }
+
+          // Don't allow users to update status of their own messages
+          if (message.senderId === session.user.id) {
+            continue; // Skip own messages
+          }
+
+          // Only allow status progression
+          const currentStatus = message.status as 'sent' | 'delivered' | 'read';
+          const statusOrder = { 'sent': 0, 'delivered': 1, 'read': 2 };
+          
+          if (statusOrder[validatedData.status] <= statusOrder[currentStatus]) {
+            continue; // Skip if not progressing
+          }
+
+          // Update message status
+          await db
+            .update(messages)
+            .set({ 
+              status: validatedData.status,
+              updatedAt: new Date()
+            })
+            .where(eq(messages.id, validatedData.messageId));
+
+          updatedCount++;
+
+        } catch (updateError) {
+          console.error(`Error updating message ${update.messageId}:`, updateError);
+          // Continue with other updates
+        }
+      }
+    }
+
+    return {
+      success: true,
+      data: { updatedCount }
+    };
+
+  } catch (error) {
+    console.error("Error batch updating message statuses:", error);
+    return {
+      success: false,
+      error: "Failed to update message statuses. Please try again."
+    };
+  }
+}
+
+/**
+ * Auto-mark messages as delivered when they are fetched by the recipient
+ * This simulates delivery receipts in a polling-based system
+ */
+export async function markMessagesAsDelivered(
+  matchId: string
+): Promise<ActionResult<{ deliveredCount: number }>> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return {
+        success: false,
+        error: "Authentication required"
+      };
+    }
+
+    // Verify user has access to this match
+    const hasAccess = await validateUserAccess(matchId, session.user.id);
+    if (!hasAccess) {
+      return {
+        success: false,
+        error: "Unauthorized access to conversation"
+      };
+    }
+
+    // Mark messages as delivered (only messages sent by other user that are still 'sent')
+    const result = await db
+      .update(messages)
+      .set({ 
+        status: 'delivered',
+        updatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(messages.matchId, matchId),
+          eq(messages.status, 'sent'),
+          (messages, { not, eq }) => not(eq(messages.senderId, session.user.id))
+        )
+      )
+      .returning({ id: messages.id });
+
+    return {
+      success: true,
+      data: { deliveredCount: result.length }
+    };
+
+  } catch (error) {
+    console.error("Error marking messages as delivered:", error);
+    return {
+      success: false,
+      error: "Failed to mark messages as delivered. Please try again."
     };
   }
 }

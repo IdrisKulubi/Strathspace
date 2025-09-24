@@ -106,6 +106,64 @@ describe("MessageBubble", () => {
     expect(readStatus).toHaveClass("text-blue-400");
   });
 
+  it("shows status tooltips for better user experience", () => {
+    render(
+      <MessageBubble
+        message={{ ...mockMessage, status: "sent" }}
+        currentUserId="user-1"
+        onRetry={mockOnRetry}
+      />
+    );
+
+    const statusIcon = screen.getByText("✓");
+    expect(statusIcon).toHaveClass("cursor-help");
+  });
+
+  it("shows different status icons for each status", () => {
+    const statuses = [
+      { status: "sent" as const, icon: "✓" },
+      { status: "delivered" as const, icon: "✓✓" },
+      { status: "read" as const, icon: "✓✓" },
+    ];
+
+    statuses.forEach(({ status, icon }) => {
+      const { unmount } = render(
+        <MessageBubble
+          message={{ ...mockMessage, status }}
+          currentUserId="user-1"
+          onRetry={mockOnRetry}
+        />
+      );
+
+      expect(screen.getByText(icon)).toBeInTheDocument();
+      unmount();
+    });
+  });
+
+  it("shows sending status with hourglass icon", () => {
+    render(
+      <MessageBubble
+        message={{ ...mockMessage, status: "sending" }}
+        currentUserId="user-1"
+        onRetry={mockOnRetry}
+      />
+    );
+
+    expect(screen.getByText("⏳")).toBeInTheDocument();
+  });
+
+  it("shows failed status with alert icon", () => {
+    render(
+      <MessageBubble
+        message={{ ...mockMessage, status: "failed" }}
+        currentUserId="user-1"
+        onRetry={mockOnRetry}
+      />
+    );
+
+    expect(screen.getByTestId("alert-icon")).toBeInTheDocument();
+  });
+
   it("shows retry button for failed messages", () => {
     render(
       <MessageBubble
@@ -120,9 +178,10 @@ describe("MessageBubble", () => {
   });
 
   it("calls onRetry when retry button is clicked", () => {
+    const failedMessage = { ...mockMessage, status: "failed" as const };
     render(
       <MessageBubble
-        message={{ ...mockMessage, status: "failed" }}
+        message={failedMessage}
         currentUserId="user-1"
         onRetry={mockOnRetry}
       />
@@ -131,7 +190,7 @@ describe("MessageBubble", () => {
     const retryButton = screen.getByText("Retry");
     fireEvent.click(retryButton);
 
-    expect(mockOnRetry).toHaveBeenCalledWith(mockMessage);
+    expect(mockOnRetry).toHaveBeenCalledWith(failedMessage);
   });
 
   it("shows optimistic message styling", () => {
