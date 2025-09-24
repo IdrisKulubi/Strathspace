@@ -5,8 +5,6 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/db/schema";
-import Pusher from "pusher-js";
-
 interface ChatProps {
   currentUser: string;
   matchId: string;
@@ -17,25 +15,9 @@ export function Chat({ currentUser, matchId }: ChatProps) {
   const [newMessage, setNewMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // TODO: Implement periodic message fetching to replace real-time updates
   useEffect(() => {
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-      channelAuthorization: {
-        endpoint: "/api/pusher/auth",
-        transport: "ajax",
-      },
-    });
-
-    const channel = pusher.subscribe(`private-match-${matchId}`);
-
-    channel.bind("new-message", (message: Message) => {
-      setMessages((prev) => [...prev, message]);
-    });
-
-    return () => {
-      channel.unbind_all();
-      channel.unsubscribe();
-    };
+    // Placeholder for message fetching logic
   }, [matchId]);
 
   const sendMessage = async (e: React.FormEvent) => {

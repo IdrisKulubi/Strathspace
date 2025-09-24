@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FixedSizeList as List, ListChildComponentProps, areEqual } from "react-window";
+import { List } from "react-window";
 import { format, isSameDay, isToday, isYesterday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -10,50 +10,51 @@ import { ChevronDown, Loader2, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MessageBubble } from "./message-bubble";
 import { useMessagePagination } from "@/hooks/use-message-pagination";
-import { useCachedMessaging } from "@/hooks/use-cached-messaging";
 import { MemoryMonitor, performanceMonitor } from "@/lib/messaging/performance";
 import type { MessageWithSender } from "@/lib/actions/messaging.actions";
-import { memo } from "react";
 
 interface VirtualMessageListProps {
   /**
    * The match/conversation ID
    */
   matchId: string;
-  
+
   /**
    * Current user ID for message alignment
    */
   currentUserId: string;
-  
+
   /**
    * Height of the message list container
    * @default 400
    */
   height?: number;
-  
+
   /**
    * Estimated height of each message item
    * @default 80
    */
   itemHeight?: number;
-  
+
   /**
    * Number of messages to load per page
    * @default 100
    */
   pageSize?: number;
-  
+
   /**
    * Custom retry handler for failed messages
    */
   onRetry?: (messageId?: string) => Promise<void>;
-  
+
   /**
    * Callback when messages are loaded
    */
-  onMessagesLoaded?: (messages: MessageWithSender[], isLoadingMore: boolean) => void;
-  
+  onMessagesLoaded?: (
+    messages: MessageWithSender[],
+    isLoadingMore: boolean
+  ) => void;
+
   /**
    * Additional CSS classes
    */
@@ -61,11 +62,16 @@ interface VirtualMessageListProps {
 }
 
 interface MessageListItem {
-  type: 'message' | 'date-separator' | 'loading';
+  type: "message" | "date-separator" | "loading";
   id: string;
   message?: MessageWithSender;
   date?: Date;
   height: number;
+}
+
+interface ItemRendererProps {
+  index: number;
+  style: React.CSSProperties;
 }
 
 /**
@@ -80,58 +86,14 @@ export function VirtualMessageList({
   pageSize = 100,
   onRetry,
   onMessagesLoaded,
-  className
+  className,
 }: VirtualMessageListProps) {
-  const listRef = useRef<List>(null);
+  const listRef = useRef<any>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const performanceRef = useRef<{ lastRender: number; renderCount: number }>({
     lastRender: 0,
-    renderCount: 0
-  });
-
-  // Use cached messaging for better performance
-  const {
-    messages,
-    isLoading,
-    hasMore,
-    error,
-    totalCount,
-    loadMoreMessages,
-    refresh
-  } = useCachedMessaging({
-    matchId,
-    enabled: true,
-    pollingInterval: 4000
-  });
-
-  // Monitor memory usage
-  useEffect(() => {
-    const stopMonitoring = MemoryMonitor.startMonitoring(30000);
-    return stopMonitoring;
-  }, []);
-
-  // Performance monitoring
-  useEffect(() => {
-    const now = performance.now();
-    performanceRef.current.renderCount++;
-    
-    if (performanceRef.current.lastRender > 0) {
-      const renderTime = now - performanceRef.current.lastRender;
-      
-      performanceMonitor.recordQuery({
-        operation: 'virtual-list-render',
-        duration: renderTime,
-        timestamp: Date.now(),
-        success: true,
-        metadata: {
-          messageCount: messages.length,
-          renderCount: performanceRef.current.renderCount
-        }
-      });
-    }
-    
-    performanceRef.current.lastRender = now;
+    renderCount: 0,
   });
 
   // Use the message pagination hook with larger page size for virtual scrolling
@@ -144,7 +106,7 @@ export function VirtualMessageList({
     totalCount,
     loadMore,
     refresh,
-    infiniteScroll
+    infiniteScroll,
   } = useMessagePagination({
     matchId,
     pageSize,
@@ -153,8 +115,37 @@ export function VirtualMessageList({
     maintainScrollPosition: false, // Virtual list handles this
     onMessagesLoaded,
     onError: (error) => {
-      console.error('Virtual message list error:', error);
+      console.error("Virtual message list error:", error);
+    },
+  });
+
+  // Monitor memory usage
+  useEffect(() => {
+    const stopMonitoring = MemoryMonitor.startMonitoring(30000);
+    return stopMonitoring;
+  }, []);
+
+  // Performance monitoring
+  useEffect(() => {
+    const now = performance.now();
+    performanceRef.current.renderCount++;
+
+    if (performanceRef.current.lastRender > 0) {
+      const renderTime = now - performanceRef.current.lastRender;
+
+      performanceMonitor.recordQuery({
+        operation: "virtual-list-render",
+        duration: renderTime,
+        timestamp: Date.now(),
+        success: true,
+        metadata: {
+          messageCount: messages.length,
+          renderCount: performanceRef.current.renderCount,
+        },
+      });
     }
+
+    performanceRef.current.lastRender = now;
   });
 
   // Format date separators
@@ -171,13 +162,13 @@ export function VirtualMessageList({
   // Create virtual list items with date separators
   const listItems = useMemo(() => {
     const items: MessageListItem[] = [];
-    
+
     // Add loading indicator at top if loading more
     if (isLoadingMore && hasMore) {
       items.push({
-        type: 'loading',
-        id: 'loading-more',
-        height: 60
+        type: "loading",
+        id: "loading-more",
+        height: 60,
       });
     }
 
@@ -185,24 +176,26 @@ export function VirtualMessageList({
     messages.forEach((message, index) => {
       const messageDate = new Date(message.createdAt);
       const prevMessage = index > 0 ? messages[index - 1] : null;
-      const prevMessageDate = prevMessage ? new Date(prevMessage.createdAt) : null;
-      
+      const prevMessageDate = prevMessage
+        ? new Date(prevMessage.createdAt)
+        : null;
+
       // Add date separator if this is the first message or date changed
       if (!prevMessageDate || !isSameDay(messageDate, prevMessageDate)) {
         items.push({
-          type: 'date-separator',
+          type: "date-separator",
           id: `date-${messageDate.toISOString()}`,
           date: messageDate,
-          height: 40
+          height: 40,
         });
       }
-      
+
       // Add message
       items.push({
-        type: 'message',
+        type: "message",
         id: message.id,
         message,
-        height: itemHeight
+        height: itemHeight,
       });
     });
 
@@ -210,39 +203,56 @@ export function VirtualMessageList({
   }, [messages, isLoadingMore, hasMore, itemHeight]);
 
   // Get item height for virtual list
-  const getItemSize = useCallback((index: number) => {
-    return listItems[index]?.height || itemHeight;
-  }, [listItems, itemHeight]);
+  const getItemSize = useCallback(
+    (index: number) => {
+      return listItems[index]?.height || itemHeight;
+    },
+    [listItems, itemHeight]
+  );
 
   // Handle scroll events
-  const handleScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }: any) => {
-    if (!scrollUpdateWasRequested) {
-      const totalHeight = listItems.reduce((sum, item) => sum + item.height, 0);
-      const visibleHeight = height;
-      const distanceFromBottom = totalHeight - scrollOffset - visibleHeight;
-      
-      const nearBottom = distanceFromBottom < itemHeight * 3;
-      setIsNearBottom(nearBottom);
-      setShowScrollToBottom(!nearBottom && messages.length > 0);
-      
-      // Load more when near top
-      if (scrollOffset < itemHeight * 2 && hasMore && !isLoadingMore) {
-        loadMore();
+  const handleScroll = useCallback(
+    ({ scrollOffset, scrollUpdateWasRequested }: any) => {
+      if (!scrollUpdateWasRequested) {
+        const totalHeight = listItems.reduce(
+          (sum, item) => sum + item.height,
+          0
+        );
+        const visibleHeight = height;
+        const distanceFromBottom = totalHeight - scrollOffset - visibleHeight;
+
+        const nearBottom = distanceFromBottom < itemHeight * 3;
+        setIsNearBottom(nearBottom);
+        setShowScrollToBottom(!nearBottom && messages.length > 0);
+
+        // Load more when near top
+        if (scrollOffset < itemHeight * 2 && hasMore && !isLoadingMore) {
+          loadMore();
+        }
       }
-    }
-  }, [listItems, height, itemHeight, messages.length, hasMore, isLoadingMore, loadMore]);
+    },
+    [
+      listItems,
+      height,
+      itemHeight,
+      messages.length,
+      hasMore,
+      isLoadingMore,
+      loadMore,
+    ]
+  );
 
   // Scroll to bottom
   const scrollToBottom = useCallback(() => {
     if (listRef.current && listItems.length > 0) {
-      listRef.current.scrollToItem(listItems.length - 1, 'end');
+      listRef.current.scrollToItem(listItems.length - 1, "end");
     }
   }, [listItems.length]);
 
   // Scroll to top
   const scrollToTop = useCallback(() => {
     if (listRef.current) {
-      listRef.current.scrollToItem(0, 'start');
+      listRef.current.scrollToItem(0, "start");
     }
   }, []);
 
@@ -253,7 +263,13 @@ export function VirtualMessageList({
         scrollToBottom();
       }, 100);
     }
-  }, [messages.length, isNearBottom, isLoadingMore, listItems.length, scrollToBottom]);
+  }, [
+    messages.length,
+    isNearBottom,
+    isLoadingMore,
+    listItems.length,
+    scrollToBottom,
+  ]);
 
   // Enhanced retry function
   const handleRetry = async (messageId?: string) => {
@@ -261,61 +277,67 @@ export function VirtualMessageList({
       try {
         await onRetry(messageId);
       } catch (error) {
-        console.error('Retry failed:', error);
+        console.error("Retry failed:", error);
       }
     }
   };
 
-  // Memoized item renderer for performance
-  const ItemRenderer = memo(({ index, style }: ListChildComponentProps) => {
-    const item = listItems[index];
-    
-    if (!item) {
-      return <div style={style} />;
-    }
+  // Item renderer function for react-window
+  const renderItem = useCallback(
+    ({ index, style }: ItemRendererProps) => {
+      const item = listItems[index];
 
-    if (item.type === 'loading') {
-      return (
-        <div style={style} className="flex justify-center items-center py-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Loading older messages...</span>
+      if (!item) {
+        return <div style={style} />;
+      }
+
+      if (item.type === "loading") {
+        return (
+          <div style={style} className="flex justify-center items-center py-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading older messages...</span>
+            </div>
           </div>
-        </div>
-      );
-    }
+        );
+      }
 
-    if (item.type === 'date-separator') {
-      return (
-        <div style={style} className="flex items-center gap-4 my-2 px-4">
-          <Separator className="flex-1" />
-          <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded-full border">
-            {formatDateSeparator(item.date!)}
-          </span>
-          <Separator className="flex-1" />
-        </div>
-      );
-    }
+      if (item.type === "date-separator") {
+        return (
+          <div style={style} className="flex items-center gap-4 my-2 px-4">
+            <Separator className="flex-1" />
+            <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded-full border">
+              {formatDateSeparator(item.date!)}
+            </span>
+            <Separator className="flex-1" />
+          </div>
+        );
+      }
 
-    if (item.type === 'message' && item.message) {
-      return (
-        <div style={style} className="px-4 py-2">
-          <MessageBubble
-            message={item.message}
-            currentUserId={currentUserId}
-            onRetry={handleRetry}
-          />
-        </div>
-      );
-    }
+      if (item.type === "message" && item.message) {
+        return (
+          <div style={style} className="px-4 py-2">
+            <MessageBubble
+              message={item.message}
+              currentUserId={currentUserId}
+              onRetry={(message) => handleRetry(message.id)}
+            />
+          </div>
+        );
+      }
 
-    return <div style={style} />;
-  }, areEqual);
+      return <div style={style} />;
+    },
+    [listItems, currentUserId, handleRetry, formatDateSeparator]
+  );
 
   // Empty state
   if (messages.length === 0 && !isLoading && !error) {
     return (
-      <div className={cn("flex items-center justify-center p-8", className)} style={{ height }}>
+      <div
+        className={cn("flex items-center justify-center p-8", className)}
+        style={{ height }}
+      >
         <div className="text-center space-y-2">
           <p className="text-muted-foreground">No messages yet</p>
           <p className="text-sm text-muted-foreground">
@@ -329,7 +351,10 @@ export function VirtualMessageList({
   // Error state
   if (error && messages.length === 0) {
     return (
-      <div className={cn("flex items-center justify-center p-8", className)} style={{ height }}>
+      <div
+        className={cn("flex items-center justify-center p-8", className)}
+        style={{ height }}
+      >
         <div className="text-center space-y-4">
           <p className="text-muted-foreground">Failed to load messages</p>
           <p className="text-sm text-muted-foreground">{error}</p>
@@ -385,9 +410,8 @@ export function VirtualMessageList({
         itemSize={getItemSize}
         onScroll={handleScroll}
         className="scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
-      >
-        {ItemRenderer}
-      </List>
+        children={renderItem}
+      />
 
       {/* Scroll to bottom button */}
       {showScrollToBottom && (

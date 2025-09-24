@@ -1,21 +1,20 @@
 "use client";
 
-import { useChat } from "@/hooks/use-chat";
-import { MessageBubble } from "./message-bubble";
-import { ChatHeader } from "./chat-header";
-import { ChatInput } from "./chat-input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { AnimatePresence, motion } from "framer-motion";
+import { useCachedMessaging } from "@/hooks/use-cached-messaging";
+import { VirtualMessageList } from "@/components/messaging/virtual-message-list";
+import { MessageInput } from "@/components/messaging/message-input";
+import { performanceMonitor, MemoryMonitor } from "@/lib/messaging/performance";
+import { messageCache } from "@/lib/messaging/cache";
 import { type Profile } from "@/db/schema";
-import { Spinner } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { useUnreadMessages } from "@/hooks/use-unread-messages";
-import { useEffect, useRef } from "react";
-import { markMessagesAsRead } from "@/lib/actions/chat.actions";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { RevealRequestButton } from "@/components/anonymous/RevealRequestButton";
-
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Wifi, WifiOff, Users, MessageCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { markConversationAsRead } from "@/lib/actions/messaging.actions";
 
 interface ChatWindowProps {
   matchId: string;
@@ -25,219 +24,294 @@ interface ChatWindowProps {
 }
 
 export const ChatWindow = ({ matchId, onClose, partner, currentUserProfile }: ChatWindowProps) => {
-  const {
-    messages,
-    isTyping,
-    handleSend,
-    handleTyping,
-    isLoading,
-  } = useChat(matchId, partner);
-
+  const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const isInChatPage = pathname?.startsWith('/chat/');
+  
+  const [performanceStats, setPerformanceStats] = useState<any>(null);
 
-  const { data: session } = useSession();
-  const { markAsRead } = useUnreadMessages(session?.user.id ?? "");
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  // Use the new optimized messaging system with caching and offline support
+  const {
+    messages,
+    isLoading,
+    isSending,
+    isOnline,
+    error,
+    sendMessage,
+    retryMessage,
+    getCacheStats,
+    clearCache
+  } = useCachedMessaging({
+    matchId,
+    enabled: true,
+    pollingInterval: 4000,
+    retryInterval: 5000,
+    maxRetries: 3
+  });
 
-  // Safely handle potentially undefined partner
-  const partnerName = partner?.firstName || "this person";
+  // Performance monitoring and memory tracking
+  useEffect(() => {
+    console.log('🚀 NEW OPTIMIZED MESSAGING SYSTEM ACTIVE:', {
+      matchId,
+      partnerName: partner?.firstName || partner?.name,
+      messageCount: messages.length,
+      isOnline,
+      hasOfflineSupport: true,
+      hasVirtualScrolling: true,
+      hasPerformanceMonitoring: true,
+      cacheStats: getCacheStats()
+    });
+
+    // Start memory monitoring
+    const stopMemoryMonitoring = MemoryMonitor.startMonitoring(30000);
+    
+    // Record performance metrics
+    performanceMonitor.recordQuery({
+      operation: 'optimized-chat-window-mount',
+      duration: performance.now(),
+      timestamp: Date.now(),
+      success: true,
+      metadata: { 
+        matchId, 
+        messageCount: messages.length,
+        partnerName: partner?.firstName || partner?.name,
+        isOnline
+      }
+    });
+
+    // Update performance stats periodically
+    const statsInterval = setInterval(() => {
+      const stats = performanceMonitor.getStats();
+      const memoryStats = MemoryMonitor.getMemoryStats();
+      setPerformanceStats({ ...stats, memory: memoryStats });
+    }, 10000);
+
+    return () => {
+      stopMemoryMonitoring();
+      clearInterval(statsInterval);
+    };
+  }, [matchId, messages.length, partner, isOnline, getCacheStats]);
+
+  // Mark messages as read when conversation is viewed
+  useEffect(() => {
+    if (session?.user?.id && matchId && messages.length > 0) {
+      const markAsRead = async () => {
+        try {
+          await markConversationAsRead(matchId);
+          console.log('📖 Messages marked as read for match:', matchId);
+        } catch (error) {
+          console.error('Error marking messages as read:', error);
+        }
+      };
+      
+      // Debounce the mark as read call
+      const timer = setTimeout(markAsRead, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [matchId, session?.user?.id, messages.length]);
+
+  const partnerName = partner?.firstName || partner?.name || "this person";
   const matchDate = partner?.createdAt ? new Date(partner.createdAt).toLocaleDateString() : "recently";
 
-  // Define a reliable close handler
   const handleClose = () => {
     if (onClose) {
-      // Use provided onClose if available
       onClose();
     } else if (isInChatPage) {
-      // Fallback to navigation if in a dedicated chat page
       router.push('/explore');
     }
   };
 
-  // Effect for marking messages as read (initialization)
-  useEffect(() => {
-    let isMounted = true;
-
-    const performInitialization = async () => {
-      if (!session?.user?.id || !matchId) {
-        return;
-      }
-
-      try {
-        // Client-side update first for responsiveness
-        if (isMounted) {
-          markAsRead(matchId);
-        }
-        // Then server-side
-        await markMessagesAsRead(matchId, session.user.id);
-      } catch (error) {
-        if (isMounted) {
-          console.error('Error marking messages as read:', error);
-        }
-      }
-    };
-
-    // Defer the execution slightly to avoid issues during initial render cycles
-    const timerId = setTimeout(() => {
-      if (isMounted) {
-        performInitialization();
-      }
-    }, 0);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timerId);
-    };
-  }, [matchId, session, markAsRead]); // Dependencies: run when chat context changes
-
-  // Effect for scrolling
-  useEffect(() => {
-    if (scrollAreaRef.current && messages.length > 0) {
-      const scrollArea = scrollAreaRef.current;
-      // Use requestAnimationFrame for smoother scroll updates
-      requestAnimationFrame(() => {
-        if (scrollAreaRef.current) { // Check ref again inside rAF
-            scrollArea.scrollTop = scrollArea.scrollHeight;
-        }
-      });
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim() || !session?.user?.id) return;
+    
+    console.log('📤 Sending message with new system:', { content: content.substring(0, 50) + '...', isOnline });
+    
+    const success = await sendMessage(matchId, content);
+    
+    if (!success && !isOnline) {
+      console.log('📱 Message queued for offline sending');
     }
-  }, [messages]); // Dependency: run only when messages array (or its length) changes
+  };
 
-  // Prepare message lists for rendering
-  const regularMessages = messages.slice(0, Math.max(0, messages.length - 5));
-  const animatedMessages = messages.slice(Math.max(0, messages.length - 5));
+  const handleRetry = async (messageId?: string) => {
+    if (messageId) {
+      console.log('🔄 Retrying message:', messageId);
+      await retryMessage(messageId);
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <ChatHeader 
-        partner={partner}
-        onClose={handleClose}
+      {/* Enhanced Chat Header with Performance Indicators */}
+      <div className="flex items-center justify-between p-4 border-b bg-card">
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleClose}
+            className="p-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          
+          <div className="flex items-center gap-2">
+            <div>
+              <h3 className="font-semibold text-lg">{partnerName}</h3>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Matched {matchDate}</span>
+                <Badge variant={isOnline ? "default" : "secondary"} className="text-xs">
+                  {isOnline ? (
+                    <>
+                      <Wifi className="h-3 w-3 mr-1" />
+                      Online
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="h-3 w-3 mr-1" />
+                      Offline
+                    </>
+                  )}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">
+            <MessageCircle className="h-3 w-3 mr-1" />
+            {messages.length}
+          </Badge>
+          
+          {performanceStats && (
+            <Badge variant="outline" className="text-xs">
+              {Math.round(performanceStats.averageQueryTime)}ms avg
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Match Info */}
+      <div className="px-4 py-2 text-sm text-muted-foreground text-center border-b bg-muted/30">
+        <div className="flex items-center justify-center gap-2">
+          <Users className="h-4 w-4" />
+          <span>You matched with {partnerName} on {matchDate}</span>
+        </div>
+      </div>
+      
+      {/* Anonymous Mode Notice */}
+      {currentUserProfile?.anonymous && partner?.anonymous && (
+        <div className="p-4 border-b text-center bg-muted/50">
+          <p className="text-sm text-muted-foreground mb-2">
+            You are both in Anonymous Mode. Choose to reveal your profiles?
+          </p>
+          <RevealRequestButton 
+            matchId={matchId} 
+            hasRequested={currentUserProfile?.anonymousRevealRequested ?? false}
+          />
+        </div>
+      )}
+
+      {/* Virtual Message List with Performance Optimization */}
+      <VirtualMessageList
+        matchId={matchId}
+        currentUserId={session?.user?.id || ""}
+        height={window.innerHeight - 200} // Dynamic height
+        itemHeight={80}
+        pageSize={100}
+        onRetry={handleRetry}
+        onMessagesLoaded={(msgs, isLoadingMore) => {
+          console.log('📨 Messages loaded with virtual scrolling:', { 
+            count: msgs.length, 
+            isLoadingMore,
+            cacheHit: getCacheStats().messageCount > 0
+          });
+        }}
+        className="flex-1"
       />
 
-      {isLoading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Spinner className="h-8 w-8 text-pink-500" />
-        </div>
-      ) : (
-        <>
-          <div className="px-4 py-2 text-sm text-muted-foreground text-center border-b">
-            You matched with {partnerName} on {matchDate}
-          </div>
-          
-          {/* Reveal Request Button Logic */}
-          {currentUserProfile?.anonymous && partner?.anonymous && (
-            <div className="p-4 border-b text-center">
-              <p className="text-sm text-muted-foreground mb-2">
-                You are both in Anonymous Mode. Choose to reveal your profiles?
-              </p>
-              <RevealRequestButton 
-                matchId={matchId} 
-                hasRequested={currentUserProfile?.anonymousRevealRequested ?? false}
-              />
-            </div>
-          )}
-          
-          <ScrollArea 
-            className="flex-1 p-4"
-            ref={scrollAreaRef}
-          >
-            <div className="flex flex-col space-y-4">
-              {/* Only animate the last 5 messages for better performance */}
-              {regularMessages.map((message) => (
-                <div
-                  key={`regular-${message.id}`}
-                  className={cn(
-                    "flex",
-                    message.senderId === session?.user.id ? "justify-end" : "justify-start"
-                  )}
-                >
-                  <MessageBubble 
-                    message={message} 
-                    isUser={message.senderId === session?.user.id}
-                  />
-                </div>
-              ))}
-              
-              <AnimatePresence initial={false}>
-                {animatedMessages.map((message) => (
-                  <motion.div
-                    key={`animated-${message.id}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className={cn(
-                      "flex",
-                      message.senderId === session?.user.id ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    <MessageBubble 
-                      message={message} 
-                      isUser={message.senderId === session?.user.id}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-            
-            {isTyping && (
-              <div className="flex items-center gap-2 text-muted-foreground mt-4">
-                <TypingIndicator />
-                <span>{partnerName} is typing...</span>
-              </div>
+      {/* Enhanced Message Input with Status */}
+      <div className="border-t bg-card">
+        <div className="p-4">
+          <MessageInput
+            onSend={handleSendMessage}
+            disabled={isSending}
+            placeholder={
+              isOnline 
+                ? "Type a message..." 
+                : "Offline - message will be sent when online"
+            }
+            className={cn(
+              "transition-all duration-200",
+              !isOnline && "bg-muted/50"
             )}
-          </ScrollArea>
-
-          <ChatInput 
-            onSend={handleSend}
-            onTyping={handleTyping}
           />
           
-          {!isInChatPage && (
-            <div className="flex justify-center gap-4 py-4 border-t">
-              <button className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-              <button className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg>
-              </button>
-              <button className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-              </button>
+          {/* Status Bar */}
+          <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "flex items-center gap-1",
+                isOnline ? "text-green-600" : "text-orange-600"
+              )}>
+                {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+                {isOnline ? "Connected" : "Offline"}
+              </span>
+              
+              {isSending && (
+                <span className="text-blue-600 animate-pulse">Sending...</span>
+              )}
             </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-};
+            
+            <div className="flex items-center gap-2">
+              <span>{messages.length} messages</span>
+              
+              {getCacheStats().messageCount > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {getCacheStats().messageCount} cached
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-const TypingIndicator = () => {
-  // Create a stable array to avoid regenerating on each render
-  const dots = [
-    { id: 'typing-dot-1', delay: '0s' },
-    { id: 'typing-dot-2', delay: '0.2s' },
-    { id: 'typing-dot-3', delay: '0.4s' }
-  ];
-  
-  return (
-    <div className="flex space-x-1">
-      {dots.map(dot => (
-        <div
-          key={dot.id}
-          className="w-2 h-2 bg-primary rounded-full animate-bounce"
-          style={{ animationDelay: dot.delay }}
-        />
-      ))}
+      {/* Error Display with Retry */}
+      {error && (
+        <div className="p-3 bg-destructive/10 border-t border-destructive/20">
+          <div className="flex items-center justify-between">
+            <span className="text-destructive text-sm">{error}</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.location.reload()}
+              className="text-xs"
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Debug Panel (Development Only) */}
+      {process.env.NODE_ENV === 'development' && performanceStats && (
+        <div className="p-2 bg-muted/30 border-t text-xs text-muted-foreground">
+          <div className="flex justify-between">
+            <span>Avg: {Math.round(performanceStats.averageQueryTime)}ms</span>
+            <span>Cache: {getCacheStats().messageCount} msgs</span>
+            <span>Memory: {performanceStats.memory?.current ? Math.round(performanceStats.memory.current / 1024 / 1024) + 'MB' : 'N/A'}</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={clearCache}
+              className="text-xs h-auto p-1"
+            >
+              Clear Cache
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

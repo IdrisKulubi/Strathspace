@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatPreview } from "./chat-preview";
 import { EmptyChats } from "./empty-chats";
 import { cn } from "@/lib/utils";
-import Pusher from 'pusher-js';
+
 
 interface ChatSectionProps {
   currentUser: { id: string; image: string; name: string };
@@ -105,47 +105,16 @@ export function ChatSection({
     }
   }, [fetchChats, initialChats.length]);
 
-  // Real-time updates via Pusher
+  // Periodic updates to replace real-time functionality
   useEffect(() => {
     if (!currentUser?.id) return;
 
-    // Ensure environment variables are available
-    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY;
-    const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
+    // Set up periodic fetching every 30 seconds
+    const interval = setInterval(() => {
+      fetchChats(true);
+    }, 30000);
 
-    if (!pusherKey || !pusherCluster) {
-      console.error("Pusher environment variables are not set.");
-      return;
-    }
-
-    const pusherClient = new Pusher(pusherKey, {
-      cluster: pusherCluster,
-      authEndpoint: "/api/pusher/auth",
-    });
-
-    const channelName = `private-user-${currentUser.id}-chatlist`;
-    const eventName = "chatlist-update";
-
-    try {
-      const channel = pusherClient.subscribe(channelName);
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel.bind(eventName, (_data: any) => {
-        setTimeout(() => fetchChats(true), 300);
-      });
-
-      channel.bind('pusher:subscription_succeeded', () => {
-      });
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel.bind('pusher:subscription_error', (status: any) => {
-        console.error(`Failed to subscribe to ${channelName}: `, status);
-      });
-      
-      return () => {
-        pusherClient.unsubscribe(channelName);
-      };
-    } catch (error) {
-      console.error("Error setting up Pusher subscription:", error);
-    }
+    return () => clearInterval(interval);
   }, [currentUser?.id, fetchChats]);
 
   // Memoize the chat list to prevent unnecessary re-renders

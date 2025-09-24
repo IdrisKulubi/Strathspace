@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { getUnreadCount } from '@/lib/actions/chat.actions';
-import { pusherClient } from '@/lib/pusher/client';
 
 export function useUnreadMessages(userId: string) {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -28,27 +27,8 @@ export function useUnreadMessages(userId: string) {
     
     fetchInitialCount();
 
-    const channel = pusherClient.subscribe(`private-user-${userId}`);
-    
-    const handleNewMessage = (data: { matchId: string }) => {
-      if (!readMessagesRef.current.has(data.matchId)) {
-        setUnreadCount(prev => prev + 1);
-      }
-    };
-
-    const handleMessagesRead = (data: { matchId: string }) => {
-      readMessagesRef.current.add(data.matchId);
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    };
-
-    channel.bind('new-message', handleNewMessage);
-    channel.bind('messages-read', handleMessagesRead);
-
     return () => {
       isMounted.current = false;
-      channel.unbind('new-message', handleNewMessage);
-      channel.unbind('messages-read', handleMessagesRead);
-      pusherClient.unsubscribe(`private-user-${userId}`);
     };
   }, [userId]);
 

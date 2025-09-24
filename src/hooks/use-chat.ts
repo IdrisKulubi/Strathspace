@@ -1,9 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import Pusher from "pusher-js";
 import type { Message, Profile } from "@/db/schema";
 import { getChatMessages, sendMessage } from "@/lib/actions/chat.actions";
 import { useSession } from "next-auth/react";
-import type { Channel } from "pusher-js";
 import { toast } from "./use-toast";
 import { CACHE_KEYS, CACHE_TTL } from "@/lib/constants/cache";
 import {  getCachedData, setCachedData } from "@/lib/utils/redis-helpers";
@@ -32,12 +30,10 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [partner, setPartner] = useState<Profile>(initialPartner);
   const [isTyping, setIsTyping] = useState(false);
-  const [channel, setChannel] = useState<Channel>();
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const hasInitialized = useRef<boolean>(false);
   const messageIdsRef = useRef<Set<string>>(new Set<string>());
-  const pusherRef = useRef<Pusher | null>(null);
   const cacheKeyRef = useRef<string>(CACHE_KEYS.CHAT.MESSAGES(matchId));
 
   const handleNewMessage = useCallback((message: Message) => {
@@ -82,9 +78,7 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
     });
   }, []);
 
-  const handleTypingEvent = useCallback(({ isTyping }: { isTyping: boolean }) => {
-    setIsTyping(isTyping);
-  }, []);
+
 
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -185,34 +179,15 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
             { compress: true }
           ).catch(err => console.error("Failed to cache messages:", err));
         }
-        
-        const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-          authEndpoint: "/api/pusher/auth",
-        });
-        
-        pusherRef.current = pusher;
-
-        const channel = pusher.subscribe(`match-${matchId}`);
-        channel.bind("new-message", handleNewMessage);
-        channel.bind("typing", handleTypingEvent);
-        setChannel(channel);
       } catch (error) {
         console.error("Failed to load messages:", error);
       } finally {
         setIsLoading(false);
       }
-
-      return () => {
-        if (channel) {
-          channel.unbind_all();
-          pusherRef.current?.unsubscribe(`match-${matchId}`);
-        }
-      };
     };
 
     initChat();
-  }, [matchId, handleNewMessage, handleTypingEvent, channel]);
+  }, [matchId, handleNewMessage]);
 
   const handleSend = useCallback(
     async (content: string) => {
@@ -319,15 +294,13 @@ export const useChat = (matchId: string, initialPartner: Profile) => {
   );
 
   const handleTyping = useCallback(async (isTyping: boolean) => {
-    channel?.trigger("client-typing", { isTyping });
-    
     // Cache typing status for this user in this match
     if (session?.user?.id) {
       const typingKey = CACHE_KEYS.CHAT.TYPING(matchId, session.user.id);
       setCachedData(typingKey, { isTyping }, isTyping ? 10 : 1)
         .catch(err => console.error("Failed to cache typing status:", err));
     }
-  }, [channel, matchId, session?.user?.id]);
+  }, [matchId, session?.user?.id]);
 
   return {
     messages,

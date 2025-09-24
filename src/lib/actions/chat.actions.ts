@@ -4,7 +4,7 @@ import  db  from "@/db/drizzle";
 import { matches, messages } from "@/db/schema";
 import { auth } from "@/auth";
 import { eq, and } from "drizzle-orm";
-import { pusher } from "@/lib/pusher/server";
+
 
 export async function getChatMessages(matchId: string) {
   const session = await auth();
@@ -64,18 +64,7 @@ export async function sendMessage(
       columns: { user1Id: true, user2Id: true },
     });
 
-    if (matchDetails) {
-      const eventName = "chatlist-update"; // Consistent event name
-      const payload = { matchId, timestamp: new Date().toISOString(), senderId };
-      try {
-        await Promise.all([
-          pusher.trigger(`private-user-${matchDetails.user1Id}-chatlist`, eventName, payload),
-          pusher.trigger(`private-user-${matchDetails.user2Id}-chatlist`, eventName, payload)
-        ]);
-      } catch (pusherError) {
-        console.error("Pusher trigger failed in sendMessage:", pusherError);
-      }
-    }
+    // Note: Real-time notifications removed - using periodic fetching instead
 
     return { message, error: null };
   } catch (error) {
@@ -261,7 +250,7 @@ export async function markMessagesAsRead(matchId: string, userId: string) {
         )
       );
 
-    await pusher.trigger(`private-user-${userId}`, 'messages-read', { matchId });
+    // Note: Real-time notifications removed - using periodic fetching instead
     
     return { success: true };
   } catch (error) {
