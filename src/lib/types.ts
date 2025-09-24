@@ -23,3 +23,20 @@ export interface ActionResult<T> {
   error?: string;
 }
 
+// Re-export messaging types for convenience
+export type {
+  Message,
+  MessageWithSender,
+  ConversationPreview,
+  PaginatedMessages,
+  SendMessageFormData,
+  GetMessagesParams,
+  UpdateMessageStatusParams,
+  SendMessageResult,
+  GetMessagesResult,
+  GetConversationsResult,
+  UpdateMessageStatusResult,
+  MessagingState,
+  MessageStatus
+} from './types/messaging.types';
+

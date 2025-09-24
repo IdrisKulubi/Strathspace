@@ -9,7 +9,7 @@ import {
   json,
   primaryKey,
   index,
-  uniqueIndex
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 import { User } from "next-auth";
@@ -18,7 +18,7 @@ import { User } from "next-auth";
 export const users = pgTable(
   "user",
   {
-    id: text("id").primaryKey(), 
+    id: text("id").primaryKey(),
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
     role: text("role").$type<"user" | "admin">().default("user"),
@@ -84,64 +84,73 @@ export const verificationTokens = pgTable(
 );
 
 // Extended user profiles
-export const profiles = pgTable(
-  "profiles",
-  { 
-    id: uuid("id").defaultRandom().primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    bio: text("bio"),
-    age: integer("age"),
-    gender: text("gender"),
-    role: text("role").$type<"user" | "admin">().default("user"),
-    interests: json("interests").$type<string[]>(),
-    photos: json("photos").$type<string[]>(),
-    isVisible: boolean("is_visible").default(true),
-    lastActive: timestamp("last_active").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-    isComplete: boolean("is_complete").default(false),
-    profileCompleted: boolean("profile_completed").default(false),
-    lookingFor: text("looking_for"),
-    course: text("course"),
-    yearOfStudy: integer("year_of_study"),
-    instagram: text("instagram"),
-    spotify: text("spotify"),
-    snapchat: text("snapchat"),
-    profilePhoto: text("profile_photo"),
-    phoneNumber: text("phone_number"),
-    firstName: text("first_name").notNull().default(""),
-    lastName: text("last_name").notNull().default(""),
-    isMatch: boolean("is_match").default(false),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    anonymous: boolean("anonymous").default(false),
-    anonymousAvatar: text("anonymous_avatar"),
-    anonymousRevealRequested: boolean("anonymous_reveal_requested").default(false),
-    drinkingPreference: text("drinking_preference"),
-    workoutFrequency: text("workout_frequency"),
-    socialMediaUsage: text("social_media_usage"),
-    sleepingHabits: text("sleeping_habits"),
-    personalityType: text("personality_type"),
-    communicationStyle: text("communication_style"),
-    loveLanguage: text("love_language"),
-    zodiacSign: text("zodiac_sign"),
-    visibilityMode: text("visibility_mode").default("standard"),
-    incognitoMode: boolean("incognito_mode").default(false),
-    discoveryPaused: boolean("discovery_paused").default(false),
-    readReceiptsEnabled: boolean("read_receipts_enabled").default(true),
-    showActiveStatus: boolean("show_active_status").default(true),
-    username: text("username"),
-  }
-);
+export const profiles = pgTable("profiles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  bio: text("bio"),
+  age: integer("age"),
+  gender: text("gender"),
+  role: text("role").$type<"user" | "admin">().default("user"),
+  interests: json("interests").$type<string[]>(),
+  photos: json("photos").$type<string[]>(),
+  isVisible: boolean("is_visible").default(true),
+  lastActive: timestamp("last_active").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  isComplete: boolean("is_complete").default(false),
+  profileCompleted: boolean("profile_completed").default(false),
+  lookingFor: text("looking_for"),
+  course: text("course"),
+  yearOfStudy: integer("year_of_study"),
+  instagram: text("instagram"),
+  spotify: text("spotify"),
+  snapchat: text("snapchat"),
+  profilePhoto: text("profile_photo"),
+  phoneNumber: text("phone_number"),
+  firstName: text("first_name").notNull().default(""),
+  lastName: text("last_name").notNull().default(""),
+  isMatch: boolean("is_match").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  anonymous: boolean("anonymous").default(false),
+  anonymousAvatar: text("anonymous_avatar"),
+  anonymousRevealRequested: boolean("anonymous_reveal_requested").default(
+    false
+  ),
+  drinkingPreference: text("drinking_preference"),
+  workoutFrequency: text("workout_frequency"),
+  socialMediaUsage: text("social_media_usage"),
+  sleepingHabits: text("sleeping_habits"),
+  personalityType: text("personality_type"),
+  communicationStyle: text("communication_style"),
+  loveLanguage: text("love_language"),
+  zodiacSign: text("zodiac_sign"),
+  visibilityMode: text("visibility_mode").default("standard"),
+  incognitoMode: boolean("incognito_mode").default(false),
+  discoveryPaused: boolean("discovery_paused").default(false),
+  readReceiptsEnabled: boolean("read_receipts_enabled").default(true),
+  showActiveStatus: boolean("show_active_status").default(true),
+  username: text("username"),
+});
 
 // Indexes for the profiles table (defined externally)
 export const profileUserIdIdx = index("profile_user_id_idx").on(sql`user_id`);
-export const profileIsVisibleIdx = index("profile_is_visible_idx").on(sql`is_visible`);
+export const profileIsVisibleIdx = index("profile_is_visible_idx").on(
+  sql`is_visible`
+);
 export const profileGenderIdx = index("profile_gender_idx").on(sql`gender`);
-export const profileLastActiveIdx = index("profile_last_active_idx").on(sql`last_active`);
-export const profileCompletedIdx = index("profile_completed_idx").on(sql`profile_completed`);
-export const profileUsernameIdx = index("profile_username_idx").on(sql`username`);
-export const profileAnonymousIdx = index("profile_anonymous_idx").on(sql`anonymous`);
+export const profileLastActiveIdx = index("profile_last_active_idx").on(
+  sql`last_active`
+);
+export const profileCompletedIdx = index("profile_completed_idx").on(
+  sql`profile_completed`
+);
+export const profileUsernameIdx = index("profile_username_idx").on(
+  sql`username`
+);
+export const profileAnonymousIdx = index("profile_anonymous_idx").on(
+  sql`anonymous`
+);
 
 // Swipes/Likes
 export const swipes = pgTable(
@@ -215,12 +224,12 @@ export const messages = pgTable(
       .default("sent")
       .notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull()
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => ({
     matchIdIdx: index("match_id_idx").on(table.matchId),
     senderIdIdx: index("sender_id_idx").on(table.senderId),
-    createdAtIdx: index("created_at_idx").on(table.createdAt)
+    createdAtIdx: index("created_at_idx").on(table.createdAt),
   })
 );
 
@@ -228,7 +237,7 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   sender: one(users, {
     fields: [messages.senderId],
     references: [users.id],
-  })
+  }),
 }));
 
 // Blocks
@@ -256,41 +265,51 @@ export const starredProfiles = pgTable("starred_profiles", {
 });
 
 // Reports
-export const reports = pgTable("reports", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  reporterId: text("reporter_id")
-    .notNull()
-    .references(() => users.id),
-  reportedUserId: text("reported_user_id")
-    .notNull()
-    .references(() => users.id),
-  reason: text("reason").notNull(),
-  status: text("status").$type<"PENDING" | "RESOLVED">().default("PENDING"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  resolvedAt: timestamp("resolved_at"),
-  adminNotes: text("admin_notes"),
-}, (table) => ({
-  reportedIdx: index("reported_user_idx").on(table.reportedUserId),
-  statusIdx: index("report_status_idx").on(table.status),
-}));
+export const reports = pgTable(
+  "reports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reporterId: text("reporter_id")
+      .notNull()
+      .references(() => users.id),
+    reportedUserId: text("reported_user_id")
+      .notNull()
+      .references(() => users.id),
+    reason: text("reason").notNull(),
+    status: text("status").$type<"PENDING" | "RESOLVED">().default("PENDING"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    resolvedAt: timestamp("resolved_at"),
+    adminNotes: text("admin_notes"),
+  },
+  (table) => ({
+    reportedIdx: index("reported_user_idx").on(table.reportedUserId),
+    statusIdx: index("report_status_idx").on(table.status),
+  })
+);
 
 // Profile Views
-export const profileViews = pgTable("profile_views", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  viewerId: text("viewer_id")
-    .notNull()
-    .references(() => users.id),
-  viewedId: text("viewed_id")
-    .notNull()
-    .references(() => users.id),
-  viewedAt: timestamp("viewed_at").defaultNow().notNull(),
-  source: text("source").$type<"VIEW_MORE" | "PROFILE_CARD" | "SEARCH" | "MATCHES">().default("VIEW_MORE"),
-  viewDuration: integer("view_duration"), 
-}, (table) => ({
-  viewerIdx: index("profile_views_viewer_idx").on(table.viewerId),
-  viewedIdx: index("profile_views_viewed_idx").on(table.viewedId),
-  viewedAtIdx: index("profile_views_viewed_at_idx").on(table.viewedAt),
-}));
+export const profileViews = pgTable(
+  "profile_views",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    viewerId: text("viewer_id")
+      .notNull()
+      .references(() => users.id),
+    viewedId: text("viewed_id")
+      .notNull()
+      .references(() => users.id),
+    viewedAt: timestamp("viewed_at").defaultNow().notNull(),
+    source: text("source")
+      .$type<"VIEW_MORE" | "PROFILE_CARD" | "SEARCH" | "MATCHES">()
+      .default("VIEW_MORE"),
+    viewDuration: integer("view_duration"),
+  },
+  (table) => ({
+    viewerIdx: index("profile_views_viewer_idx").on(table.viewerId),
+    viewedIdx: index("profile_views_viewed_idx").on(table.viewedId),
+    viewedAtIdx: index("profile_views_viewed_at_idx").on(table.viewedAt),
+  })
+);
 
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -355,6 +374,4 @@ export type Profile = typeof profiles.$inferSelect & {
 // Export the Message type if needed
 export type Message = typeof messages.$inferSelect;
 
-
 export type ProfileView = typeof profileViews.$inferSelect;
-
