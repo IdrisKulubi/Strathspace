@@ -29,11 +29,11 @@ To use these workflows, you need to set up the following secrets in your GitHub 
 
 - `VERCEL_TOKEN`: An API token from Vercel
 - `VERCEL_ORG_ID`: Your Vercel organization ID
-- `VERCEL_PROJECT_ID`: Your Vercel project ID
+- `VERCEL_PROJECT_ID`: Your Vercel project ID get it from the project settings 
 
 ## How It Works
 
 1. When you push to a feature branch, the `auto-deploy-merge.yml` workflow will run.
 2. If all tests pass and the deployment succeeds, it will create a PR to merge your branch into main.
-3. The PR will be set to auto-merge once all required checks pass.
+3. The PR will be set to auto-merge once all required checks pass and the deployment to vercel is succesfull
 
