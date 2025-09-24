@@ -1,0 +1,1 @@
+CREATE INDEX "match_id_created_at_idx" ON "messages" USING btree ("match_id","created_at");

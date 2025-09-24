@@ -230,6 +230,8 @@ export const messages = pgTable(
     matchIdIdx: index("match_id_idx").on(table.matchId),
     senderIdIdx: index("sender_id_idx").on(table.senderId),
     createdAtIdx: index("created_at_idx").on(table.createdAt),
+    // Composite index for efficient message pagination queries
+    matchIdCreatedAtIdx: index("match_id_created_at_idx").on(table.matchId, table.createdAt),
   })
 );
 

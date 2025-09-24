@@ -27,7 +27,7 @@ const customJestConfig = {
     '<rootDir>/node_modules/',
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!(next-auth|@auth/core)/)'
+    'node_modules/(?!(next-auth|@auth/core|lucide-react)/)'
   ],
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
   globals: {
