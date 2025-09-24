@@ -7,6 +7,12 @@ import { eq, and, or, desc, asc, lt, gt } from "drizzle-orm";
 import { z } from "zod";
 import { ActionResult } from "@/lib/types";
 import { revalidatePath } from "next/cache";
+import { 
+  withErrorHandling, 
+  createMessagingError, 
+  MessagingErrorType,
+  ERROR_CODES 
+} from "@/lib/utils/messaging-errors.utils";
 
 // Enhanced TypeScript types for messaging
 export interface MessageWithSender {
@@ -102,13 +108,14 @@ export async function validateUserAccess(matchId: string, userId: string): Promi
 export async function sendMessage(
   formData: FormData
 ): Promise<ActionResult<MessageWithSender>> {
-  try {
+  return withErrorHandling(async () => {
     const session = await auth();
     if (!session?.user?.id) {
-      return {
-        success: false,
-        error: "Authentication required"
-      };
+      throw createMessagingError(
+        MessagingErrorType.AUTH_ERROR,
+        "Authentication required",
+        ERROR_CODES.UNAUTHORIZED_ACCESS
+      );
     }
 
     // Extract and validate form data
@@ -117,29 +124,51 @@ export async function sendMessage(
       content: formData.get('content') as string,
     };
 
-    const validatedData = sendMessageSchema.parse(rawData);
+    let validatedData;
+    try {
+      validatedData = sendMessageSchema.parse(rawData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw createMessagingError(
+          MessagingErrorType.VALIDATION_ERROR,
+          error.errors.map(e => e.message).join(", "),
+          ERROR_CODES.INVALID_MESSAGE_CONTENT
+        );
+      }
+      throw error;
+    }
 
     // Verify user has access to this match
     const hasAccess = await validateUserAccess(validatedData.matchId, session.user.id);
     if (!hasAccess) {
-      return {
-        success: false,
-        error: "Unauthorized access to conversation"
-      };
+      throw createMessagingError(
+        MessagingErrorType.PERMISSION_ERROR,
+        "Unauthorized access to conversation",
+        ERROR_CODES.MATCH_NOT_ACCESSIBLE
+      );
     }
 
     // Insert message into database
-    const [newMessage] = await db
-      .insert(messages)
-      .values({
-        matchId: validatedData.matchId,
-        senderId: session.user.id,
-        content: validatedData.content,
-        status: 'sent',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
+    let newMessage;
+    try {
+      [newMessage] = await db
+        .insert(messages)
+        .values({
+          matchId: validatedData.matchId,
+          senderId: session.user.id,
+          content: validatedData.content,
+          status: 'sent',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+    } catch (error) {
+      throw createMessagingError(
+        MessagingErrorType.DATABASE_ERROR,
+        "Failed to save message to database",
+        ERROR_CODES.MESSAGE_SEND_FAILED
+      );
+    }
 
     // Get sender information for the response
     const sender = await db.query.users.findFirst({
@@ -152,10 +181,11 @@ export async function sendMessage(
     });
 
     if (!sender) {
-      return {
-        success: false,
-        error: "Sender information not found"
-      };
+      throw createMessagingError(
+        MessagingErrorType.DATABASE_ERROR,
+        "Sender information not found",
+        ERROR_CODES.MESSAGE_SEND_FAILED
+      );
     }
 
     const messageWithSender: MessageWithSender = {
@@ -165,38 +195,30 @@ export async function sendMessage(
     };
 
     // Update match timestamp
-    await db
-      .update(matches)
-      .set({ 
-        lastMessageAt: new Date(),
-        updatedAt: new Date()
-      })
-      .where(eq(matches.id, validatedData.matchId));
-
-    // Revalidate relevant paths
-    revalidatePath(`/chat/${validatedData.matchId}`);
-    revalidatePath('/chat');
-
-    return {
-      success: true,
-      data: messageWithSender
-    };
-
-  } catch (error) {
-    console.error("Error sending message:", error);
-    
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.errors.map(e => e.message).join(", ")
-      };
+    try {
+      await db
+        .update(matches)
+        .set({ 
+          lastMessageAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(matches.id, validatedData.matchId));
+    } catch (error) {
+      // Non-critical error - message was sent successfully
+      console.warn("Failed to update match timestamp:", error);
     }
 
-    return {
-      success: false,
-      error: "Failed to send message. Please try again."
-    };
-  }
+    // Revalidate relevant paths
+    try {
+      revalidatePath(`/chat/${validatedData.matchId}`);
+      revalidatePath('/chat');
+    } catch (error) {
+      // Non-critical error - message was sent successfully
+      console.warn("Failed to revalidate paths:", error);
+    }
+
+    return messageWithSender;
+  }, 'sendMessage');
 }
 
 /**
