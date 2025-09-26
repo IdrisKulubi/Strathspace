@@ -125,8 +125,10 @@ export const ChatWindow = ({
     }
   };
 
+  const containerHeightClass = isInChatPage ? "h-screen" : "h-full";
+
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className={`flex flex-col ${containerHeightClass} bg-background`}>
       {/* Enhanced Chat Header with Performance Indicators */}
       <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center gap-3">
@@ -180,13 +182,13 @@ export const ChatWindow = ({
       {/* Message List with Cached Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoading && messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-sm text-muted-foreground">
-                Loading messages...
-              </p>
-            </div>
+          <div className="space-y-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className={cn("flex gap-3", i % 2 === 0 ? "justify-start" : "justify-end")}>
+                <div className={cn("max-w-[70%] rounded-lg px-4 py-3", i % 2 === 0 ? "bg-muted/70" : "bg-primary/20")}
+                     style={{ minHeight: 20, width: i % 3 === 0 ? 180 : 120 }} />
+              </div>
+            ))}
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
@@ -200,6 +202,15 @@ export const ChatWindow = ({
           </div>
         ) : (
           <div className="space-y-4">
+            {isLoading && (
+              <div className="opacity-70 space-y-3">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={`sk-${i}`} className={cn("flex gap-3", i % 2 === 0 ? "justify-start" : "justify-end")}>
+                    <div className={cn("max-w-[60%] rounded-lg px-4 py-2", i % 2 === 0 ? "bg-muted/50" : "bg-primary/10")} />
+                  </div>
+                ))}
+              </div>
+            )}
             {messages.map((message, index) => {
               const isCurrentUser = message.senderId === session?.user?.id;
               const showAvatar =
@@ -274,51 +285,7 @@ export const ChatWindow = ({
             </div>
           )}
 
-          {/* Debug test buttons */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="mt-2 flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  console.log("🧪 Testing direct server action call...");
-                  try {
-                    const { testSendMessage } = await import(
-                      "@/lib/test-send-message"
-                    );
-                    const result = await testSendMessage(
-                      matchId,
-                      "Test message"
-                    );
-                    console.log("🧪 Direct test result:", result);
-                  } catch (error) {
-                    console.error("🧪 Direct test error:", error);
-                  }
-                }}
-              >
-                Test Server Action
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  console.log("🔍 Checking database structure...");
-                  try {
-                    const { checkMessagesTable } = await import(
-                      "@/lib/debug-db"
-                    );
-                    const result = await checkMessagesTable();
-                    console.log("🔍 Database check result:", result);
-                  } catch (error) {
-                    console.error("🔍 Database check error:", error);
-                  }
-                }}
-              >
-                Check DB
-              </Button>
-            </div>
-          )}
+        
         </div>
       </div>
 

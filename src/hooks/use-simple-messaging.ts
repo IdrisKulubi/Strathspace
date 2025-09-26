@@ -5,13 +5,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './use-auth';
-import {
-  getMessages,
-  type MessageWithSender,
-  type PaginatedMessages
-} from '@/lib/actions/messaging.actions';
-import { simpleSendMessage } from '@/lib/actions/simple-send-message';
 import { useToast } from './use-toast';
+
+type MessageWithSender = {
+  id: string;
+  content: string;
+  matchId: string;
+  senderId: string;
+  status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  sender?: { id: string; name: string; image?: string | null };
+  localId?: string;
+  isRetrying?: boolean;
+};
 
 interface UseSimpleMessagingOptions {
   matchId: string;
@@ -19,8 +26,11 @@ interface UseSimpleMessagingOptions {
   pollingInterval?: number;
 }
 
+// In-memory cache across hook instances for snappy loads
+const messageCache = new Map<string, MessageWithSender[]>();
+
 export function useSimpleMessaging(options: UseSimpleMessagingOptions) {
-  const { matchId, enabled = true, pollingInterval = 4000 } = options;
+  const { matchId, enabled = true, pollingInterval = 2500 } = options;
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -29,18 +39,44 @@ export function useSimpleMessaging(options: UseSimpleMessagingOptions) {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch messages
+  // Hydrate from cache immediately for fast UI
+  useEffect(() => {
+    if (!matchId) return;
+    const mem = messageCache.get(matchId);
+    if (mem && mem.length) {
+      setMessages(mem);
+    } else {
+      // Try sessionStorage cache
+      try {
+        const raw = sessionStorage.getItem(`msgs::${matchId}`);
+        if (raw) {
+          const parsed = JSON.parse(raw) as MessageWithSender[];
+          if (Array.isArray(parsed)) setMessages(parsed);
+        }
+      } catch {}
+    }
+  }, [matchId]);
+
+  // Fetch messages (non-blocking when we already have some)
   const fetchMessages = useCallback(async () => {
-    if (!user || !enabled) return;
+    if (!user || !enabled || !matchId) return;
 
     try {
-      setIsLoading(true);
+      // Only show initial loading state if we have nothing to render yet
+      setIsLoading(prev => (messages.length === 0 ? true : prev));
       setError(null);
       
-      const result = await getMessages(matchId, 50);
-      
+      const res = await fetch(`/api/messages/list?matchId=${encodeURIComponent(matchId)}&limit=30`, { cache: 'no-store' });
+      const result = await res.json();
       if (result.success && result.data) {
-        setMessages(result.data.messages);
+        const next = result.data.messages as MessageWithSender[];
+        const prevLast = messages[messages.length - 1]?.id;
+        const nextLast = next[next.length - 1]?.id;
+        if (messages.length !== next.length || prevLast !== nextLast) {
+          setMessages(next);
+          messageCache.set(matchId, next);
+          try { sessionStorage.setItem(`msgs::${matchId}`, JSON.stringify(next)); } catch {}
+        }
       } else {
         throw new Error(result.error || 'Failed to fetch messages');
       }
@@ -50,7 +86,7 @@ export function useSimpleMessaging(options: UseSimpleMessagingOptions) {
     } finally {
       setIsLoading(false);
     }
-  }, [matchId, user, enabled]);
+  }, [matchId, user, enabled, messages]);
 
   // Send message - simplified and robust
   const sendMessageSimple = useCallback(async (content: string): Promise<boolean> => {
@@ -100,36 +136,36 @@ export function useSimpleMessaging(options: UseSimpleMessagingOptions) {
       // Add optimistic message to UI immediately
       setMessages(prev => {
         console.log('✅ Adding optimistic message to UI, current count:', prev.length);
-        return [...prev, optimisticMessage!];
+        const updated = [...prev, optimisticMessage!];
+        messageCache.set(matchId, updated);
+        try { sessionStorage.setItem(`msgs::${matchId}`, JSON.stringify(updated)); } catch {}
+        return updated;
       });
 
-      // Prepare form data
-      const formData = new FormData();
-      formData.append('matchId', matchId);
-      formData.append('content', content.trim());
-
-      console.log('✅ Calling server action with formData...');
-      
-      // Call server action
-      const result = await simpleSendMessage(formData);
-      
-      console.log('📡 Server action result:', {
-        success: result.success,
-        hasData: !!result.data,
-        error: result.error
+      console.log('✅ Sending via API route...');
+      const res = await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ matchId, content: content.trim() }),
       });
+      const result = await res.json();
+
+      console.log('📡 API result:', { success: result.success, hasData: !!result.data, error: result.error });
 
       if (result.success && result.data) {
         console.log('✅ Message sent successfully, updating UI...');
         
         // Replace optimistic message with real message
-        setMessages(prev => 
-          prev.map(msg => 
+        setMessages(prev => {
+          const updated = prev.map(msg => 
             msg.id === optimisticMessage!.id 
               ? { ...result.data!, status: 'sent' as const }
               : msg
-          )
-        );
+          );
+          messageCache.set(matchId, updated);
+          try { sessionStorage.setItem(`msgs::${matchId}`, JSON.stringify(updated)); } catch {}
+          return updated;
+        });
         
         return true;
       } else {
@@ -141,13 +177,16 @@ export function useSimpleMessaging(options: UseSimpleMessagingOptions) {
       
       // Update optimistic message to failed status
       if (optimisticMessage) {
-        setMessages(prev => 
-          prev.map(msg => 
+        setMessages(prev => {
+          const updated = prev.map(msg => 
             msg.id === optimisticMessage!.id 
               ? { ...msg, status: 'failed' as const }
               : msg
-          )
-        );
+          );
+          messageCache.set(matchId, updated);
+          try { sessionStorage.setItem(`msgs::${matchId}`, JSON.stringify(updated)); } catch {}
+          return updated;
+        });
       }
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

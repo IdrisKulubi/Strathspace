@@ -12,8 +12,10 @@ import { cn } from "@/lib/utils";
 interface ChatSectionProps {
   currentUser: { id: string; image: string; name: string };
   onSelectChat: (matchId: string) => void;
-  markAsRead: (matchId: string) => void;
+  markAsRead?: (matchId: string) => void;
   initialChats?: ChatPreview[];
+  disableNavigation?: boolean;
+  selectedChatId?: string | null;
 }
 
 interface ChatPreview {
@@ -34,8 +36,11 @@ export function ChatSection({
   currentUser, 
   onSelectChat, 
   markAsRead,
-  initialChats = []
+  initialChats = [],
+  disableNavigation = false,
+  selectedChatId = null,
 }: ChatSectionProps) {
+  const safeMarkAsRead = markAsRead ?? (() => {});
   const [chats, setChats] = useState<ChatPreview[]>(initialChats);
   const [isInitialLoading, setIsInitialLoading] = useState(!initialChats.length);
   const [isFetching, setIsFetching] = useState(false);
@@ -131,7 +136,9 @@ export function ChatSection({
           profile={chat as ChatPreview}
           currentUser={currentUser}
           onSelect={onSelectChat}
-          markAsRead={markAsRead}
+          markAsRead={safeMarkAsRead}
+          disableNavigation={disableNavigation}
+          isActive={selectedChatId === chat.matchId}
         />
       </div>
     ));
