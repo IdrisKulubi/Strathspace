@@ -190,47 +190,4 @@ body {
   animation: gradient-x 4s ease-in-out infinite;
 }
 
-/* Challenge page animations */
-@keyframes floatUp {
-  0% {
-    transform: translateY(100vh) rotate(0deg);
-    opacity: 0.5;
-  }
-  25% {
-    opacity: 0.8;
-  }
-  50% {
-    transform: translateY(50vh) rotate(10deg);
-    opacity: 0.6;
-  }
-  75% {
-    opacity: 0.4;
-  }
-  100% {
-    transform: translateY(-100px) rotate(25deg);
-    opacity: 0;
-  }
-}
 
-@keyframes confetti {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--x, 10px), var(--y, -50px)) rotate(var(--r, 90deg));
-    opacity: 0;
-  }
-}
-
-@keyframes confetti-container {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}

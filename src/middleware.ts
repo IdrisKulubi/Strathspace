@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { checkProfileCompletion } from "@/lib/checks";
 
 // Add home page to public routes
-const publicRoutes = ["/", "/login", "/no-access", "/challenge"];
+const publicRoutes = ["/", "/login", "/no-access"];
 
 export async function middleware(request: Request & { nextUrl: URL }) {
   const session = await auth();
@@ -23,9 +23,7 @@ export async function middleware(request: Request & { nextUrl: URL }) {
 
   // Handle non-authenticated users
   if (!isAuth) {
-    if (pathname === "/" || pathname === "/challenge") {
-      return NextResponse.next();
-    }
+    
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
