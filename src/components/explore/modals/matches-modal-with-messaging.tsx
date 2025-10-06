@@ -13,12 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   MessageCircle, 
   Heart, 
-  Clock, 
-  X,
+  Clock,
   ArrowRight,
   User
 } from "lucide-react";
-import { Profile } from "@/db/schema";
 import { useToast } from "@/hooks/use-toast";
 import { getMatchesForMessaging, getConversationStats } from "@/lib/actions/match-messaging.actions";
 import { MatchToMessageNav } from "@/components/messaging/match-to-message-nav";
@@ -53,8 +51,7 @@ interface MatchesModalWithMessagingProps {
  */
 export function MatchesModalWithMessaging({
   isOpen,
-  onClose,
-  currentUser
+  onClose
 }: MatchesModalWithMessagingProps) {
   const [matches, setMatches] = useState<MatchWithMessaging[]>([]);
   const [conversationStats, setConversationStats] = useState<Record<string, any>>({});
@@ -382,7 +379,7 @@ function EmptyMatchesState() {
       </p>
       
       <Button 
-        onClick={() => window.location.href = '/explore'}
+        onClick={() => window.location.href = '/matches'}
         size="sm"
         className="gap-2"
       >

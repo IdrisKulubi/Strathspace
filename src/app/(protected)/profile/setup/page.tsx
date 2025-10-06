@@ -34,7 +34,7 @@ function SetupForm() {
 
   useEffect(() => {
     if (session?.user?.hasProfile) {
-      router.replace("/explore");
+      router.replace("/matches");
     }
   }, [session, router]);
 
@@ -103,7 +103,7 @@ function SetupForm() {
           title: "Success!",
           description: "Profile created successfully",
         });
-        router.push("/explore");
+        router.push("/matches");
         router.refresh();
       } else {
         toast({

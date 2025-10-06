@@ -40,7 +40,7 @@ export async function middleware(request: Request & { nextUrl: URL }) {
   // Handle profile setup route access
   if (pathname.startsWith("/profile/setup")) {
     if (hasProfile) {
-      return NextResponse.redirect(new URL("/explore", request.url));
+      return NextResponse.redirect(new URL("/matches", request.url));
     }
     return NextResponse.next();
   }

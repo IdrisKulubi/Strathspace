@@ -31,6 +31,7 @@ import {
 import { signOut } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import confetti from "canvas-confetti";
 import { SwipeControls } from "../controls/swipe-controls";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
@@ -133,6 +134,7 @@ export function ExploreMobileV2({
   const [previewProfile, setPreviewProfile] = useState<Profile | null>(null);
   const { toast } = useToast();
   const unreadMessages = useUnreadMessages(currentUser.id);
+  const searchParams = useSearchParams();
 
   // Preload buffer for profiles - Improved to load more profiles in advance
   const visibleProfiles = useMemo(() => {
@@ -150,8 +152,16 @@ export function ExploreMobileV2({
     return buffer;
   }, [currentIndex, profiles]);
 
-  // Preload chat data on component mount
+  // Preload chat data on component mount and handle query parameters
   useEffect(() => {
+    // Check if we should open matches modal from query param
+    const showParam = searchParams.get('show');
+    if (showParam === 'matches') {
+      setShowMatches(true);
+      // Clear the query param after opening the modal
+      window.history.replaceState({}, '', '/matches');
+    }
+    
     if (!isChatLoaded) {
       console.time('Initial chat data preloading');
       getChats().then((result) => {
@@ -164,7 +174,7 @@ export function ExploreMobileV2({
         console.timeEnd('Initial chat data preloading');
       });
     }
-  }, [isChatLoaded]);
+  }, [isChatLoaded, searchParams]);
 
   // Periodically refresh chat data in the background
   useInterval(() => {
@@ -595,7 +605,7 @@ export function ExploreMobileV2({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => window.location.href = '/matches'}
+                  onClick={() => setShowChatList(true)}
                   onMouseEnter={handleChatHover}
                   className="relative flex flex-col items-center gap-1 h-16 w-16 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20"
                 >

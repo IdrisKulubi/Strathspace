@@ -25,7 +25,7 @@ export async function toggleAnonymousMode(enabled: boolean) {
     await clearUserCache(session.user.id);
     
     revalidatePath("/app");
-    revalidatePath("/explore");
+    revalidatePath("/matches");
     revalidatePath("/profile");
     
     return { success: true };
@@ -52,7 +52,7 @@ export async function setAnonymousAvatar(avatarId: string) {
     
       await clearUserCache(session.user.id);
     revalidatePath("/profile");
-    revalidatePath("/explore");
+    revalidatePath("/matches");
     
     return { success: true };
   } catch (error) {

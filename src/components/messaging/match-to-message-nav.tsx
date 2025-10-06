@@ -46,8 +46,13 @@ export function MatchToMessageNav({
       const result = await navigateToMessaging(matchId);
 
       if (result.success) {
-        // Navigate to the conversation
-        router.push(result.data.redirectPath);
+        // Navigate to the conversation with source parameter for proper back navigation
+        const redirectPath = result.data.redirectPath;
+        // Add source=matches query param to indicate we came from matches modal
+        const pathWithSource = redirectPath.includes('?') 
+          ? `${redirectPath}&source=matches`
+          : `${redirectPath}?source=matches`;
+        router.push(pathWithSource);
         
         // Show success toast
         toast({

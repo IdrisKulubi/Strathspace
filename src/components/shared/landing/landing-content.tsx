@@ -78,7 +78,7 @@ export function LandingContent({
           transition={{ delay: 0.4 }}
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <Link href={session?.user ? "/explore" : "/login"}>
+          <Link href={session?.user ? "/matches" : "/login"}>
             <Button
               size="lg"
               className="bg-pink-600 hover:bg-pink-700 dark:bg-pink-500 dark:hover:bg-pink-600 w-full sm:w-auto"

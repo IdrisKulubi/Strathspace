@@ -9,7 +9,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { recordSwipe, undoLastSwipe, getMatches, getLikedByProfiles } from "@/lib/actions/explore.actions";
 import { useToast } from "@/hooks/use-toast";
 import { useInterval } from "@/hooks/use-interval";
-import { handleLike, handleUnlike as unlikeAction } from "@/lib/actions/like.actions";
 import confetti from "canvas-confetti";
 import { getChats } from "@/lib/actions/chat.actions";
 import { ChatWindow } from "@/components/chat/chat-window";
@@ -304,16 +303,6 @@ setMatches((prev) => dedupeByUserId([...prev, updatedProfile]));
     setPreviewProfile(profile);
   };
 
-  // Change handleUnlike to _handleUnlike to indicate it's intentionally unused
-  const _handleUnlike = async (userId: string): Promise<{ success: boolean }> => {
-    try {
-      const result = await unlikeAction(userId);
-      return { success: !!result };
-    } catch (error) {
-      console.error("Error in unlikeAction:", error);
-      return { success: false };
-    }
-  };
 
   const convertToProfileDetailsType = (profile: Profile | null): ProfileDetailsType | null => {
     if (!profile) return null;

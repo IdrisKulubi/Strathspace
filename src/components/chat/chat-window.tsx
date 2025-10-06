@@ -6,10 +6,10 @@ import { MessageInput } from "@/components/messaging/message-input";
 import { type Profile } from "@/db/schema";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RevealRequestButton } from "@/components/anonymous/RevealRequestButton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, MessageCircle } from "lucide-react";
+import { ArrowLeft, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { markConversationAsRead } from "@/lib/actions/messaging.actions";
@@ -30,9 +30,9 @@ export const ChatWindow = ({
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isInChatPage = pathname?.startsWith("/chat/");
-
-  const [performanceStats, setPerformanceStats] = useState<any>(null);
+  const sourceParam = searchParams.get('source');
 
   // Use simple messaging system for debugging
   const { messages, isLoading, isSending, error, sendMessage, retryMessage } =
@@ -80,7 +80,12 @@ export const ChatWindow = ({
     if (onClose) {
       onClose();
     } else if (isInChatPage) {
-      router.push("/explore");
+      // If we came from matches modal, navigate back to it
+      if (sourceParam === 'matches') {
+        router.push("/matches?show=matches");
+      } else {
+        router.push("/matches");
+      }
     }
   };
 
@@ -153,16 +158,6 @@ export const ChatWindow = ({
 
         <div className="flex items-center gap-2">
           {/* Removed technical indicators */}
-        </div>
-      </div>
-
-      {/* Match Info */}
-      <div className="px-4 py-2 text-sm text-muted-foreground text-center border-b bg-muted/30">
-        <div className="flex items-center justify-center gap-2">
-          <Users className="h-4 w-4" />
-          <span>
-            You matched with {partnerName} on {matchDate}
-          </span>
         </div>
       </div>
 

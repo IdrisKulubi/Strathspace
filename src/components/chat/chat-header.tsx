@@ -30,7 +30,8 @@ export function ChatHeader({ partner, onClose }: { partner?: Profile | null, onC
       onClose();
     } else {
       // Fallback to router if onClose is not provided or doesn't work
-      router.push('/explore');
+      // Navigate to matches page with query param to open matches modal
+      router.push('/matches?show=matches');
     }
   };
 
@@ -38,7 +39,7 @@ export function ChatHeader({ partner, onClose }: { partner?: Profile | null, onC
     <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-background z-10">
       <div className="flex items-center">
         <Link
-          href="/explore"
+          href="/matches?show=matches"
           className="mr-2 p-1.5 hover:bg-accent rounded-full transition-colors"
         >
           <ChevronLeft className="h-7 w-7" />

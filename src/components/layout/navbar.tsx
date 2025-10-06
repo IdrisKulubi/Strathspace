@@ -26,7 +26,7 @@ export function Navbar({ className }: NavbarProps) {
   const pathname = usePathname();
 
   // Update the visibility logic
-  const isExplorePage = pathname === "/explore";
+  const isExplorePage = pathname === "/matches";
   const showNavigation = pathname === "/";
 
   const scrollToSection = (sectionId: string) => {
@@ -95,13 +95,13 @@ export function Navbar({ className }: NavbarProps) {
 
         <div className="flex items-center gap-4">
           <FeedbackModal />
-          {session?.user && pathname !== "/explore" && (
+          {session?.user && pathname !== "/matches" && (
             <Button
               asChild
               variant="ghost"
               className="hidden md:flex items-center gap-2 bg-gradient-to-r from-pink-500/10 to-purple-500/10 hover:from-pink-500/20 hover:to-purple-500/20 text-pink-600 dark:text-pink-400"
             >
-              <Link href="/explore">
+              <Link href="/matches">
                 <Sparkles className="h-4 w-4" />
                 <span>Explore</span>
               </Link>

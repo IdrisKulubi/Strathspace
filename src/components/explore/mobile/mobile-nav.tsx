@@ -25,7 +25,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
     <div className={`fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-background/80 backdrop-blur-lg border-b border-pink-100 dark:border-pink-900 ${className}`}>
       <div className="px-4 h-14 flex items-center justify-between">
         {/* Logo/Brand */}
-        <Link href="/explore" className="flex items-center gap-2">
+        <Link href="/matches" className="flex items-center gap-2">
           <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
             Strathspace 💝
           </span>
@@ -40,7 +40,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
               className="text-pink-500"
               asChild
             >
-              <Link href="/explore">
+              <Link href="/matches">
                 <span className="text-sm">Explore</span>
               </Link>
             </Button>
