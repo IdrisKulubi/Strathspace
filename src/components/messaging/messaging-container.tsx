@@ -141,33 +141,31 @@ export function MessagingContainer({ className }: MessagingContainerProps) {
         transition={{ duration: 0.3, ease: "easeOut" }}
       >
         {/* Desktop Layout */}
-        <div className="hidden md:flex h-full w-full">
+        <div className="hidden md:flex h-full w-full bg-[#2B1A3D]">
           {/* Conversation List */}
           <motion.div
-            className="w-80 border-r bg-background"
+            className="w-[380px] border-r border-[#3D2652]/50 bg-[#2B1A3D]"
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }}
           >
-            <Card className="h-full rounded-none border-0">
-              <CardHeader className="pb-3 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">Messages</CardTitle>
-                  </div>
+            <div className="h-full flex flex-col">
+              <div className="px-4 pt-5 pb-3 border-b border-[#3D2652]/50">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-pink-400">Strathspace</h2>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={refreshConversations}
                     disabled={isLoading}
+                    className="text-gray-400 hover:text-white hover:bg-[#3D2652]"
                   >
                     <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="p-0 flex-1">
-                <Suspense fallback={<div className="p-4">Loading conversations...</div>}>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <Suspense fallback={<div className="p-4 text-gray-400">Loading conversations...</div>}>
                   <ConversationList
                     conversations={conversations}
                     activeConversationId={activeConversationId}
@@ -175,13 +173,13 @@ export function MessagingContainer({ className }: MessagingContainerProps) {
                     isLoading={isLoading}
                   />
                 </Suspense>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </motion.div>
 
           {/* Message View */}
           <motion.div
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col bg-[#2B1A3D]"
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.2, ease: "easeOut" }}
@@ -194,68 +192,67 @@ export function MessagingContainer({ className }: MessagingContainerProps) {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="h-full"
+                  className="h-full flex flex-col"
                 >
-                  <Card className="h-full rounded-none border-0">
-                    <CardHeader className="pb-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="h-10 w-10 bg-gradient-to-br from-pink-100 to-rose-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-pink-700">
-                              {activeConversation.otherUser.name
-                                .split(" ")
-                                .map(n => n[0])
-                                .join("")
-                                .toUpperCase()
-                                .slice(0, 2)}
-                            </span>
-                          </div>
-                          <AnimatePresence>
-                            {activeConversation.otherUser.isOnline && (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                exit={{ scale: 0 }}
-                                className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-background rounded-full"
-                              />
-                            )}
-                          </AnimatePresence>
+                  {/* Chat Header */}
+                  <div className="px-6 py-4 border-b border-[#3D2652]/50 bg-[#2B1A3D]">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="h-11 w-11 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-semibold text-white">
+                            {activeConversation.otherUser.name
+                              .split(" ")
+                              .map(n => n[0])
+                              .join("")
+                              .toUpperCase()
+                              .slice(0, 2)}
+                          </span>
                         </div>
-                        
-                        <div>
-                          <CardTitle className="text-base">
-                            {activeConversation.otherUser.name}
-                          </CardTitle>
-                          <motion.p
-                            className="text-xs text-muted-foreground"
-                            animate={{
-                              color: activeConversation.otherUser.isOnline 
-                                ? "rgb(34 197 94)" 
-                                : "rgb(107 114 128)"
-                            }}
-                          >
-                            {activeConversation.otherUser.isOnline ? "Online" : "Offline"}
-                          </motion.p>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="flex-1 flex flex-col p-0">
-                      <div className="flex-1 overflow-hidden">
-                        <Suspense fallback={<div className="p-4">Loading messages...</div>}>
-                          <MessageListContainer
-                            matchId={activeConversation.matchId}
-                            className="h-full"
-                          />
-                        </Suspense>
+                        <AnimatePresence>
+                          {activeConversation.otherUser.isOnline && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              exit={{ scale: 0 }}
+                              className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-green-500 border-2 border-[#2B1A3D] rounded-full"
+                            />
+                          )}
+                        </AnimatePresence>
                       </div>
                       
-                      <MessageInputContainer
+                      <div>
+                        <h3 className="text-base font-semibold text-white">
+                          {activeConversation.otherUser.name}
+                        </h3>
+                        <motion.p
+                          className="text-sm"
+                          animate={{
+                            color: activeConversation.otherUser.isOnline 
+                              ? "rgb(34 197 94)" 
+                              : "rgb(156 163 175)"
+                          }}
+                        >
+                          {activeConversation.otherUser.isOnline ? "Online" : "Offline"}
+                        </motion.p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Messages Area */}
+                  <div className="flex-1 overflow-hidden bg-[#1F1129]">
+                    <Suspense fallback={<div className="p-4 text-gray-400">Loading messages...</div>}>
+                      <MessageListContainer
                         matchId={activeConversation.matchId}
-                        placeholder={`Message ${activeConversation.otherUser.name}...`}
+                        className="h-full"
                       />
-                    </CardContent>
-                  </Card>
+                    </Suspense>
+                  </div>
+                  
+                  {/* Message Input */}
+                  <MessageInputContainer
+                    matchId={activeConversation.matchId}
+                    placeholder={`Type a message...`}
+                  />
                 </motion.div>
               ) : (
                 <motion.div
@@ -264,33 +261,29 @@ export function MessagingContainer({ className }: MessagingContainerProps) {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="h-full"
+                  className="h-full flex items-center justify-center bg-[#1F1129]"
                 >
-                  <Card className="h-full rounded-none border-0">
-                    <CardContent className="flex items-center justify-center h-full">
-                      <div className="text-center space-y-4 max-w-sm">
-                        <motion.div
-                          animate={{ 
-                            rotate: [0, 5, -5, 0],
-                            scale: [1, 1.05, 1]
-                          }}
-                          transition={{ 
-                            duration: 2,
-                            repeat: Infinity,
-                            repeatDelay: 3
-                          }}
-                        >
-                          <MessageCircle className="h-16 w-16 text-muted-foreground mx-auto" />
-                        </motion.div>
-                        <div>
-                          <h3 className="text-lg font-medium">Select a conversation</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Choose a conversation from the list to start messaging
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="text-center space-y-4 max-w-sm px-6">
+                    <motion.div
+                      animate={{ 
+                        rotate: [0, 5, -5, 0],
+                        scale: [1, 1.05, 1]
+                      }}
+                      transition={{ 
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatDelay: 3
+                      }}
+                    >
+                      <MessageCircle className="h-16 w-16 text-pink-500/50 mx-auto" />
+                    </motion.div>
+                    <div>
+                      <h3 className="text-lg font-medium text-white">Select a conversation</h3>
+                      <p className="text-sm text-gray-400">
+                        Choose a conversation from the list to start messaging
+                      </p>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -298,7 +291,7 @@ export function MessagingContainer({ className }: MessagingContainerProps) {
         </div>
 
         {/* Mobile Layout */}
-        <div className="md:hidden h-full w-full relative">
+        <div className="md:hidden h-full w-full relative bg-[#2B1A3D]">
           <AnimatePresence mode="wait" custom={slideDirection}>
             {!isMobileConversationView ? (
               <motion.div
@@ -311,25 +304,23 @@ export function MessagingContainer({ className }: MessagingContainerProps) {
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="absolute inset-0"
               >
-                <Card className="h-full rounded-none border-0">
-                  <CardHeader className="pb-3 border-b">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-5 w-5 text-primary" />
-                        <CardTitle className="text-lg">Messages</CardTitle>
-                      </div>
+                <div className="h-full flex flex-col bg-[#2B1A3D]">
+                  <div className="px-4 pt-5 pb-3 border-b border-[#3D2652]/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-2xl font-bold text-pink-400">Strathspace</h2>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={refreshConversations}
                         disabled={isLoading}
+                        className="text-gray-400 hover:text-white hover:bg-[#3D2652]"
                       >
                         <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
                       </Button>
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-0 flex-1">
-                    <Suspense fallback={<div className="p-4">Loading conversations...</div>}>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <Suspense fallback={<div className="p-4 text-gray-400">Loading conversations...</div>}>
                       <ConversationList
                         conversations={conversations}
                         activeConversationId={activeConversationId}
@@ -337,8 +328,8 @@ export function MessagingContainer({ className }: MessagingContainerProps) {
                         isLoading={isLoading}
                       />
                     </Suspense>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             ) : activeConversation ? (
               <motion.div
@@ -351,22 +342,23 @@ export function MessagingContainer({ className }: MessagingContainerProps) {
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="absolute inset-0"
               >
-                <Card className="h-full rounded-none border-0">
-                  <CardHeader className="pb-3 border-b">
+                <div className="h-full flex flex-col bg-[#2B1A3D]">
+                  {/* Mobile Chat Header */}
+                  <div className="px-4 py-3 border-b border-[#3D2652]/50 bg-[#2B1A3D]">
                     <div className="flex items-center gap-3">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={handleBackToList}
-                        className="p-2"
+                        className="p-2 hover:bg-[#3D2652] text-white"
                       >
-                        <ArrowLeft className="h-4 w-4" />
+                        <ArrowLeft className="h-5 w-5" />
                       </Button>
                       
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1">
                         <div className="relative">
-                          <div className="h-8 w-8 bg-gradient-to-br from-pink-100 to-rose-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-pink-700">
+                          <div className="h-10 w-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-semibold text-white">
                               {activeConversation.otherUser.name
                                 .split(" ")
                                 .map(n => n[0])
@@ -381,40 +373,40 @@ export function MessagingContainer({ className }: MessagingContainerProps) {
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 exit={{ scale: 0 }}
-                                className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-background rounded-full"
+                                className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-[#2B1A3D] rounded-full"
                               />
                             )}
                           </AnimatePresence>
                         </div>
                         
                         <div>
-                          <CardTitle className="text-base">
+                          <h3 className="text-base font-semibold text-white">
                             {activeConversation.otherUser.name}
-                          </CardTitle>
-                          <p className="text-xs text-muted-foreground">
+                          </h3>
+                          <p className="text-xs text-gray-400">
                             {activeConversation.otherUser.isOnline ? "Online" : "Offline"}
                           </p>
                         </div>
                       </div>
                     </div>
-                  </CardHeader>
+                  </div>
                   
-                  <CardContent className="flex-1 flex flex-col p-0">
-                    <div className="flex-1 overflow-hidden">
-                      <Suspense fallback={<div className="p-4">Loading messages...</div>}>
-                        <MessageListContainer
-                          matchId={activeConversation.matchId}
-                          className="h-full"
-                        />
-                      </Suspense>
-                    </div>
-                    
-                    <MessageInputContainer
-                      matchId={activeConversation.matchId}
-                      placeholder={`Message ${activeConversation.otherUser.name}...`}
-                    />
-                  </CardContent>
-                </Card>
+                  {/* Messages Area */}
+                  <div className="flex-1 overflow-hidden bg-[#1F1129]">
+                    <Suspense fallback={<div className="p-4 text-gray-400">Loading messages...</div>}>
+                      <MessageListContainer
+                        matchId={activeConversation.matchId}
+                        className="h-full"
+                      />
+                    </Suspense>
+                  </div>
+                  
+                  {/* Message Input */}
+                  <MessageInputContainer
+                    matchId={activeConversation.matchId}
+                    placeholder={`Type a message...`}
+                  />
+                </div>
               </motion.div>
             ) : null}
           </AnimatePresence>

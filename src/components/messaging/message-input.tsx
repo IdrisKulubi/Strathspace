@@ -3,21 +3,21 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Send, Loader2 } from "lucide-react";
+import { Heart, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MessageInputProps } from "@/lib/messaging/types";
 
 /**
  * MessageInput component with auto-resize textarea and send functionality
  * Supports typing indicators, character limits, and keyboard shortcuts
+ * Redesigned with dark purple theme and pink heart send button
  */
 export function MessageInput({
   onSend,
   onTyping,
   disabled = false,
   placeholder = "Type a message...",
-  maxLength = 1000,
+  maxLength = 2000,
 }: MessageInputProps) {
   const [content, setContent] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -118,9 +118,10 @@ export function MessageInput({
   const canSend = content.trim().length > 0 && !isSending && !disabled;
 
   return (
-    <div className="border-t bg-background p-4">
-      <form onSubmit={handleSubmit} className="space-y-2">
-        <div className="flex gap-2 items-end">
+    <div className="bg-[#2B1A3D] border-t border-[#3D2652]/50 p-4">
+      <form onSubmit={handleSubmit}>
+        <div className="flex gap-3 items-end relative">
+          {/* Message Input */}
           <div className="flex-1 relative">
             <Textarea
               ref={textareaRef}
@@ -130,53 +131,57 @@ export function MessageInput({
               placeholder={placeholder}
               disabled={disabled || isSending}
               className={cn(
-                "min-h-[40px] max-h-[120px] resize-none rounded-2xl border-2 transition-colors",
-                "focus:border-primary/50 focus:ring-1 focus:ring-primary/20",
-                isOverLimit && "border-orange-300 focus:border-orange-400",
-                content.length >= maxLength && "border-red-300 focus:border-red-400"
+                "min-h-[48px] max-h-[120px] resize-none rounded-3xl transition-all duration-200",
+                "bg-[#3D2652] border-[#4D3662] text-white placeholder:text-gray-400",
+"focus:border-[#fb51c2]/50 focus:ring-2 focus:ring-[#fb51c2]/20",
+                "focus-visible:ring-2 focus-visible:ring-[#fb51c2]/20 focus-visible:ring-offset-0",
+                "px-5 py-3 text-[15px]",
+                isOverLimit && "border-orange-400/50 focus:border-orange-400",
+                content.length >= maxLength && "border-red-400/50 focus:border-red-400"
               )}
-              style={{ height: "40px" }} // Initial height
+              style={{ height: "48px" }} // Initial height
             />
             
-            {/* Character count indicator */}
-            {content.length > maxLength * 0.8 && (
-              <div className="absolute bottom-2 right-2">
-                <Badge
-                  variant={isOverLimit ? "destructive" : "secondary"}
-                  className="text-xs"
+            {/* Character count indicator - only show when approaching limit */}
+            {content.length > maxLength * 0.85 && (
+              <div className="absolute bottom-3 right-4">
+                <span
+                  className={cn(
+                    "text-xs font-medium",
+                    isOverLimit ? "text-orange-400" : "text-gray-500",
+                    content.length >= maxLength && "text-red-400"
+                  )}
                 >
                   {content.length}/{maxLength}
-                </Badge>
+                </span>
               </div>
             )}
           </div>
           
+          {/* Heart Send Button */}
           <Button
             type="submit"
             disabled={!canSend}
+            size="icon"
             className={cn(
-              "rounded-2xl h-10 w-10 p-0 transition-all duration-200",
-              canSend
-                ? "bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500"
-                : "bg-muted"
+              "rounded-full h-12 w-12 flex-shrink-0 transition-all duration-300 border-0",
+              "hover:scale-110 active:scale-95",
+canSend
+                ? "bg-gradient-to-br from-[#fb51c2] via-[#ff6cd4] to-[#ff88de] hover:from-[#e646b6] hover:via-[#ff63cf] hover:to-[#ff7dd9] shadow-lg shadow-pink-500/30"
+                : "bg-[#3D2652] text-gray-600 cursor-not-allowed"
             )}
           >
             {isSending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin text-white" />
             ) : (
-              <Send className="h-4 w-4" />
+              <Heart 
+                className={cn(
+                  "h-5 w-5 transition-all duration-200",
+                  canSend ? "text-white fill-white" : "text-gray-600"
+                )} 
+              />
             )}
           </Button>
-        </div>
-        
-        {/* Helper text */}
-        <div className="flex justify-between items-center text-xs text-muted-foreground">
-          <span>Press Enter to send, Shift+Enter for new line</span>
-          {content.length >= maxLength && (
-            <span className="text-red-500 font-medium">
-              Character limit reached
-            </span>
-          )}
         </div>
       </form>
     </div>

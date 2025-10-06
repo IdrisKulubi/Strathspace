@@ -7,6 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatPreview } from "./chat-preview";
 import { EmptyChats } from "./empty-chats";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 
 interface ChatSectionProps {
@@ -45,6 +47,7 @@ export function ChatSection({
   const [isInitialLoading, setIsInitialLoading] = useState(!initialChats.length);
   const [isFetching, setIsFetching] = useState(false);
   const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number>(Date.now());
+  const [query, setQuery] = useState("");
 
   // Memoize the fetch function to avoid recreation on each render
   const fetchChats = useCallback(async (force = false) => {
@@ -124,14 +127,15 @@ export function ChatSection({
 
   // Memoize the chat list to prevent unnecessary re-renders
   const chatList = useMemo(() => {
-    return chats.map((chat, index) => (
-      <div 
-        key={chat.id} 
-        className={cn(
-          "transition-colors hover:bg-muted/50",
-          index === 0 && "border-t border-border"
-        )}
-      >
+    const filtered = (chats || []).filter((c) => {
+      if (!query.trim()) return true;
+      const name = (c.firstName || "") + (c.id || "");
+      const preview = c.lastMessage?.content || "";
+      return name.toLowerCase().includes(query.toLowerCase()) || preview.toLowerCase().includes(query.toLowerCase());
+    });
+
+    return filtered.map((chat) => (
+      <div key={chat.id} className="px-3 py-1">
         <ChatPreview 
           profile={chat as ChatPreview}
           currentUser={currentUser}
@@ -142,7 +146,7 @@ export function ChatSection({
         />
       </div>
     ));
-  }, [chats, currentUser, onSelectChat, markAsRead]);
+  }, [chats, currentUser, onSelectChat, markAsRead, query, selectedChatId, disableNavigation]);
 
   if (isInitialLoading) {
     return (
@@ -161,20 +165,31 @@ export function ChatSection({
   }
 
   return (
-    <div className="flex h-full w-full flex-col bg-background">
-      <div className="border-b border-border/10 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        {isFetching && (
-          <div className="absolute right-4 top-3">
-            <Spinner className="h-4 w-4 text-muted-foreground opacity-50" />
-          </div>
-        )}
+    <div className="flex h-full w-full flex-col bg-[#2B1A3D] text-white">
+      {/* Search bar */}
+      <div className="px-3 pt-3 pb-2 border-b border-[#3D2652]/50">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search Matches"
+            className="pl-10 bg-[#3D2652] border-none text-white placeholder:text-gray-400 rounded-xl focus-visible:ring-1 focus-visible:ring-pink-500/50"
+          />
+        </div>
       </div>
       
       <ScrollArea className="flex-1">
-        <div className="divide-y divide-border">
+        <div className="py-2">
           {chatList}
         </div>
       </ScrollArea>
+
+      {isFetching && (
+        <div className="absolute right-4 top-3">
+          <Spinner className="h-4 w-4 text-gray-400 opacity-50" />
+        </div>
+      )}
     </div>
   );
 } 

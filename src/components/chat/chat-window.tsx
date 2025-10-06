@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RevealRequestButton } from "@/components/anonymous/RevealRequestButton";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -133,23 +134,33 @@ export const ChatWindow = ({
   const containerHeightClass = isInChatPage ? "h-screen" : "h-full";
 
   return (
-    <div className={`flex flex-col ${containerHeightClass} bg-background`}>
-      {/* Enhanced Chat Header with Performance Indicators */}
-      <div className="flex items-center justify-between p-4 border-b bg-card">
-        <div className="flex items-center gap-3">
+    <div className={`flex flex-col ${containerHeightClass} bg-[#2B1A3D]`}>
+      {/* Chat Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#3D2652]/50 bg-[#2B1A3D]">
+      <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleClose}
-            className="p-2"
+            className="p-2 hover:bg-[#3D2652] text-white"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={partner?.profilePhoto || undefined} alt={partnerName} />
+<AvatarFallback className="bg-gradient-to-br from-[#fb51c2] to-[#ff88de] text-white text-xs font-semibold">
+                  {partnerName?.[0]?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              {/* Online indicator placeholder */}
+              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-[#2B1A3D] rounded-full" />
+            </div>
             <div>
-              <h3 className="font-semibold text-lg">{partnerName}</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <h3 className="font-semibold text-white text-lg">{partnerName}</h3>
+              <div className="flex items-center gap-2 text-sm text-gray-400">
                 <span>Matched {matchDate}</span>
               </div>
             </div>
@@ -157,14 +168,14 @@ export const ChatWindow = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Removed technical indicators */}
+          {/* Right-side actions placeholder */}
         </div>
       </div>
 
       {/* Anonymous Mode Notice */}
       {currentUserProfile?.anonymous && partner?.anonymous && (
-        <div className="p-4 border-b text-center bg-muted/50">
-          <p className="text-sm text-muted-foreground mb-2">
+        <div className="p-4 border-b border-[#3D2652]/50 text-center bg-[#2B1A3D]">
+          <p className="text-sm text-gray-400 mb-2">
             You are both in Anonymous Mode. Choose to reveal your profiles?
           </p>
           <RevealRequestButton
@@ -174,13 +185,13 @@ export const ChatWindow = ({
         </div>
       )}
 
-      {/* Message List with Cached Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Message List */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#1F1129]">
         {isLoading && messages.length === 0 ? (
           <div className="space-y-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className={cn("flex gap-3", i % 2 === 0 ? "justify-start" : "justify-end")}>
-                <div className={cn("max-w-[70%] rounded-lg px-4 py-3", i % 2 === 0 ? "bg-muted/70" : "bg-primary/20")}
+                <div className={cn("max-w-[70%] rounded-[20px] px-4 py-3", i % 2 === 0 ? "bg-purple-800/30" : "bg-pink-500/20")}
                      style={{ minHeight: 20, width: i % 3 === 0 ? 180 : 120 }} />
               </div>
             ))}
@@ -188,9 +199,9 @@ export const ChatWindow = ({
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-lg font-medium">Start the conversation</p>
-              <p className="text-sm text-muted-foreground">
+              <MessageCircle className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+              <p className="text-lg font-medium text-white">Start the conversation</p>
+              <p className="text-sm text-gray-400">
                 Send a message to {partnerName}
               </p>
             </div>
@@ -201,7 +212,7 @@ export const ChatWindow = ({
               <div className="opacity-70 space-y-3">
                 {Array.from({ length: 2 }).map((_, i) => (
                   <div key={`sk-${i}`} className={cn("flex gap-3", i % 2 === 0 ? "justify-start" : "justify-end")}>
-                    <div className={cn("max-w-[60%] rounded-lg px-4 py-2", i % 2 === 0 ? "bg-muted/50" : "bg-primary/10")} />
+                    <div className={cn("max-w-[60%] rounded-[20px] px-4 py-2", i % 2 === 0 ? "bg-purple-800/30" : "bg-pink-500/20")} />
                   </div>
                 ))}
               </div>
@@ -209,9 +220,7 @@ export const ChatWindow = ({
             {messages.map((message, index) => {
               const isCurrentUser = message.senderId === session?.user?.id;
               const showAvatar =
-                !isCurrentUser &&
-                (index === 0 ||
-                  messages[index - 1]?.senderId !== message.senderId);
+                index === 0 || messages[index - 1]?.senderId !== message.senderId;
 
               return (
                 <div
@@ -221,25 +230,31 @@ export const ChatWindow = ({
                     isCurrentUser ? "justify-end" : "justify-start"
                   )}
                 >
+                  {/* Left avatar for partner messages */}
                   {!isCurrentUser && (
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                      {showAvatar
-                        ? partner?.firstName?.[0]?.toUpperCase() || "?"
-                        : ""}
-                    </div>
+                    showAvatar ? (
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={partner?.profilePhoto || undefined} alt={partnerName} />
+                        <AvatarFallback className="bg-gradient-to-br from-pink-500 to-purple-600 text-white text-xs font-semibold">
+                          {partnerName?.[0]?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <div className="w-8" />
+                    )
                   )}
 
                   <div
                     className={cn(
-                      "max-w-[70%] rounded-lg px-4 py-2",
+                      "max-w-[70%] rounded-[20px] px-4 py-2",
                       isCurrentUser
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+? "bg-gradient-to-r from-[#fb51c2] via-[#ff6cd4] to-[#ff88de] text-white shadow-lg shadow-pink-500/20"
+                        : "bg-[#3D2652] text-white border border-[#4D3662]/50"
                     )}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-[15px] leading-relaxed">{message.content}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs opacity-70">
+                      <span className="text-xs text-gray-400">
                         {format(new Date(message.createdAt), "HH:mm")}
                       </span>
                       {message.status === "sending" && (
@@ -257,6 +272,20 @@ export const ChatWindow = ({
                       )}
                     </div>
                   </div>
+
+                  {/* Right avatar for current user's messages */}
+                  {isCurrentUser && (
+                    showAvatar ? (
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={(session?.user as any)?.image || undefined} alt="You" />
+<AvatarFallback className="bg-gradient-to-br from-[#fb51c2] to-[#ff88de] text-white text-xs font-semibold">
+                          {session?.user?.name?.[0]?.toUpperCase() || "Y"}
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <div className="w-8" />
+                    )
+                  )}
                 </div>
               );
             })}
@@ -264,8 +293,8 @@ export const ChatWindow = ({
         )}
       </div>
 
-      {/* Enhanced Message Input with Status */}
-      <div className="border-t bg-card">
+      {/* Message Input */}
+      <div className="border-t border-[#3D2652]/50 bg-[#2B1A3D]">
         <div className="p-4">
           <MessageInput
             onSend={handleSendMessage}
@@ -273,10 +302,10 @@ export const ChatWindow = ({
             placeholder="Type a message..."
           />
 
-          {/* Simplified Status - Only show sending state */}
+          {/* Sending status */}
           {isSending && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              <span className="text-blue-600 animate-pulse">Sending...</span>
+            <div className="mt-2 text-xs text-gray-400">
+              <span className="text-pink-400 animate-pulse">Sending...</span>
             </div>
           )}
 

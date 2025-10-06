@@ -68,84 +68,93 @@ export function ChatPreview({ profile, currentUser, onSelect, markAsRead, disabl
   return (
     <Button
       variant="ghost"
-      className={cn("w-full h-auto p-4 rounded-none border-b border-border transition-colors", isActive ? "bg-accent/60 hover:bg-accent" : "hover:bg-accent/50")}
+      className={cn(
+        "w-full h-auto p-3 rounded-xl transition-all duration-200",
+        isActive 
+          ? "bg-[#492759] text-white hover:bg-[#492759]"
+          : "hover:bg-[#3D2652]/70 text-white"
+      )}
       onClick={handleClick}
     >
       {disableNavigation ? (
-        <div className="flex items-center gap-4 w-full">
-          <Avatar className="h-12 w-12 shrink-0">
+        <div className="flex items-center gap-3 w-full">
+          <Avatar className="h-10 w-10 shrink-0">
             <AvatarImage 
               src={profile.profilePhoto || undefined}
               alt={displayName}
             />
-            <AvatarFallback>{initials}</AvatarFallback>
+<AvatarFallback className="bg-gradient-to-br from-[#fb51c2] to-[#ff88de] text-white font-semibold">
+              {initials}
+            </AvatarFallback>
           </Avatar>
 
           <div className="flex-1 min-w-0 text-left">
-            <div className="flex justify-between items-center mb-1.5">
-              <p className="font-semibold truncate text-foreground">
+            <div className="flex justify-between items-center mb-0.5">
+              <p className="font-semibold truncate">
                 {displayName}
               </p>
               {profile.lastMessage && (
-                <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
                   {formattedTime}
                 </span>
               )}
             </div>
 
             <p className={cn(
-              "text-sm truncate",
+              "text-[13px] truncate",
               hasUnread 
-                ? "text-foreground font-medium" 
-                : "text-muted-foreground/80"
+                ? "text-gray-200 font-medium" 
+                : "text-gray-400"
             )}>
               {profile.lastMessage?.content || 'No messages yet'}
             </p>
           </div>
 
           {hasUnread && (
-            <div className="w-2.5 h-2.5 rounded-full bg-pink-500 dark:bg-pink-400 shrink-0 animate-pulse" />
+            <div className="w-2.5 h-2.5 rounded-full bg-pink-500 shrink-0 animate-pulse" />
           )}
         </div>
       ) : (
         <Link 
           href={`/chat/${profile.matchId}`}
-          className="flex items-center gap-4 w-full"
+          className="flex items-center gap-3 w-full"
           prefetch={true}
           replace={true}
         >
-          <Avatar className="h-12 w-12 shrink-0">
+          <Avatar className="h-10 w-10 shrink-0">
             <AvatarImage 
               src={profile.profilePhoto || undefined}
               alt={displayName}
             />
-            <AvatarFallback>{initials}</AvatarFallback>
+<AvatarFallback className="bg-gradient-to-br from-[#fb51c2] to-[#ff88de] text-white font-semibold">
+              {initials}
+            </AvatarFallback>
           </Avatar>
 
           <div className="flex-1 min-w-0 text-left">
-            <div className="flex justify-between items-center mb-1.5">
-              <p className="font-semibold truncate text-foreground">
+            <div className="flex justify-between items-center mb-0.5">
+              <p className="font-semibold truncate">
                 {displayName}
               </p>
               {profile.lastMessage && (
-                <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
                   {formattedTime}
                 </span>
               )}
             </div>
 
             <p className={cn(
-              "text-sm truncate",
+              "text-[13px] truncate",
               hasUnread 
-                ? "text-foreground font-medium" 
-                : "text-muted-foreground/80"
+                ? "text-gray-200 font-medium" 
+                : "text-gray-400"
             )}>
               {profile.lastMessage?.content || 'No messages yet'}
             </p>
           </div>
 
           {hasUnread && (
-            <div className="w-2.5 h-2.5 rounded-full bg-pink-500 dark:bg-pink-400 shrink-0 animate-pulse" />
+            <div className="w-2.5 h-2.5 rounded-full bg-pink-500 shrink-0 animate-pulse" />
           )}
         </Link>
       )}

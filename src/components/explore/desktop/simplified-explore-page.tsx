@@ -34,8 +34,8 @@ export const SimplifiedExplorePage: React.FC<SimplifiedExplorePageProps> = ({
     children,
 }) => {
     // Helper to dedupe by userId to avoid duplicate React keys and repeated cards
-    const dedupeByUserId = <T extends { userId: string }>(arr: T[]): T[] => {
-        const map = new Map<string, T>();
+    const dedupeByUserId = (arr: any[]): any[] => {
+        const map = new Map<string, any>();
         for (const item of arr || []) {
             if (!map.has(item.userId)) map.set(item.userId, item);
         }
@@ -76,7 +76,7 @@ export const SimplifiedExplorePage: React.FC<SimplifiedExplorePageProps> = ({
 
             {/* Main content grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 min-h-0">
-            <div className="col-span-1 border-r overflow-y-auto bg-background/95">
+            <div className="col-span-1 border-r overflow-y-auto bg-[#2B1A3D]">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
                     <TabsList className="shrink-0 grid w-full grid-cols-2">
                         <TabsTrigger value="matches">Matches</TabsTrigger>
@@ -116,7 +116,7 @@ export const SimplifiedExplorePage: React.FC<SimplifiedExplorePageProps> = ({
                         </ScrollArea>
                     </TabsContent>
                     <TabsContent value="messages" className="flex-grow overflow-y-auto">
-                       <ChatSection 
+<ChatSection 
                             currentUser={currentUser}
                             onSelectChat={(matchId) => {
                               setSelectedChatId(matchId);
@@ -211,7 +211,6 @@ let partner = (uniqueMatches as (Profile & { matchId?: string })[]).find(m => (m
                                             anonymousRevealRequested: false,
                                             id: "",
                                             role: "user",
-                                            // @ts-expect-error allow partial fields for UI
                                         } as unknown as Profile;
                                     }
                                 }

@@ -43,8 +43,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ChatWindow } from "@/components/chat/chat-window";
 import { MatchToMessageNav } from "@/components/messaging/match-to-message-nav";
+import { ChatWindow } from "@/components/chat/chat-window";
 import { getStalkers } from "@/lib/actions/stalker.actions";
 import { Badge } from "@/components/ui/badge";
 import { MobileNavbar } from "./mobile-navbar";

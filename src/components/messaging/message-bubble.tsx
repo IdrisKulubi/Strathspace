@@ -123,8 +123,8 @@ export function MessageBubble({ message, currentUserId, onRetry }: MessageBubble
           isShortMessage ? "text-sm" : "text-base",
           // Background and text colors
           isCurrentUser
-            ? "bg-gradient-to-r from-pink-500 to-rose-400 text-white"
-            : "bg-secondary border border-border/50 text-foreground",
+? "bg-gradient-to-r from-[#fb51c2] via-[#ff6cd4] to-[#ff88de] text-white shadow-lg shadow-pink-500/20"
+            : "bg-[#3D2652] text-white border border-[#4D3662]/50",
           // Border radius adjustments for message tails
           isCurrentUser ? "rounded-br-md" : "rounded-bl-md",
           // Opacity for optimistic messages

@@ -2,15 +2,24 @@
 
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Message } from "@/db/schema";
-
 
 interface MessageBubbleProps {
   message: Message;
   isUser: boolean;
+  partnerName?: string;
+  partnerImage?: string;
+  showAvatar?: boolean;
 }
 
-export const MessageBubble = ({ message, isUser }: MessageBubbleProps) => {
+export const MessageBubble = ({ 
+  message, 
+  isUser, 
+  partnerName, 
+  partnerImage,
+  showAvatar = false 
+}: MessageBubbleProps) => {
   const messageStatus = message?.status || "sent";
   const isSent = messageStatus === "sent";
   const isDelivered = messageStatus === "delivered";
@@ -18,54 +27,77 @@ export const MessageBubble = ({ message, isUser }: MessageBubbleProps) => {
 
   const content = message?.content || "";
   const contentLength = content.length;
-  const isShortMessage = contentLength < 20;
   const isLongMessage = contentLength > 100;
   
   const messageDate = message?.createdAt ? new Date(message.createdAt) : new Date();
   const formattedTime = format(messageDate, "HH:mm");
 
+  // Get initials for avatar fallback
+  const getInitials = (name?: string) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <div className={cn(
-      "flex flex-col gap-1",
-      "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]", 
-      isUser ? "ml-auto" : "mr-auto"
+      "flex gap-2 items-end",
+      isUser ? "flex-row-reverse" : "flex-row"
     )}>
+      {/* Avatar for partner messages */}
+      {!isUser && showAvatar && (
+        <Avatar className="h-8 w-8 border-2 border-transparent flex-shrink-0">
+          <AvatarImage src={partnerImage} alt={partnerName} />
+          <AvatarFallback className="bg-gradient-to-br from-pink-500 to-purple-600 text-white text-xs font-semibold">
+            {getInitials(partnerName)}
+          </AvatarFallback>
+        </Avatar>
+      )}
+      {!isUser && !showAvatar && <div className="w-8 flex-shrink-0" />}
+
+      {/* Message bubble */}
       <div className={cn(
-        "rounded-2xl transition-colors",
-        isShortMessage 
-          ? "px-2 py-1.5" 
-          : isLongMessage 
-            ? "p-2.5 sm:p-3" 
-            : "px-2.5 py-2 sm:p-2.5",
-        isShortMessage ? "text-sm" : isLongMessage ? "text-[0.925rem]" : "text-base",
-        isShortMessage ? "w-fit" : "w-full",
-        isUser
-          ? "bg-gradient-to-r from-pink-500 to-rose-400 text-white"
-          : "bg-secondary border border-border/50 text-foreground",
-        isUser ? "rounded-br-sm" : "rounded-bl-sm"
+        "flex flex-col gap-0.5",
+        "max-w-[75%] sm:max-w-[70%] md:max-w-[60%]"
       )}>
-        <p className="break-words whitespace-pre-wrap">{content}</p>
-        
         <div className={cn(
-          "flex items-center gap-2",
-          isShortMessage ? "mt-0" : "mt-1"
+          "rounded-[20px] transition-all duration-200",
+          isLongMessage ? "px-4 py-3" : "px-4 py-2.5",
+          isUser
+            ? "bg-gradient-to-r from-[#E13A96] via-[#E84FA7] to-[#EF65B8] text-white shadow-lg shadow-pink-500/20"
+            : "bg-[#3D2652] text-white border border-[#4D3662]/50",
+          isUser ? "rounded-br-md" : "rounded-bl-md"
         )}>
-          <span className={cn(
-            "text-xs opacity-75",
-            isUser ? "text-white/90" : "text-muted-foreground"
-          )}>
+          <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">
+            {content}
+          </p>
+        </div>
+        
+        {/* Time and status indicators - shown below bubble */}
+        <div className={cn(
+          "flex items-center gap-1.5 px-2",
+          isUser ? "justify-end" : "justify-start"
+        )}>
+          <span className="text-[11px] text-gray-500">
             {formattedTime}
           </span>
           
           {isUser && (
-            <div className="flex items-center gap-0.5 text-[0.7rem]">
-              {isSent && <span className="text-blue-300/80">✓</span>}
-              {isDelivered && <span className="text-blue-300/80">✓✓</span>}
-              {isRead && <span className="text-blue-600">✓✓</span>}
+            <div className="flex items-center">
+              {isSent && <span className="text-[10px] text-gray-500">✓</span>}
+              {isDelivered && <span className="text-[10px] text-gray-500">✓✓</span>}
+              {isRead && <span className="text-[10px] text-blue-400">✓✓</span>}
             </div>
           )}
         </div>
       </div>
+
+      {/* Spacer for user messages to align with avatar space */}
+      {isUser && <div className="w-8 flex-shrink-0" />}
     </div>
   );
 };

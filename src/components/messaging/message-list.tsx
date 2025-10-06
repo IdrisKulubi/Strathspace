@@ -102,10 +102,10 @@ export function MessageList({
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8 bg-[#1F1129]">
         <div className="text-center space-y-2">
-          <p className="text-muted-foreground">No messages yet</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-gray-400">No messages yet</p>
+          <p className="text-sm text-gray-500">
             Start the conversation by sending a message!
           </p>
         </div>
@@ -114,13 +114,13 @@ export function MessageList({
   }
 
   return (
-    <div className={cn("flex-1 relative", className)}>
+    <div className={cn("flex-1 relative bg-[#1F1129]", className)}>
       <ScrollArea
         ref={scrollAreaRef}
         className="h-full"
         onScrollCapture={handleScroll}
       >
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-6">
           {/* Load more button at the top */}
           {hasMore && (
             <div className="flex justify-center">
@@ -129,7 +129,7 @@ export function MessageList({
                 size="sm"
                 onClick={handleLoadMore}
                 disabled={isLoadingMore}
-                className="text-xs"
+                className="text-xs text-gray-400 hover:text-white hover:bg-[#3D2652]"
               >
                 {isLoadingMore ? (
                   <>
@@ -145,38 +145,40 @@ export function MessageList({
 
           {/* Loading skeleton for initial load */}
           {isLoading && messages.length === 0 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
                   className={cn(
-                    "flex",
+                    "flex gap-2",
                     i % 2 === 0 ? "justify-end" : "justify-start"
                   )}
                 >
-                  <div className="space-y-2 max-w-[70%]">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
+                  {i % 2 !== 0 && <Skeleton className="h-8 w-8 rounded-full bg-purple-800/30" />}
+                  <div className="space-y-2 max-w-[60%]">
+                    <Skeleton className="h-12 w-48 rounded-[20px] bg-purple-800/30" />
                   </div>
+                  {i % 2 === 0 && <Skeleton className="h-8 w-8 rounded-full bg-purple-800/30 opacity-0" />}
                 </div>
               ))}
             </div>
           )}
 
           {/* Messages with date separators */}
-          {groupedMessages.map((item) => {
+          {groupedMessages.map((item, index) => {
             if (item.type === "date-separator") {
               return (
                 <div key={item.id} className="flex items-center gap-4 my-6">
-                  <Separator className="flex-1" />
-                  <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded-full border">
+                  <Separator className="flex-1 bg-[#3D2652]" />
+                  <span className="text-xs text-gray-500 bg-[#2B1A3D] px-3 py-1 rounded-full border border-[#3D2652]">
                     {formatDateSeparator(item.date!)}
                   </span>
-                  <Separator className="flex-1" />
+                  <Separator className="flex-1 bg-[#3D2652]" />
                 </div>
               );
             }
 
+            // The MessageBubble component determines if the message is from the current user
             return (
               <div
                 key={item.id}
